@@ -1,0 +1,16 @@
+# Archivos de Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Archivos de configuración de Windows/VS Code
+.vscode/
+.idea/
+*.iml
+*.sublime-project
+*.sublime-workspace
+node_modules/
