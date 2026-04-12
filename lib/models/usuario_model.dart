@@ -1,3 +1,6 @@
+/// Enumeración que define los diferentes roles disponibles para un usuario en la plataforma.
+enum RolSistema { estudiante, tutor, admin }
+
 /// Clase que representa el modelo de un usuario en la plataforma de tutorías.
 /// Esta clase es la encargada de estructurar los datos principales de las personas.
 class UsuarioModel {
@@ -13,9 +16,9 @@ class UsuarioModel {
   /// Sirve como la vía principal de contacto y también es la credencial para iniciar sesión.
   final String correoElectronico;
 
-  /// Rol dentro del sistema. Los valores permitidos son: 'estudiante', 'tutor' o 'admin'.
-  /// Sirve para saber qué permisos se le otorgan en la aplicación y qué pantallas puede visualizar.
-  final String rolEnElSistema;
+  /// Rol dentro del sistema. Determina los permisos y las pantallas que puede visualizar.
+  /// Los roles definidos están estructurados mediante el enum [RolSistema].
+  final RolSistema rolEnElSistema;
 
   /// Facultad a la que pertenece el usuario (Ejemplo: Ingeniería en Sistemas).
   /// Puede ser nulo (vacío) si el usuario aún no ha llenado este dato o su perfil es más general.
@@ -47,7 +50,7 @@ class UsuarioModel {
       'identificadorUnico': identificadorUnico,
       'nombreCompleto': nombreCompleto,
       'correoElectronico': correoElectronico,
-      'rolEnElSistema': rolEnElSistema,
+      'rolEnElSistema': rolEnElSistema.name,
       'facultad': facultad,
       'carrera': carrera,
       'listaDeTutoresSuscritos': listaDeTutoresSuscritos,
@@ -63,7 +66,7 @@ class UsuarioModel {
         identificadorUnico: '',
         nombreCompleto: 'Usuario Desconocido',
         correoElectronico: '',
-        rolEnElSistema: 'estudiante',
+        rolEnElSistema: RolSistema.estudiante,
         listaDeTutoresSuscritos: [],
       );
     }
@@ -73,7 +76,10 @@ class UsuarioModel {
       identificadorUnico: mapaDeDatos['identificadorUnico'] ?? '',
       nombreCompleto: mapaDeDatos['nombreCompleto'] ?? 'Usuario Desconocido',
       correoElectronico: mapaDeDatos['correoElectronico'] ?? '',
-      rolEnElSistema: mapaDeDatos['rolEnElSistema'] ?? 'estudiante',
+      rolEnElSistema: RolSistema.values.firstWhere(
+        (rol) => rol.name == mapaDeDatos['rolEnElSistema'],
+        orElse: () => RolSistema.estudiante,
+      ),
       
       // La facultad y la carrera aceptan valores nulos de forma natural, por lo que no es necesario un valor por defecto drástico.
       facultad: mapaDeDatos['facultad'],
@@ -84,5 +90,11 @@ class UsuarioModel {
           ? List<String>.from(mapaDeDatos['listaDeTutoresSuscritos'])
           : [],
     );
+  }
+
+  /// Método utilitario ágil diseñado para facilitar auditorías y verificaciones de permisos a lo largo de la app.
+  /// Compara el rol asignado actualmente al perfil frente a un rol específico introducido como parámetro.
+  bool tieneRol(RolSistema rolRequerido) {
+    return rolEnElSistema == rolRequerido;
   }
 }

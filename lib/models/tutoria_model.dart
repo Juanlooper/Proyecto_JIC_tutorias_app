@@ -38,6 +38,14 @@ class TutoriaModel {
   /// Es opcional (nulo por defecto) hasta que se decida cómo llevar al cabo la cita concretada.
   final String? enlaceOReunion;
 
+  /// Cupo máximo de estudiantes que pueden participar en la tutoría.
+  /// Define el límite de capacidad para gestionar las inscripciones.
+  final int cupoMaximo;
+
+  /// Duración planificada de la tutoría en minutos.
+  /// Útil para agendamiento y visualización en calendarios.
+  final int duracionMinutos;
+
   /// Constructor base. Se encarga de ensamblar en la memoria RAM una tutoría cuando llamamos la clase.
   /// El atributo 'required' indica qué pieza es indispensable para considerarse legalmente una tutoría.
   TutoriaModel({
@@ -50,6 +58,8 @@ class TutoriaModel {
     required this.estadoDeLaSolicitud,
     required this.fechaHoraSugerida,
     this.enlaceOReunion,
+    required this.cupoMaximo,
+    required this.duracionMinutos,
   });
 
   /// Transforma nuestra estructura de datos de objeto a formato mapa de clave/valor.
@@ -66,6 +76,8 @@ class TutoriaModel {
       // Se utiliza texto de estándar ISO 8601 para que la conversión de la fecha sea inquebrantable
       'fechaHoraSugerida': fechaHoraSugerida.toIso8601String(),
       'enlaceOReunion': enlaceOReunion,
+      'cupoMaximo': cupoMaximo,
+      'duracionMinutos': duracionMinutos,
     };
   }
 
@@ -83,6 +95,8 @@ class TutoriaModel {
         modalidadDeClase: 'Virtual',
         estadoDeLaSolicitud: 'pendiente',
         fechaHoraSugerida: DateTime.now(), // Por si no hay fecha, no colapsa el motor
+        cupoMaximo: 1,
+        duracionMinutos: 60,
       );
     }
 
@@ -125,6 +139,8 @@ class TutoriaModel {
       
       fechaHoraSugerida: fechaSegura,
       enlaceOReunion: mapaDeDatos['enlaceOReunion'],
+      cupoMaximo: mapaDeDatos['cupoMaximo'] ?? 1,
+      duracionMinutos: mapaDeDatos['duracionMinutos'] ?? 60,
     );
   }
 }

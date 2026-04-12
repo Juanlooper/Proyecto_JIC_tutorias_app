@@ -57,7 +57,7 @@ class TutoriasProvider extends ChangeNotifier {
       await cargarListadoDeTutoriasPendientes(); 
       return true;
     } else {
-      _mensajeDeErrorDelSistema = "Las reglas del servidor bloquean temporalmente tu intento de emitir la clase.";
+      _mensajeDeErrorDelSistema = "Las reglas del servidor han abortado la creación. Recuerda: No sugerir fechas pasadas o revisa tu conexión.";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return false;
