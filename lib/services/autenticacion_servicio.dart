@@ -26,10 +26,7 @@ class AutenticacionServicio {
     String? carrera,
   }) async {
     try {
-      // REGLA DE NEGOCIO: Validar que el correo sea institucional de la UTP para asegurar pertenencia.
-      if (!correoElectronico.trim().toLowerCase().endsWith('@utp.ac.pa')) {
-        return "Error: Solo se permiten correos institucionales de la UTP";
-      }
+
 
       // Paso 1: Pedimos permiso a Firebase para crear la cuenta de seguridad
       UserCredential credencialesCreadas = await _llavesDeAcceso.createUserWithEmailAndPassword(
