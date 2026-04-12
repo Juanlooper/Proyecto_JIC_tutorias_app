@@ -12,6 +12,11 @@ class BaseDeDatosServicio {
   /// El bloque 'try' es un escudo anti-cortes de internet, validando que solo retorne "verdadero" si hubo un impacto real en DB.
   Future<bool> crearNuevaTutoria({required TutoriaModel modeloDeLaNuevaClase}) async {
     try {
+      // REGLA DE NEGOCIO: Validación de Integridad Temporal. No se pueden programar tutorías en un tiempo vencido (pasado).
+      if (modeloDeLaNuevaClase.fechaHoraSugerida.isBefore(DateTime.now())) {
+        return false;
+      }
+
       // 1. Apuntamos al pasillo "tutorias". Usamos de etiqueta de la carpeta el mismo 'identificadorDeTutoria'.
       // 2. .set() esparcirá el resultado nativo extraído de .toMap() directamente al servidor de la JIC.
       await _bodegaDeConocimiento
@@ -58,16 +63,33 @@ class BaseDeDatosServicio {
     required String identificadorDeUnAlumnoFinal,
   }) async {
     try {
-      // Update solo hace "parches".
-      // Con FieldValue.arrayUnion estamos diciendo: "añade este Alumno justo al final de la lista existente evitando que se duplique".
-      await _bodegaDeConocimiento
-          .collection('tutorias')
-          .doc(identificadorDeTutoriaEspecifica)
-          .update({
-             'listaDeEstudiantesInscritos': FieldValue.arrayUnion([identificadorDeUnAlumnoFinal])
-          });
+      // Explicación Técnica (SRE): El uso de runTransaction le dice a Firestore que agrupe este procedimiento
+      // en un cerrojo (lock) de lectura/escritura atómico. Garantiza matemática y sistemáticamente que si existen picos de concurrencia
+      // (Ejemplo: varios alumnos uniéndose al unísono al último cupo) sólo se proceda si la lectura en memoria está inmaculada, evitando carreras (Race Conditions).
+      return await _bodegaDeConocimiento.runTransaction((transaccion) async {
+        DocumentReference refTutoria = _bodegaDeConocimiento
+            .collection('tutorias')
+            .doc(identificadorDeTutoriaEspecifica);
+            
+        DocumentSnapshot tutoriaDoc = await transaccion.get(refTutoria);
+        
+        if (!tutoriaDoc.exists) {
+          return "Error crítico: La tutoría deseada no existe.";
+        }
 
-      return "Cupo Asegurado: Ya te encuentras en lista";
+        TutoriaModel tutoriaVigente = TutoriaModel.fromMap(tutoriaDoc.data() as Map<String, dynamic>?);
+        
+        // REGLA DE NEGOCIO: Proteger el cupo máximo para asegurar la capacidad de la clase.
+        if (tutoriaVigente.listaDeEstudiantesInscritos.length >= tutoriaVigente.cupoMaximo) {
+          return "La tutoría ha alcanzado su límite de cupos";
+        }
+        
+        transaccion.update(refTutoria, {
+             'listaDeEstudiantesInscritos': FieldValue.arrayUnion([identificadorDeUnAlumnoFinal])
+        });
+
+        return "Cupo Asegurado: Ya te encuentras en lista";
+      });
     } catch (errorDeIntegracion) {
       return "Sucedió un colapso en la nube intentando ingresar tu registro.";
     }
@@ -81,6 +103,44 @@ class BaseDeDatosServicio {
     String? linkOficialParaSesion,
   }) async {
     try {
+      // REGLA DE NEGOCIO: Validar que el tutor no tenga otra clase aceptada que se solape en este mismo horario.
+      DocumentSnapshot docDeseada = await _bodegaDeConocimiento
+          .collection('tutorias')
+          .doc(identificadorDeTutoriaEspecifica)
+          .get();
+          
+      if (docDeseada.exists) {
+        TutoriaModel tutoriaPorAceptar = TutoriaModel.fromMap(docDeseada.data() as Map<String, dynamic>?);
+        
+        // REGLA DE NEGOCIO: Prevención de bucles. Un usuario no puede ser tutor y estudiante de la misma sesión simultáneamente.
+        if (tutoriaPorAceptar.listaDeEstudiantesInscritos.contains(maestroHerederoAlMando)) {
+          return "Error: No puedes ser el tutor de tu propia solicitud";
+        }
+
+        DateTime inicioNueva = tutoriaPorAceptar.fechaHoraSugerida;
+        DateTime finNueva = inicioNueva.add(Duration(minutes: tutoriaPorAceptar.duracionMinutos));
+
+        QuerySnapshot tutoriasAnteriores = await _bodegaDeConocimiento
+            .collection('tutorias')
+            .where('identificadorDelTutor', isEqualTo: maestroHerederoAlMando)
+            .where('estadoDeLaSolicitud', isEqualTo: 'aceptada')
+            .get();
+
+        for (var docTemporal in tutoriasAnteriores.docs) {
+          TutoriaModel tutoriaAceptada = TutoriaModel.fromMap(docTemporal.data() as Map<String, dynamic>?);
+          DateTime inicioExistente = tutoriaAceptada.fechaHoraSugerida;
+          DateTime finExistente = inicioExistente.add(Duration(minutes: tutoriaAceptada.duracionMinutos));
+
+          // Verificamos si existe un traslape en la línea de tiempo real
+          bool hayConflicto = inicioNueva.isBefore(finExistente) && finNueva.isAfter(inicioExistente);
+          if (hayConflicto) {
+            return "Error de agenda: Ya tienes una tutoría programada en este horario";
+          }
+        }
+      } else {
+        return "Error crícito: La tutoría ha caducado o no existe en la base de datos.";
+      }
+
       // Carga útil ultra-liviana. Preparamos el sobre de correo nada más con lo que es imperioso cambiar por ahorro.
       Map<String, dynamic> parchesLigeros = {
         'estadoDeLaSolicitud': 'aceptada',

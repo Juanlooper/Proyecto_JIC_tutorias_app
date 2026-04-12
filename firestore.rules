@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Función auxiliar para saber si la sesión está iniciada.
+    // Por qué: Restringe el acceso global únicamente a miembros de la UTP registrados en la plataforma.
+    function estaAutenticado() {
+      return request.auth != null;
+    }
+
+    // Función auxiliar para leer el rol del usuario conectado desde la base de datos de Auth.
+    // Por qué: Reutilizamos esta consulta para auditar si el usuario tiene privilegios administrativos o de tutor.
+    function obtenerRolDelUsuario() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rolEnElSistema;
+    }
+
+    match /usuarios/{userId} {
+      // Lectura: Cualquier usuario autenticado puede leer cualquier perfil.
+      // Por qué: Se necesita para que los estudiantes puedan ver la información de los tutores, y viceversa, habilitando la comunicación en la plataforma.
+      allow read: if estaAutenticado();
+      
+      // Creación: Un usuario solo puede crear su propio documento si el 'rolEnElSistema' es 'estudiante'.
+      // Por qué: Evita que un nuevo usuario manipule la petición de creación para asignarse a sí mismo como 'admin' o 'tutor' burlando el sistema.
+      allow create: if estaAutenticado() 
+                    && request.auth.uid == userId
+                    && request.resource.data.rolEnElSistema == 'estudiante';
+      
+      // Actualización: Un usuario puede actualizar su 'nombreCompleto', 'facultad' y 'carrera', pero TIENE PROHIBIDO actualizar el campo 'rolEnElSistema'.
+      // Por qué: Protege el escalamiento de privilegios. Solo un administrador o proceso backend de confianza puede y debe alterar el rol de alguien.
+      allow update: if estaAutenticado() 
+                    && request.auth.uid == userId
+                    && request.resource.data.rolEnElSistema == resource.data.rolEnElSistema;
+                    
+      // Eliminación: Deshabilitada.
+      // Por qué: Mantener la integridad del historial de registros en el sistema académico.
+      allow delete: if false;
+    }
+
+    match /tutorias/{tutoriaId} {
+      // Lectura: Pública para usuarios autenticados.
+      // Por qué: Requerido para mostrar el tablero general de tutorías disponibles a toda la comunidad estudiantil.
+      allow read: if estaAutenticado();
+      
+      // Creación: Se permite a cualquier usuario autenticado crear una tutoría.
+      // Por qué: Tanto tutores como estudiantes pueden publicar solicitudes de clases a través de la aplicación.
+      allow create: if estaAutenticado();
+      
+      // Eliminación: Solo el creador de la tutoría puede eliminarla si está en estado 'pendiente'.
+      // Por qué: Protege la tutoría de ser borrada por malicia de un tercero, y bloquea su eliminación si ya un tutor la aceptó y apartó tiempo en su agenda para impartirla.
+      // Nota de diseño: Asumimos al creador como miembro de la 'listaDeEstudiantesInscritos'.
+      allow delete: if estaAutenticado()
+                    && request.auth.uid in resource.data.listaDeEstudiantesInscritos
+                    && resource.data.estadoDeLaSolicitud == 'pendiente';
+      
+      // Actualización: El campo 'identificadorDelTutor' solo puede ser modificado por un usuario cuyo rol sea 'tutor' o 'admin'.
+      // Por qué: Garantiza estructuralmente que un estudiante regular no pueda autoasignarse como catedrático de una tutoría, vulnerando la calidad de estudio.
+      allow update: if estaAutenticado()
+                    && (
+                      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['identificadorDelTutor'])) 
+                      || 
+                      (obtenerRolDelUsuario() == 'tutor' || obtenerRolDelUsuario() == 'admin')
+                    );
+    }
+  }
+}

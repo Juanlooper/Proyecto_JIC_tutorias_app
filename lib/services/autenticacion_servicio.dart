@@ -26,6 +26,11 @@ class AutenticacionServicio {
     String? carrera,
   }) async {
     try {
+      // REGLA DE NEGOCIO: Validar que el correo sea institucional de la UTP para asegurar pertenencia.
+      if (!correoElectronico.trim().toLowerCase().endsWith('@utp.ac.pa')) {
+        return "Error: Solo se permiten correos institucionales de la UTP";
+      }
+
       // Paso 1: Pedimos permiso a Firebase para crear la cuenta de seguridad
       UserCredential credencialesCreadas = await _llavesDeAcceso.createUserWithEmailAndPassword(
         email: correoElectronico,
@@ -42,7 +47,7 @@ class AutenticacionServicio {
           identificadorUnico: identificadorRecienNacido,
           nombreCompleto: nombreCompleto,
           correoElectronico: correoElectronico,
-          rolEnElSistema: 'estudiante', // Valor por defecto. Se asume que todo el que se registra es inicialmente estudiante.
+          rolEnElSistema: RolSistema.estudiante, // Valor por defecto. Se asume que todo el que se registra es inicialmente estudiante.
           facultad: facultad,
           carrera: carrera,
           listaDeTutoresSuscritos: [], // Al ser nuevo, no tiene a nadie en su lista

@@ -29,6 +29,27 @@ class AutenticacionProvider extends ChangeNotifier {
   bool get estaCargando => _estaCargando;
   String get mensajeDeError => _mensajeDeError;
 
+  /// Auditoría de estado: Retorna true solo si el usuario actual definió su nombre, facultad y carrera.
+  /// Esto previene perfiles "fantasma" sin información académica.
+  bool get perfilCompleto {
+    if (_usuarioActual == null) return false;
+    
+    final bool nombreListo = _usuarioActual!.nombreCompleto.trim().isNotEmpty;
+    final bool facultadLista = _usuarioActual!.facultad != null && _usuarioActual!.facultad!.trim().isNotEmpty;
+    final bool carreraLista = _usuarioActual!.carrera != null && _usuarioActual!.carrera!.trim().isNotEmpty;
+    
+    return nombreListo && facultadLista && carreraLista;
+  }
+
+  /// Auditoría de permisos operativos: Impide que perfiles incompletos creen o acepten tutorías.
+  /// Devuelve un mensaje de error si [perfilCompleto] es falso, y retorna nulo si el usuario tiene paso libre.
+  String? verificarPermisoOperativo() {
+    if (!perfilCompleto) {
+      return "Acción denegada: Necesitas completar tu información académica (Facultad y Carrera) en tu perfil para poder proceder.";
+    }
+    return null;
+  }
+
   /// Función esencial. Verifica si había una persona conectada previamente
   /// (Ideal para cuando cierras la App y la vuelves a abrir de golpe horas después).
   Future<void> inicializarSesionAlAbrirApp() async {
