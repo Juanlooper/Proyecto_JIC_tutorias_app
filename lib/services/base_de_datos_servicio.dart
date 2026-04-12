@@ -101,6 +101,7 @@ class BaseDeDatosServicio {
     required String identificadorDeTutoriaEspecifica,
     required String maestroHerederoAlMando,
     String? linkOficialParaSesion,
+    String? estadoPropuestoOpcional,
   }) async {
     try {
       // REGLA DE NEGOCIO: Validar que el tutor no tenga otra clase aceptada que se solape en este mismo horario.
@@ -143,7 +144,7 @@ class BaseDeDatosServicio {
 
       // Carga útil ultra-liviana. Preparamos el sobre de correo nada más con lo que es imperioso cambiar por ahorro.
       Map<String, dynamic> parchesLigeros = {
-        'estadoDeLaSolicitud': 'aceptada',
+        'estadoDeLaSolicitud': estadoPropuestoOpcional ?? 'aceptada',
         'identificadorDelTutor': maestroHerederoAlMando,
       };
 

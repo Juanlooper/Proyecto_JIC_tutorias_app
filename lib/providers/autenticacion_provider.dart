@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/usuario_model.dart';
 import '../services/autenticacion_servicio.dart';
 
@@ -132,6 +133,46 @@ class AutenticacionProvider extends ChangeNotifier {
     await _servicioIntegradoDeAutenticacion.cerrarSesion();
     _usuarioActual = null; // Purificamos los privilegios
     _limpiarCualquierTextoDefectuosoAnterior();
+
+    _desactivarIndicadorDeCargaEnPantalla();
+    notifyListeners();
+  }
+
+  // --- Gestión Social y de Comunidad ---
+
+  /// Permite a un alumno suscribirse a un tutor para que la UI de Alejandra cambie al instante.
+  /// Documentacion Técnica para Maiky: El uso de FieldValue.arrayUnion y FieldValue.arrayRemove 
+  /// manda la orden exacta a la nube para agregar/quitar este id sin sobre-escribir toda la cadena.
+  /// Esto evita colisiones de datos y sobreescrituras corruptas si el alumno sigue a varios tutores rápido.
+  Future<void> gestionarSuscripcionATutor(String idTutor) async {
+    if (_usuarioActual == null) return;
+    
+    _activarIndicadorDeCargaEnPantalla();
+    
+    bool loEstabaSiguiendo = _usuarioActual!.listaDeTutoresSuscritos.contains(idTutor);
+    
+    try {
+      if (loEstabaSiguiendo) {
+        // Removerlo para reflejo instantaneo
+        _usuarioActual!.listaDeTutoresSuscritos.remove(idTutor);
+        await FirebaseFirestore.instance.collection('usuarios').doc(_usuarioActual!.identificadorUnico).update({
+          'listaDeTutoresSuscritos': FieldValue.arrayRemove([idTutor])
+        });
+      } else {
+        // Anadirlo visualmente al instante
+        _usuarioActual!.listaDeTutoresSuscritos.add(idTutor);
+        await FirebaseFirestore.instance.collection('usuarios').doc(_usuarioActual!.identificadorUnico).update({
+          'listaDeTutoresSuscritos': FieldValue.arrayUnion([idTutor])
+        });
+      }
+    } catch (error) {
+      // Reversión amistosa ante caidas de señal
+      if (loEstabaSiguiendo) {
+        _usuarioActual!.listaDeTutoresSuscritos.add(idTutor);
+      } else {
+        _usuarioActual!.listaDeTutoresSuscritos.remove(idTutor);
+      }
+    }
 
     _desactivarIndicadorDeCargaEnPantalla();
     notifyListeners();

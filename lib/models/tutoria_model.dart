@@ -14,6 +14,10 @@ class TutoriaModel {
   /// Sirve para que el tutor pueda preparar la clase de manera mucho más enfocada.
   final String temaEspecifico;
 
+  /// Especifica a qué rama o carrera de la UTP pertenece la materia solicitada.
+  /// Resulta imprescindible para el filtro que Maiky procesa desde los proveedores.
+  final String carrera;
+
   /// Es el identificador único del usuario que está dictando la clase (el profesor/tutor).
   /// Sirve para vincular los honorarios o reseñas a la cuenta directa del responsable de enseñar.
   final String identificadorDelTutor;
@@ -46,20 +50,33 @@ class TutoriaModel {
   /// Útil para agendamiento y visualización en calendarios.
   final int duracionMinutos;
 
+  /// Indica a qué hora inició realmente la sesión académica.
+  final DateTime? horaInicioReal;
+
+  /// Indica a qué hora el tutor dio por finalizada la sesión, útil para calcular pagos u horas formales.
+  final DateTime? horaFinReal;
+
+  /// Propiedad que define si la sesión permite múltiples usuarios al mismo tiempo.
+  final bool esGrupal;
+
   /// Constructor base. Se encarga de ensamblar en la memoria RAM una tutoría cuando llamamos la clase.
   /// El atributo 'required' indica qué pieza es indispensable para considerarse legalmente una tutoría.
   TutoriaModel({
     required this.identificadorDeTutoria,
     required this.materiaOAsignatura,
     required this.temaEspecifico,
+    required this.carrera,
     required this.identificadorDelTutor,
     required this.listaDeEstudiantesInscritos,
     required this.modalidadDeClase,
     required this.estadoDeLaSolicitud,
     required this.fechaHoraSugerida,
     this.enlaceOReunion,
-    required this.cupoMaximo,
+    this.cupoMaximo = 1,
     required this.duracionMinutos,
+    this.horaInicioReal,
+    this.horaFinReal,
+    this.esGrupal = false,
   });
 
   /// Transforma nuestra estructura de datos de objeto a formato mapa de clave/valor.
@@ -69,6 +86,7 @@ class TutoriaModel {
       'identificadorDeTutoria': identificadorDeTutoria,
       'materiaOAsignatura': materiaOAsignatura,
       'temaEspecifico': temaEspecifico,
+      'carrera': carrera,
       'identificadorDelTutor': identificadorDelTutor,
       'listaDeEstudiantesInscritos': listaDeEstudiantesInscritos,
       'modalidadDeClase': modalidadDeClase,
@@ -78,6 +96,9 @@ class TutoriaModel {
       'enlaceOReunion': enlaceOReunion,
       'cupoMaximo': cupoMaximo,
       'duracionMinutos': duracionMinutos,
+      'horaInicioReal': horaInicioReal?.toIso8601String(),
+      'horaFinReal': horaFinReal?.toIso8601String(),
+      'esGrupal': esGrupal,
     };
   }
 
@@ -90,6 +111,7 @@ class TutoriaModel {
         identificadorDeTutoria: '',
         materiaOAsignatura: 'Materia no registrada',
         temaEspecifico: 'No se detalló el tema',
+        carrera: 'General',
         identificadorDelTutor: '',
         listaDeEstudiantesInscritos: [],
         modalidadDeClase: 'Virtual',
@@ -125,6 +147,7 @@ class TutoriaModel {
       identificadorDeTutoria: mapaDeDatos['identificadorDeTutoria'] ?? '',
       materiaOAsignatura: mapaDeDatos['materiaOAsignatura'] ?? 'Materia no definida',
       temaEspecifico: mapaDeDatos['temaEspecifico'] ?? 'No se ha indicado un tema',
+      carrera: mapaDeDatos['carrera'] ?? 'General',
       identificadorDelTutor: mapaDeDatos['identificadorDelTutor'] ?? '',
       
       // Requisito cumplido: Si la lista de estudiantes viene vacía o nula se la obliga a interpretar y crear un []
@@ -141,6 +164,9 @@ class TutoriaModel {
       enlaceOReunion: mapaDeDatos['enlaceOReunion'],
       cupoMaximo: mapaDeDatos['cupoMaximo'] ?? 1,
       duracionMinutos: mapaDeDatos['duracionMinutos'] ?? 60,
+      horaInicioReal: mapaDeDatos['horaInicioReal'] != null ? DateTime.tryParse(mapaDeDatos['horaInicioReal']) : null,
+      horaFinReal: mapaDeDatos['horaFinReal'] != null ? DateTime.tryParse(mapaDeDatos['horaFinReal']) : null,
+      esGrupal: mapaDeDatos['esGrupal'] ?? false,
     );
   }
 }
