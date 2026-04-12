@@ -2,21 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/usuario_model.dart';
 import '../services/autenticacion_servicio.dart';
+import '../services/usuario_servicio.dart';
 
 /// Proveedor del Estado de Autenticación (El Sistema Central de Identidad).
 /// Imagina este archivo como el 'Megáfono' de la aplicación. Se conecta con el servicio silencioso,
-/// le pide confirmar si la clave es correcta, y luego "le grita" a todas las pantallas (notifyListeners): 
+/// le pide confirmar si la clave es correcta, y luego "le grita" a todas las pantallas (notifyListeners):
 /// "¡Oigan, una persona inició sesión con éxito, dibujen su foto de perfil y escondan el formulario login!".
 class AutenticacionProvider extends ChangeNotifier {
-  
   /// Herramienta o servicio contratado que sabe cómo hacer el trabajo pesado con Firebase.
-  final AutenticacionServicio _servicioIntegradoDeAutenticacion = AutenticacionServicio();
+  final AutenticacionServicio _servicioIntegradoDeAutenticacion =
+      AutenticacionServicio();
+
+  final UsuarioServicio _usuarioServicio = UsuarioServicio();
 
   /// El usuario que actualmente sostiene el teléfono y tiene la aplicación abierta.
   /// Resultará 'nulo' si la persona aún no ha ingresado correctamente correo y contraseña.
   UsuarioModel? _usuarioActual;
 
-  /// Indicador de procesamiento en progreso. 
+  /// Indicador de procesamiento en progreso.
   /// Si es 'true', notifica a que Alejandra deba mostrar un círculo giratorio de espera y bloquee los botones
   /// para impedir sobrecargas en la base de datos mientras validamos un registro o ingreso.
   bool _estaCargando = false;
@@ -34,11 +37,15 @@ class AutenticacionProvider extends ChangeNotifier {
   /// Esto previene perfiles "fantasma" sin información académica.
   bool get perfilCompleto {
     if (_usuarioActual == null) return false;
-    
+
     final bool nombreListo = _usuarioActual!.nombreCompleto.trim().isNotEmpty;
-    final bool facultadLista = _usuarioActual!.facultad != null && _usuarioActual!.facultad!.trim().isNotEmpty;
-    final bool carreraLista = _usuarioActual!.carrera != null && _usuarioActual!.carrera!.trim().isNotEmpty;
-    
+    final bool facultadLista =
+        _usuarioActual!.facultad != null &&
+        _usuarioActual!.facultad!.trim().isNotEmpty;
+    final bool carreraLista =
+        _usuarioActual!.carrera != null &&
+        _usuarioActual!.carrera!.trim().isNotEmpty;
+
     return nombreListo && facultadLista && carreraLista;
   }
 
@@ -57,9 +64,10 @@ class AutenticacionProvider extends ChangeNotifier {
     _activarIndicadorDeCargaEnPantalla();
 
     // Pedimos al servicio que busque de inmediato si existe un "fantasma" de sesión válida en el teléfono
-    _usuarioActual = await _servicioIntegradoDeAutenticacion.obtenerDatosDelUsuarioActual();
-    
-    _desactivarIndicadorDeCargaEnPantalla(); 
+    _usuarioActual = await _servicioIntegradoDeAutenticacion
+        .obtenerDatosDelUsuarioActual();
+
+    _desactivarIndicadorDeCargaEnPantalla();
     // Anunciamos por el altavoz universal el cambio de estado para que reaccionen las páginas de navegación.
     notifyListeners();
   }
@@ -72,23 +80,25 @@ class AutenticacionProvider extends ChangeNotifier {
     _activarIndicadorDeCargaEnPantalla();
     _limpiarCualquierTextoDefectuosoAnterior();
 
-    String respuestaCrudaDelServidor = await _servicioIntegradoDeAutenticacion.iniciarSesion(
-      correoElectronico: correoEscrito,
-      contrasenaSecreta: contrasenaEscrita,
-    );
+    String respuestaCrudaDelServidor = await _servicioIntegradoDeAutenticacion
+        .iniciarSesion(
+          correoElectronico: correoEscrito,
+          contrasenaSecreta: contrasenaEscrita,
+        );
 
     if (respuestaCrudaDelServidor == "Acceso Concedido") {
       // Éxito. Acudimos al baúl de base de datos a traer todo su expediente formal de la JIC.
-      _usuarioActual = await _servicioIntegradoDeAutenticacion.obtenerDatosDelUsuarioActual();
+      _usuarioActual = await _servicioIntegradoDeAutenticacion
+          .obtenerDatosDelUsuarioActual();
       _desactivarIndicadorDeCargaEnPantalla();
       notifyListeners();
-      return true; 
+      return true;
     } else {
       // Fracaso controlado. Guardamos la disculpa amigable para que Alejandra la pinte en rojo brillante.
       _mensajeDeError = respuestaCrudaDelServidor;
       _desactivarIndicadorDeCargaEnPantalla();
       notifyListeners();
-      return false; 
+      return false;
     }
   }
 
@@ -103,17 +113,19 @@ class AutenticacionProvider extends ChangeNotifier {
     _activarIndicadorDeCargaEnPantalla();
     _limpiarCualquierTextoDefectuosoAnterior();
 
-    String respuestaDeLaInscripcion = await _servicioIntegradoDeAutenticacion.registrarNuevoUsuario(
-      correoElectronico: correoEscrito,
-      contrasenaSecreta: contrasenaEscrita,
-      nombreCompleto: nombreEscrito,
-      facultad: facultadElegidaEnMenu,
-      carrera: carreraElegidaEnMenu,
-    );
+    String respuestaDeLaInscripcion = await _servicioIntegradoDeAutenticacion
+        .registrarNuevoUsuario(
+          correoElectronico: correoEscrito,
+          contrasenaSecreta: contrasenaEscrita,
+          nombreCompleto: nombreEscrito,
+          facultad: facultadElegidaEnMenu,
+          carrera: carreraElegidaEnMenu,
+        );
 
     if (respuestaDeLaInscripcion == "Registro Exitoso") {
       // Lo autorizamos, de manera que buscamos e implantamos oficialmente su perfil como usuario en control activo.
-      _usuarioActual = await _servicioIntegradoDeAutenticacion.obtenerDatosDelUsuarioActual();
+      _usuarioActual = await _servicioIntegradoDeAutenticacion
+          .obtenerDatosDelUsuarioActual();
       _desactivarIndicadorDeCargaEnPantalla();
       notifyListeners();
       return true;
@@ -125,11 +137,11 @@ class AutenticacionProvider extends ChangeNotifier {
     }
   }
 
-  /// Corta mecánicamente la conexión con servidores, borra al usuario cargado en la RAM local, 
+  /// Corta mecánicamente la conexión con servidores, borra al usuario cargado en la RAM local,
   /// permitiendo regresar el flujo de la aplicación con seguridad a la pantalla clásica inicial (Login).
   Future<void> salirDeLaSesionActual() async {
     _activarIndicadorDeCargaEnPantalla();
-    
+
     await _servicioIntegradoDeAutenticacion.cerrarSesion();
     _usuarioActual = null; // Purificamos los privilegios
     _limpiarCualquierTextoDefectuosoAnterior();
@@ -150,7 +162,8 @@ class AutenticacionProvider extends ChangeNotifier {
     _activarIndicadorDeCargaEnPantalla();
     _limpiarCualquierTextoDefectuosoAnterior();
 
-    String verificacionEnviada = await _servicioIntegradoDeAutenticacion.enviarVerificacionDeCorreo();
+    String verificacionEnviada = await _servicioIntegradoDeAutenticacion
+        .enviarVerificacionDeCorreo();
 
     if (verificacionEnviada != "Verificacion Enviada") {
       _mensajeDeError = verificacionEnviada;
@@ -168,7 +181,8 @@ class AutenticacionProvider extends ChangeNotifier {
     _activarIndicadorDeCargaEnPantalla();
     _limpiarCualquierTextoDefectuosoAnterior();
 
-    String procesoDeRecuperacion = await _servicioIntegradoDeAutenticacion.enviarRecuperacionDeContrasena(correoDestino);
+    String procesoDeRecuperacion = await _servicioIntegradoDeAutenticacion
+        .enviarRecuperacionDeContrasena(correoDestino);
 
     if (procesoDeRecuperacion == "Recuperacion Enviada") {
       _desactivarIndicadorDeCargaEnPantalla();
@@ -185,29 +199,37 @@ class AutenticacionProvider extends ChangeNotifier {
   // --- Gestión Social y de Comunidad ---
 
   /// Permite a un alumno suscribirse a un tutor para que la UI de Alejandra cambie al instante.
-  /// Documentacion Técnica para Maiky: El uso de FieldValue.arrayUnion y FieldValue.arrayRemove 
+  /// Documentacion Técnica para Maiky: El uso de FieldValue.arrayUnion y FieldValue.arrayRemove
   /// manda la orden exacta a la nube para agregar/quitar este id sin sobre-escribir toda la cadena.
   /// Esto evita colisiones de datos y sobreescrituras corruptas si el alumno sigue a varios tutores rápido.
   Future<void> gestionarSuscripcionATutor(String idTutor) async {
     if (_usuarioActual == null) return;
-    
+
     _activarIndicadorDeCargaEnPantalla();
-    
-    bool loEstabaSiguiendo = _usuarioActual!.listaDeTutoresSuscritos.contains(idTutor);
-    
+
+    bool loEstabaSiguiendo = _usuarioActual!.listaDeTutoresSuscritos.contains(
+      idTutor,
+    );
+
     try {
       if (loEstabaSiguiendo) {
         // Removerlo para reflejo instantaneo
         _usuarioActual!.listaDeTutoresSuscritos.remove(idTutor);
-        await FirebaseFirestore.instance.collection('usuarios').doc(_usuarioActual!.identificadorUnico).update({
-          'listaDeTutoresSuscritos': FieldValue.arrayRemove([idTutor])
-        });
+        await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(_usuarioActual!.identificadorUnico)
+            .update({
+              'listaDeTutoresSuscritos': FieldValue.arrayRemove([idTutor]),
+            });
       } else {
         // Anadirlo visualmente al instante
         _usuarioActual!.listaDeTutoresSuscritos.add(idTutor);
-        await FirebaseFirestore.instance.collection('usuarios').doc(_usuarioActual!.identificadorUnico).update({
-          'listaDeTutoresSuscritos': FieldValue.arrayUnion([idTutor])
-        });
+        await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(_usuarioActual!.identificadorUnico)
+            .update({
+              'listaDeTutoresSuscritos': FieldValue.arrayUnion([idTutor]),
+            });
       }
     } catch (error) {
       // Reversión amistosa ante caidas de señal
@@ -222,18 +244,51 @@ class AutenticacionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> actualizarInformacionPerfil(
+    String facultad,
+    String carrera,
+  ) async {
+    if (_usuarioActual == null) return false;
+
+    _estaCargando = true;
+    notifyListeners();
+
+    bool exito = await _usuarioServicio.actualizarDatosAcademicos(
+      idUsuario: _usuarioActual!.identificadorUnico,
+      nuevaFacultad: facultad,
+      nuevaCarrera: carrera,
+    );
+
+    if (exito) {
+      // Actualización atómica en memoria local
+      _usuarioActual = UsuarioModel(
+        identificadorUnico: _usuarioActual!.identificadorUnico,
+        nombreCompleto: _usuarioActual!.nombreCompleto,
+        correoElectronico: _usuarioActual!.correoElectronico,
+        rolEnElSistema: _usuarioActual!.rolEnElSistema,
+        listaDeTutoresSuscritos: _usuarioActual!.listaDeTutoresSuscritos,
+        facultad: facultad,
+        carrera: carrera,
+      );
+    }
+
+    _estaCargando = false;
+    notifyListeners();
+    return exito;
+  }
+
   // --- Motores Internos (Herramientas encapsuladas de Provider) ---
 
   /// Manda una señal global indicando que estamos "pensando" u "operando por internet", habilitando animaciones visuales.
   void _activarIndicadorDeCargaEnPantalla() {
     _estaCargando = true;
-    notifyListeners(); 
+    notifyListeners();
   }
 
   /// Retira la carga después que una operación pesada acaba de culminar.
   void _desactivarIndicadorDeCargaEnPantalla() {
     _estaCargando = false;
-    // Omitimos notifyListeners intencionalmente aquí ya que la función maestra que nos invoca 
+    // Omitimos notifyListeners intencionalmente aquí ya que la función maestra que nos invoca
     // típicamente llamará a notifyListeners() por su cuenta.
   }
 

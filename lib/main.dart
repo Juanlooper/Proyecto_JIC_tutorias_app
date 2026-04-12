@@ -10,6 +10,7 @@ import 'providers/tutorias_provider.dart';
 
 // Importación de Nuestras Vistas
 import 'views/auth/login_view.dart';
+import 'views/main_navigation_view.dart';
 
 void main() async {
   // Aseguramos que los componentes de Flutter estén vinculados antes de iniciar procesos nativos como Firebase.
@@ -63,7 +64,7 @@ class TutoriasApp extends StatelessWidget {
 
             // Si se afirma que hay sesión, lo escoltamos hasta el área de Operaciones del Sistema (HogarTemporal)
             if (motorDeIdentidad.usuarioActual != null) {
-              return const PantallaHogarTemporal();
+              return const MainNavigationView();
             }
 
             // Si verdaderamente no hay sesión, deberá de enfrentarse al muro inicial de credenciales.
