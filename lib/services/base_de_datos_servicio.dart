@@ -38,9 +38,9 @@ class BaseDeDatosServicio {
 
       // Transformamos ('map') el montón crudo de registros a una lista formal de nuestro prestigioso modelo
       List<TutoriaModel> listadoResultante = lecturaOptimizada.docs.map((hojaDocumental) {
-        var informaciónBruta = hojaDocumental.data() as Map<String, dynamic>?;
+        var informacionBruta = hojaDocumental.data() as Map<String, dynamic>?;
         // Aquí pasamos los datos por el colador super-protegido del fromMap que diseñamos antes
-        return TutoriaModel.fromMap(informaciónBruta); 
+        return TutoriaModel.fromMap(informacionBruta); 
       }).toList();
 
       return listadoResultante;

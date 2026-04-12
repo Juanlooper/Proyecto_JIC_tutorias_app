@@ -8,7 +8,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  firebase_core: ^3.10.1
-  cloud_firestore: ^5.6.0
+  firebase_core: ^4.6.0
+  cloud_firestore: ^6.2.0
   google_fonts: ^8.0.2
-  # ... el resto de tus dependencias
+  provider: ^6.1.5+1
+  firebase_auth: ^6.3.0
