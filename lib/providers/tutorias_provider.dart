@@ -207,6 +207,43 @@ class TutoriasProvider extends ChangeNotifier {
     }
   }
 
+  // --- Consultas del Perfil Individual ---
+  Future<void> cargarTutoriasSuscritasDelUsuario(String idUsuario) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+    
+    try {
+      // Optamos por dos consultas asíncronas para unir ambos mundos: dictando y asistiendo
+      final consultaTutor = FirebaseFirestore.instance.collection('tutorias')
+          .where('identificadorDelTutor', isEqualTo: idUsuario)
+          .get();
+      
+      final consultaEstudiante = FirebaseFirestore.instance.collection('tutorias')
+          .where('listaDeEstudiantesInscritos', arrayContains: idUsuario)
+          .get();
+          
+      final resultados = await Future.wait([consultaTutor, consultaEstudiante]);
+      
+      final Map<String, TutoriaModel> mapaUnico = {};
+      
+      for (var querySnapshot in resultados) {
+        for (var doc in querySnapshot.docs) {
+          final modelo = TutoriaModel.fromMap(doc.data() as Map<String, dynamic>);
+          mapaUnico[modelo.identificadorDeTutoria] = modelo;
+        }
+      }
+      
+      _tutoriasSuscritasDelUsuario = mapaUnico.values.toList();
+      // Refrescamos memoria visual de los contadores
+      notifyListeners();
+    } catch (e) {
+      _mensajeDeErrorDelSistema = 'No se pudieron descargar tus tutorías.';
+    }
+    
+    _apagarSenalIndicadoraDeEspera();
+    notifyListeners();
+  }
+
   // --- Herrajes y Engranajes Internos del State Manager ---
 
   void _iluminarSenalIndicadoraDeEspera() {
