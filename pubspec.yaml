@@ -10,4 +10,5 @@ dependencies:
     sdk: flutter
   firebase_core: ^3.10.1
   cloud_firestore: ^5.6.0
+  google_fonts: ^8.0.2
   # ... el resto de tus dependencias
