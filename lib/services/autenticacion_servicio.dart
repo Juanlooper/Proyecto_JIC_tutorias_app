@@ -151,4 +151,50 @@ class AutenticacionServicio {
       return null;
     }
   }
+
+  /// Dispara un correo de verificacion hacia la bandeja del usuario registrado.
+  /// Documentacion para Maiky: La verificacion de correo es vital para evitar "usuarios fantasma"
+  /// en la base de datos. Sin ella, cualquier persona podria registrarse con un correo ajeno
+  /// (incluso inventado) y contaminar la coleccion 'usuarios' con perfiles ficticios que jamas
+  /// podran recuperar su acceso ni confirmar su identidad academica real.
+  Future<String> enviarVerificacionDeCorreo() async {
+    try {
+      User? visitanteActivo = _llavesDeAcceso.currentUser;
+
+      if (visitanteActivo == null) {
+        return "No hay ninguna sesion activa para verificar.";
+      }
+
+      await visitanteActivo.sendEmailVerification();
+      return "Verificacion Enviada";
+
+    } on FirebaseAuthException catch (errorFirebase) {
+      if (errorFirebase.code == 'too-many-requests') {
+        return "Has solicitado demasiadas verificaciones. Espera unos minutos antes de intentar nuevamente.";
+      }
+      return "Error al enviar verificacion: ${errorFirebase.message}";
+    } catch (errorGeneral) {
+      return "Fallo critico al intentar enviar el correo de verificacion. Revisa tu conexion.";
+    }
+  }
+
+  /// Envia un enlace seguro al buzon del usuario para que pueda restablecer su contrasena.
+  /// Documentacion para Maiky: Este proceso es exclusivamente controlado por Firebase Auth, 
+  /// quien genera un token temporal con caducidad. Nosotros jamas tocamos la contrasena directamente.
+  Future<String> enviarRecuperacionDeContrasena(String correoDestino) async {
+    try {
+      await _llavesDeAcceso.sendPasswordResetEmail(email: correoDestino);
+      return "Recuperacion Enviada";
+
+    } on FirebaseAuthException catch (errorFirebase) {
+      if (errorFirebase.code == 'user-not-found' || errorFirebase.code == 'invalid-email') {
+        return "No existe ninguna cuenta asociada a ese correo electronico.";
+      } else if (errorFirebase.code == 'too-many-requests') {
+        return "Demasiados intentos de recuperacion. Espera unos minutos.";
+      }
+      return "Error en el proceso de recuperacion: ${errorFirebase.message}";
+    } catch (errorGeneral) {
+      return "Fallo critico al solicitar la recuperacion. Verifica tu conexion a internet.";
+    }
+  }
 }

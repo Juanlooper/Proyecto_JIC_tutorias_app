@@ -138,6 +138,50 @@ class AutenticacionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- Seguridad Avanzada de Identidad ---
+
+  /// Problema de negocio que resuelve: Impide que actores maliciosos o descuidados registren
+  /// correos falsos que contaminen la base de datos con "usuarios fantasma". Al exigir que el
+  /// correo se verifique, aseguramos que cada perfil en Firestore corresponde a una persona real
+  /// con acceso legitimo a esa bandeja de entrada.
+  /// UX para Alejandra: Mientras el correo viaja por los servidores de Google, el indicador
+  /// _estaCargando se activa para que la interfaz muestre un spinner y bloquee el boton de reenvio.
+  Future<void> dispararVerificacionDeCorreo() async {
+    _activarIndicadorDeCargaEnPantalla();
+    _limpiarCualquierTextoDefectuosoAnterior();
+
+    String verificacionEnviada = await _servicioIntegradoDeAutenticacion.enviarVerificacionDeCorreo();
+
+    if (verificacionEnviada != "Verificacion Enviada") {
+      _mensajeDeError = verificacionEnviada;
+    }
+
+    _desactivarIndicadorDeCargaEnPantalla();
+    notifyListeners();
+  }
+
+  /// Problema de negocio que resuelve: Ofrece a los estudiantes una salida segura cuando
+  /// olvidan su contrasena sin requerir intervencion manual del equipo administrativo.
+  /// Retorna true si el correo de recuperacion se envio exitosamente para que Alejandra
+  /// pueda mostrar un dialogo de confirmacion positiva en pantalla.
+  Future<bool> solicitarCambioDeContrasena(String correoDestino) async {
+    _activarIndicadorDeCargaEnPantalla();
+    _limpiarCualquierTextoDefectuosoAnterior();
+
+    String procesoDeRecuperacion = await _servicioIntegradoDeAutenticacion.enviarRecuperacionDeContrasena(correoDestino);
+
+    if (procesoDeRecuperacion == "Recuperacion Enviada") {
+      _desactivarIndicadorDeCargaEnPantalla();
+      notifyListeners();
+      return true;
+    } else {
+      _mensajeDeError = procesoDeRecuperacion;
+      _desactivarIndicadorDeCargaEnPantalla();
+      notifyListeners();
+      return false;
+    }
+  }
+
   // --- Gestión Social y de Comunidad ---
 
   /// Permite a un alumno suscribirse a un tutor para que la UI de Alejandra cambie al instante.
