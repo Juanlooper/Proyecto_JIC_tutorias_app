@@ -1,190 +1,167 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../../core/theme/app_theme.dart';
 import '../../providers/autenticacion_provider.dart';
 import 'registro_view.dart';
 
-/// Pantalla Visual Intermedia ("Fase de Ingeniería") para el Inicio de Sesión.
-/// Este archivo se ofrece como "Lienzo Base" para que Alejandra sepa qué cajas conectar 
-/// cuando elabore el diseño final, y para que Maiky pruebe el salto de páginas funcional 100% puro.
 class LoginView extends StatefulWidget {
-  const LoginView({Key? key}) : super(key: key);
+  const LoginView({super.key});
 
   @override
   State<LoginView> createState() => _LoginViewState();
 }
 
 class _LoginViewState extends State<LoginView> {
-  // Los Controladores: Actúan como aspiradoras que recogen el texto según lo digitan los estudiantes.
-  final TextEditingController _controladorCorreo = TextEditingController();
-  final TextEditingController _controladorContrasena = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _correoController = TextEditingController();
+  final _passwordController = TextEditingController();
 
-  /// El cerebro detrás del botón "Iniciar Sesión".
-  /// Toma los textos, habla con nuestro Provider, y decide si saltar de pantalla o mostrar alerta roja.
-  Future<void> _intentarAccederAlSistema() async {
-    // 1. Tomamos el contenido. .trim() corta los "espacios fantasma" finales por si el estudiante pega con error su correo.
-    String correoInyectado = _controladorCorreo.text.trim();
-    String claveInyectada = _controladorContrasena.text.trim();
+  @override
+  void dispose() {
+    _correoController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
-    // Barrera local visual: No desgastamos al servidor ni al Provider si está vacío.
-    if (correoInyectado.isEmpty || claveInyectada.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, rellena tu correo y contraseña primero.')),
+  void _ejecutarLogin() async {
+    if (_formKey.currentState!.validate()) {
+      final authProvider = context.read<AutenticacionProvider>();
+
+      // Conectado con la lógica exacta de tu backend
+      bool exito = await authProvider.ingresarConCorreoYClave(
+        correoEscrito: _correoController.text.trim(),
+        contrasenaEscrita: _passwordController.text.trim(),
       );
-      return; 
-    }
 
-    // 2. Nos asomamos al Intercomunicador. (.read da la orden disparadora sin pausar la app).
-    final motorDeIdentidad = context.read<AutenticacionProvider>();
-
-    // 3. Viajamos al Provider y esperamos firmemente la boleta de respuesta
-    bool exitoEntrando = await motorDeIdentidad.ingresarConCorreoYClave(
-      correoEscrito: correoInyectado,
-      contrasenaEscrita: claveInyectada,
-    );
-
-    // Condición divisoria posterior de validación:
-    if (exitoEntrando == true) {
-      // Triunfo rotundo. Saltamos y destruimos temporalmente esta pantalla login de fondo (pushReplacement).
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const PantallaHogarTemporal()),
-      );
-    } else {
-      // Fracaso justificado por seguridad. Pedimos cordialmente el texto en "modo Maiky" que nos preparó el backend y lo dibujamos.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            motorDeIdentidad.mensajeDeError,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+      if (!exito && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              authProvider.mensajeDeError,
+            ), // <-- Error manejado correctamente
+            backgroundColor: Colors.redAccent,
           ),
-          backgroundColor: Colors.red.shade700, // Rojo intenso de aviso orgánico
-          behavior: SnackBarBehavior.floating,  // Pequeña estilización flotante
-          duration: const Duration(seconds: 4), 
-        ),
-      );
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Escáner en tiempo real (.watch). Si el Provider levanta la bandera "_estaCargando", reconstruimos (setState instantáneo) el visual.
-    final semaforoDeCargaEnProceso = context.watch<AutenticacionProvider>().estaCargando;
+    final authProvider = context.watch<AutenticacionProvider>();
 
     return Scaffold(
-      backgroundColor: Colors.white, // Fondo ultra limpio minimalista
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 40.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Ícono placeholder simple mientras Canva está finalizado
-              const Icon(Icons.school_rounded, size: 90, color: Colors.blueAccent),
-              const SizedBox(height: 40),
-
-              // Input TextField de Correos
-              TextField(
-                controller: _controladorCorreo,
-                keyboardType: TextInputType.emailAddress,
-                enabled: !semaforoDeCargaEnProceso, // Si la máquina procesa, paraliza el teclado
-                decoration: const InputDecoration(
-                  labelText: 'Correo del alumno/tutor',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Input TextField de Contraseñas
-              TextField(
-                controller: _controladorContrasena,
-                obscureText: true, // Transforma texto en "Puntitos" impenetrables a mirones
-                enabled: !semaforoDeCargaEnProceso, 
-                decoration: const InputDecoration(
-                  labelText: 'Contraseña de Acceso',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock_outline),
-                ),
-              ),
-              const SizedBox(height: 35),
-
-              // --- Mecanismo Mutante ---
-              // Si el Provider dijo "Espérame que uso internet"... pintamos reloj de arena (Círculo giratorio).
-              // Si dijo "Ya acabé" o no a hecho nada... pintamos el Gran Botón azul de "Iniciar".
-              if (semaforoDeCargaEnProceso)
-                const CircularProgressIndicator(color: Colors.blueAccent)
-              else
-                SizedBox(
-                  width: double.infinity, // Ocupa todo el margen horizontal disponible generosamente
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _intentarAccederAlSistema,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent, // Color prototipo
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10), 
-                      ),
-                    ),
-                    child: const Text('Iniciar Sesión', style: TextStyle(fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold)),
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Icon(Icons.school, size: 80, color: AppTheme.verdeVecta),
+                const SizedBox(height: 16),
+                const Text(
+                  'VECTA',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textoOscuro,
+                    letterSpacing: 2,
                   ),
                 ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Reserva fácil tu tutoría.\nConéctate con tutores calificados.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: Colors.black54),
+                ),
+                const SizedBox(height: 48),
 
-              const SizedBox(height: 15),
+                TextFormField(
+                  controller: _correoController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Correo institucional (@utp.ac.pa)',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty)
+                      return 'Ingresa tu correo';
+                    if (!value.contains('@')) return 'Correo no válido';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
 
-              // Enlace de texto fantasma de pie de la app, muy útil para el onboarding futuro
-              TextButton(
-                onPressed: semaforoDeCargaEnProceso ? null : () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const RegistroView()),
-                  );
-                }, 
-                child: const Text('¿No estás inscrito? Únete aquí', style: TextStyle(color: Colors.grey)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Contraseña',
+                    prefixIcon: Icon(Icons.lock_outline),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty)
+                      return 'Ingresa tu contraseña';
+                    return null;
+                  },
+                ),
 
-/// ---- ESQUELETO DE CONFIRMACIÓN (Home Falso) ----
-/// Un destino seguro provisional para validar que entramos hasta el final con credenciales y luego permitir devolvernos con un "Cerrar Sesión".
-class PantallaHogarTemporal extends StatelessWidget {
-  const PantallaHogarTemporal({Key? key}) : super(key: key);
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {},
+                    child: const Text('¿Olvidaste tu contraseña?'),
+                  ),
+                ),
+                const SizedBox(height: 24),
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tablero Maestro JIC'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.exit_to_app),
-            onPressed: () async {
-              // Validamos el cierre de sesión natural y lo retornamos a la pared del login
-              await context.read<AutenticacionProvider>().salirDeLaSesionActual();
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginView()),
-              );
-            },
-          )
-        ],
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.rocket_launch, size: 80, color: Colors.green),
-            SizedBox(height: 20),
-            Text(
-              '¡Arquitectura Front-End Resuelta!',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                SizedBox(
+                  height: 56,
+                  child: FilledButton(
+                    onPressed: authProvider.estaCargando
+                        ? null
+                        : _ejecutarLogin,
+                    child: authProvider.estaCargando
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            'Iniciar sesión',
+                            style: TextStyle(fontSize: 18),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('¿No tienes cuenta?'),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RegistroView(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Crea tu cuenta aquí',
+                        style: TextStyle(
+                          color: AppTheme.azulVecta,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            Text('Has penetrado el sistema de bases de datos.', style: TextStyle(color: Colors.grey)),
-          ],
+          ),
         ),
       ),
     );
