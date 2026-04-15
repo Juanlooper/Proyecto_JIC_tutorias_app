@@ -1,25 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-
 import 'firebase_options.dart';
 
-// Importación de Nuestros Providers
+// Importación del ADN visual
+import 'core/theme/app_theme.dart';
+
+// Importación de todos los Providers de lógica
 import 'providers/autenticacion_provider.dart';
 import 'providers/tutorias_provider.dart';
+import 'providers/evaluacion_provider.dart';
+import 'providers/notificaciones_provider.dart';
+import 'providers/admin_provider.dart';
 
-// Importación de Nuestras Vistas
+// Vistas principales (Con la ruta corregida a la carpeta auth)
 import 'views/auth/login_view.dart';
 import 'views/main_navigation_view.dart';
 
 void main() async {
-  // Aseguramos que los componentes de Flutter estén vinculados antes de iniciar procesos nativos como Firebase.
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Inicializamos la conexión principal con Firebase utilizando las plataformas correctas (Android/iOS).
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(const TutoriasApp());
 }
@@ -29,46 +30,45 @@ class TutoriasApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Al envolver la MaterialApp en un MultiProvider, aseguramos que AutenticacionProvider 
-    // y TutoriasProvider actúen de manera globalizada para todas las vistas.
     return MultiProvider(
       providers: [
-        // Proveedor central de Identidad. Validamos al inicio la sesión usando 'inicializarSesionAlAbrirApp'.
+        // 1. Manejo de Identidad (Iniciamos la sesión automáticamente si ya existía)
         ChangeNotifierProvider(
           create: (_) => AutenticacionProvider()..inicializarSesionAlAbrirApp(),
         ),
-        // Proveedor central del Tablero de Tutorías.
-        ChangeNotifierProvider(
-          create: (_) => TutoriasProvider(),
-        ),
+
+        // 2. Manejo de Tutorías
+        ChangeNotifierProvider(create: (_) => TutoriasProvider()),
+
+        // 3. Sistema de Reputación y Calidad
+        ChangeNotifierProvider(create: (_) => EvaluacionProvider()),
+
+        // 4. Sistema de Notificaciones in-app
+        ChangeNotifierProvider(create: (_) => NotificacionesProvider()),
+
+        // 5. Panel Administrativo para métricas
+        ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
       child: MaterialApp(
-        title: 'Tutorías JIC',
+        title: 'Vecta Tutorías',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          brightness: Brightness.dark, // Modo oscuro por defecto
-          useMaterial3: true,
-        ),
-        // La propiedad 'home' utiliza un Consumer para leer continuamente la validación activa del usuario.
+
+        // ¡Aquí inyectamos el Tema Global de Vecta!
+        theme: AppTheme.lightTheme,
+
         home: Consumer<AutenticacionProvider>(
-          builder: (context, motorDeIdentidad, child) {
-            // Mostramos un círculo de progreso mientras el sistema intenta leer si existe rastro
-            // de una sesión en el teléfono, bloqueando el parpadeo de interfaces irreales.
-            if (motorDeIdentidad.estaCargando && motorDeIdentidad.usuarioActual == null) {
+          builder: (context, auth, _) {
+            // Pantalla de carga mientras verifica la sesión
+            if (auth.estaCargando && auth.usuarioActual == null) {
               return const Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(),
-                ),
+                body: Center(child: CircularProgressIndicator()),
               );
             }
 
-            // Si se afirma que hay sesión, lo escoltamos hasta el área de Operaciones del Sistema (HogarTemporal)
-            if (motorDeIdentidad.usuarioActual != null) {
-              return const MainNavigationView();
-            }
-
-            // Si verdaderamente no hay sesión, deberá de enfrentarse al muro inicial de credenciales.
-            return const LoginView();
+            // Si hay usuario, vamos al Dashboard. Si no, al Login.
+            return auth.usuarioActual != null
+                ? const MainNavigationView()
+                : const LoginView();
           },
         ),
       ),
