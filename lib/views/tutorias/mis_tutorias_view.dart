@@ -6,6 +6,7 @@ import '../../providers/autenticacion_provider.dart';
 import '../../providers/tutorias_provider.dart';
 import '../../models/tutoria_model.dart';
 import '../../models/usuario_model.dart';
+import '../../core/theme/app_theme.dart';
 
 class MisTutoriasView extends StatefulWidget {
   const MisTutoriasView({super.key});
@@ -44,17 +45,22 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
         body: Consumer2<AutenticacionProvider, TutoriasProvider>(
           builder: (context, authProv, tutProv, child) {
             final UsuarioModel? usuarioEnSesion = authProv.usuarioActual;
-            
+
             if (usuarioEnSesion == null || tutProv.estaCargandoPeticionEnNube) {
               return const Center(child: CircularProgressIndicator());
             }
 
             final String uid = usuarioEnSesion.identificadorUnico;
-            final List<TutoriaModel> universoTutorias = tutProv.tutoriasSuscritasDelUsuario;
+            final List<TutoriaModel> universoTutorias =
+                tutProv.tutoriasSuscritasDelUsuario;
 
             // Filtro dinámico en tiempo de ejecución
-            final listadoAsistiendo = universoTutorias.where((tuto) => tuto.listaDeEstudiantesInscritos.contains(uid)).toList();
-            final listadoDictando = universoTutorias.where((tuto) => tuto.identificadorDelTutor == uid).toList();
+            final listadoAsistiendo = universoTutorias
+                .where((tuto) => tuto.listaDeEstudiantesInscritos.contains(uid))
+                .toList();
+            final listadoDictando = universoTutorias
+                .where((tuto) => tuto.identificadorDelTutor == uid)
+                .toList();
 
             return TabBarView(
               children: [
@@ -137,13 +143,15 @@ class _TarjetaDeCompromiso extends StatelessWidget {
     if (datos.enlaceOReunion == null || datos.enlaceOReunion!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('El profesor aún no ha provisto un enlace para esta materia.'),
+          content: Text(
+            'El profesor aún no ha provisto un enlace para esta materia.',
+          ),
           duration: Duration(seconds: 3),
         ),
       );
       return;
     }
-    
+
     // Aquí idealmente vendría un url_launcher general, pero respetamos la regla de negocio
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -158,24 +166,38 @@ class _TarjetaDeCompromiso extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Finalizar Tutoría'),
-        content: const Text('¿Estás seguro que deseas dar por culminada la clase? Esta acción generará el cierre de horas oficiales en tu récord.'),
+        content: const Text(
+          '¿Estás seguro que deseas dar por culminada la clase? Esta acción generará el cierre de horas oficiales en tu récord.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirmar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Confirmar'),
+          ),
         ],
       ),
     );
 
     if (confirmarFin == true && context.mounted) {
       final proveedorNotificador = context.read<TutoriasProvider>();
-      final uId = context.read<AutenticacionProvider>().usuarioActual?.identificadorUnico;
+      final uId = context
+          .read<AutenticacionProvider>()
+          .usuarioActual
+          ?.identificadorUnico;
 
       try {
-        await FirebaseFirestore.instance.collection('tutorias').doc(datos.identificadorDeTutoria).update({
-          'estadoDeLaSolicitud': 'finalizada',
-          'horaFinReal': DateTime.now().toIso8601String(),
-        });
-        
+        await FirebaseFirestore.instance
+            .collection('tutorias')
+            .doc(datos.identificadorDeTutoria)
+            .update({
+              'estadoDeLaSolicitud': 'finalizada',
+              'horaFinReal': DateTime.now().toIso8601String(),
+            });
+
         if (uId != null && context.mounted) {
           // Refrescamos Provider para que los contadores visuales cambien y lea la BD actualizada
           await proveedorNotificador.cargarTutoriasSuscritasDelUsuario(uId);
@@ -184,7 +206,9 @@ class _TarjetaDeCompromiso extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('¡Tutoría finalizada! Horas oficiales dictadas actualizadas.'),
+              content: Text(
+                '¡Tutoría finalizada! Horas oficiales dictadas actualizadas.',
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -193,7 +217,9 @@ class _TarjetaDeCompromiso extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Sucedió un error reportando la hora de fin a la Base de Datos.'),
+              content: Text(
+                'Sucedió un error reportando la hora de fin a la Base de Datos.',
+              ),
               backgroundColor: Colors.redAccent,
             ),
           );
@@ -209,6 +235,104 @@ class _TarjetaDeCompromiso extends StatelessWidget {
     if (estado == 'finalizada') return Colors.greenAccent;
     if (estado == 'cancelada') return Colors.redAccent;
     return Colors.grey;
+  }
+
+  Future<void> _mostrarDialogoDeEvaluacion(BuildContext context) async {
+    int notaClase = 0;
+    int notaTutor = 0;
+    final TextEditingController ctrlComentario = TextEditingController();
+
+    await showDialog(
+      context: context,
+      barrierDismissible:
+          false, // HCI: Obligatorio, no se cierra al tocar fuera
+      builder: (contextDialogo) {
+        return StatefulBuilder(
+          // Necesario para que las estrellas cambien de color en el diálogo
+          builder: (context, setEstadoInterno) {
+            return AlertDialog(
+              title: const Text(
+                'Evaluar Tutoría',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primarioAzul,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('¿Qué tal fue el contenido de la clase?'),
+                    _construirSelectorEstrellas(
+                      (valor) => setEstadoInterno(() => notaClase = valor),
+                      notaClase,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('¿Cómo calificarías al tutor?'),
+                    _construirSelectorEstrellas(
+                      (valor) => setEstadoInterno(() => notaTutor = valor),
+                      notaTutor,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: ctrlComentario,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Comentario (opcional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(contextDialogo),
+                  child: const Text(
+                    'CANCELAR',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTheme.primarioVerde,
+                  ),
+                  onPressed: (notaClase == 0 || notaTutor == 0)
+                      ? null
+                      : () async {
+                          // Aquí se llamaría al provider: registrarEvaluacionCompleta
+                          // Por ahora, solo cerramos y simulamos éxito UI
+                          Navigator.pop(contextDialogo);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('¡Gracias por tu evaluación!'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        },
+                  child: const Text('ENVIAR EVALUACIÓN'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _construirSelectorEstrellas(Function(int) alTocar, int valorActual) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(5, (index) {
+        return IconButton(
+          icon: Icon(
+            index < valorActual ? Icons.star : Icons.star_border,
+            color: index < valorActual ? Colors.amber : Colors.grey,
+          ),
+          onPressed: () => alTocar(index + 1),
+        );
+      }),
+    );
   }
 
   @override
@@ -230,12 +354,17 @@ class _TarjetaDeCompromiso extends StatelessWidget {
                 Expanded(
                   child: Text(
                     datos.materiaOAsignatura,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: colorDeEstado.withAlpha(50),
                     borderRadius: BorderRadius.circular(20),
@@ -255,7 +384,9 @@ class _TarjetaDeCompromiso extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               datos.temaEspecifico,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[400]),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[400]),
             ),
             const Divider(height: 24),
             Row(
@@ -269,7 +400,7 @@ class _TarjetaDeCompromiso extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             // Acciones Principal y Condicional
             Align(
               alignment: Alignment.centerRight,
@@ -278,21 +409,45 @@ class _TarjetaDeCompromiso extends StatelessWidget {
                   if (!esSeccionDictando && datos.enlaceOReunion != null) {
                     return FilledButton.icon(
                       onPressed: () => _abrirEnlaceGenuino(ctx),
-                      style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primaryContainer, foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                      ),
                       icon: const Icon(Icons.link),
                       label: const Text('Ver enlace/aula'),
                     );
                   }
-                  
-                  if (esSeccionDictando && (datos.estadoDeLaSolicitud.toLowerCase() == 'aceptada' || datos.estadoDeLaSolicitud.toLowerCase() == 'abierta')) {
+
+                  if (esSeccionDictando &&
+                      (datos.estadoDeLaSolicitud.toLowerCase() == 'aceptada' ||
+                          datos.estadoDeLaSolicitud.toLowerCase() ==
+                              'abierta')) {
                     return FilledButton.icon(
                       onPressed: () => _culminarTutoriaDada(ctx),
-                      style: FilledButton.styleFrom(backgroundColor: Colors.deepOrange),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.deepOrange,
+                      ),
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Text('Finalizar Tutoría'),
                     );
                   }
-                  
+
+                  if (!esSeccionDictando &&
+                      datos.estadoDeLaSolicitud.toLowerCase() == 'finalizada') {
+                    return FilledButton.icon(
+                      onPressed: () => _mostrarDialogoDeEvaluacion(ctx),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.primarioVerde,
+                      ),
+                      icon: const Icon(Icons.rate_review),
+                      label: const Text('Evaluar Sesión'),
+                    );
+                  }
+
                   return const SizedBox.shrink();
                 },
               ),
