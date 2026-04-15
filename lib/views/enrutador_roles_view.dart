@@ -25,10 +25,10 @@ class EnrutadorRolesView extends StatelessWidget {
     // EL SWITCHBOARD LÓGICO (El policía de tránsito usando la función correcta)
     if (usuario.tieneRol(RolSistema.admin)) {
       // Pantalla temporal mientras Maiky la diseña
-      return _pantallaTemporal('Panel de Administrador', AppTheme.azulVecta);
+      return _pantallaTemporal('Panel de Administrador', AppTheme.primarioAzul);
     } else if (usuario.tieneRol(RolSistema.tutor)) {
       // Pantalla temporal mientras Maiky la diseña
-      return _pantallaTemporal('Panel de Tutor', AppTheme.verdeVecta);
+      return _pantallaTemporal('Panel de Tutor', AppTheme.primarioVerde);
     } else {
       // Si es estudiante normal
       return const MainNavigationView();

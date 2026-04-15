@@ -61,7 +61,11 @@ class _LoginViewState extends State<LoginView> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.school, size: 80, color: AppTheme.verdeVecta),
+                const Icon(
+                  Icons.school,
+                  size: 80,
+                  color: AppTheme.primarioVerde,
+                ),
                 const SizedBox(height: 16),
                 const Text(
                   'VECTA',
@@ -152,7 +156,7 @@ class _LoginViewState extends State<LoginView> {
                       child: const Text(
                         'Crea tu cuenta aquí',
                         style: TextStyle(
-                          color: AppTheme.azulVecta,
+                          color: AppTheme.primarioAzul,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
