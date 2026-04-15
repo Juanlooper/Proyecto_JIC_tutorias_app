@@ -6,8 +6,10 @@ import '../models/usuario_model.dart';
 import 'home/home_view.dart';
 import 'explore/explorar_view.dart';
 import 'profile/perfil_view.dart';
-
 import 'tutorias/mis_tutorias_view.dart';
+
+// Importamos tu nueva pantalla diseñada hoy
+import 'admin/admin_dashboard_view.dart';
 
 class MainNavigationView extends StatefulWidget {
   const MainNavigationView({super.key});
@@ -27,23 +29,16 @@ class _MainNavigationViewState extends State<MainNavigationView> {
 
   @override
   Widget build(BuildContext context) {
-    // Al usar context.watch, la vista esta a la escucha de la informacion
-    // del usuario actual en tiempo real.
     final motorDeIdentidad = context.watch<AutenticacionProvider>();
     final usuarioActual = motorDeIdentidad.usuarioActual;
 
-    // Manejo de nulls en caso de que tarde milisegundos en cargar o refrescar
     if (usuarioActual == null) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final bool esAdmin = usuarioActual.tieneRol(RolSistema.admin);
 
-    // Listado modular de las vistas a mostrar en el flujo principal.
+    // Listado modular de vistas
     final List<Widget> vistasSistema = [
       const HomeView(),
       const ExplorarView(),
@@ -51,6 +46,7 @@ class _MainNavigationViewState extends State<MainNavigationView> {
       const PerfilView(),
     ];
 
+    // Items del menú inferior
     final List<BottomNavigationBarItem> itemsNavegacion = [
       const BottomNavigationBarItem(
         icon: Icon(Icons.dashboard_outlined),
@@ -63,7 +59,6 @@ class _MainNavigationViewState extends State<MainNavigationView> {
         label: 'Comunidad',
       ),
       const BottomNavigationBarItem(
-
         icon: Icon(Icons.calendar_month_outlined),
         activeIcon: Icon(Icons.calendar_month),
         label: 'Mis Tutorías',
@@ -75,7 +70,8 @@ class _MainNavigationViewState extends State<MainNavigationView> {
       ),
     ];
 
-    // Regla: Si el usuario tiene RolSistema.admin, agregamos el area de metricas
+    // REGLA DE NEGOCIO Y HCI: Acceso basado en roles.
+    // Solo si es administrador, inyectamos dinámicamente el Dashboard en la lista.
     if (esAdmin) {
       vistasSistema.add(const AdminDashboardView());
       itemsNavegacion.add(
@@ -87,45 +83,17 @@ class _MainNavigationViewState extends State<MainNavigationView> {
       );
     }
 
-    // Prevencion de errores en caso de cambio de roles dinamico
-    if (_indiceActual >= vistasSistema.length) {
-      _indiceActual = 0;
-    }
-
-    /*
-     * Proposito del IndexedStack:
-     * El IndexedStack es un widget asombroso que inicializa todas las vistas hijas
-     * simultaneamente y simplemente corta o activa su opacidad y presencia en el lienzo
-     * en base al indice proveido. A diferencia de redibujar condicionalmente, esto preserva
-     * el estado de cada vista (ejemplo: preservar a que altura ibamos haciendo scroll)
-     * optimizando bastante el rendimiento y mejorando la fluidez visual al cambiar las pestanas.
-     */
     return Scaffold(
-      body: IndexedStack(
-        index: _indiceActual,
-        children: vistasSistema,
-      ),
+      body: IndexedStack(index: _indiceActual, children: vistasSistema),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _indiceActual,
         onTap: _seleccionarVista,
         items: itemsNavegacion,
-        type: BottomNavigationBarType.fixed, // Asegura que persistan los colores
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Coherencia Dark Mode
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
       ),
     );
-  }
-}
-
-
-
-
-class AdminDashboardView extends StatelessWidget {
-  const AdminDashboardView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Vista: Metricas del Sistema (Admin)'));
   }
 }
