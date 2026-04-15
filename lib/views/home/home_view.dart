@@ -15,13 +15,28 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
+  final TextEditingController _controladorBusqueda = TextEditingController();
+  String _terminoBusqueda = '';
+
   @override
   void initState() {
     super.initState();
-    // Programamos la carga para cuando el arbol de widgets este montado
+    // Escucha los cambios en el teclado para actualizar el estado reactivamente
+    _controladorBusqueda.addListener(() {
+      setState(() {
+        _terminoBusqueda = _controladorBusqueda.text.toLowerCase().trim();
+      });
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TutoriasProvider>().cargarListadoDeTutoriasPendientes();
     });
+  }
+
+  @override
+  void dispose() {
+    _controladorBusqueda.dispose();
+    super.dispose();
   }
 
   Future<void> _actualizarLista() async {
@@ -30,62 +45,90 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    /*
-     * Documentacion de uso de RefreshIndicator:
-     * El componente RefreshIndicator envuelve primariamente el area de desplazamiento 
-     * (scrollable). Al deslizar la pantalla hacia abajo mas alla de cierto limite,
-     * se dispara la funcion de recarga asincrona proporcionada en 'onRefresh'. 
-     * Durante la espera, se despliega un circulo superior indicando que la aplicacion
-     * esta descargando datos actualizados de la nube antes de redibujar la vista.
-     */
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Explorar Tutorías'),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _actualizarLista,
-        child: Consumer<TutoriasProvider>(
-          builder: (context, proveedorTutorias, child) {
-            // Evaluacion de espera conectiva
-            if (proveedorTutorias.estaCargandoPeticionEnNube && proveedorTutorias.tutoriasPendientesGenerales.isEmpty) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            }
+      appBar: AppBar(title: const Text('Explorar Tutorías'), centerTitle: true),
+      body: Column(
+        children: [
+          // Barra de Búsqueda (HCI: Reconocimiento sobre recuerdo)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _controladorBusqueda,
+              decoration: InputDecoration(
+                labelText: 'Buscar por materia o tema...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 16,
+                ),
+              ),
+            ),
+          ),
 
-            final listado = proveedorTutorias.tutoriasPendientesGenerales;
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _actualizarLista,
+              child: Consumer<TutoriasProvider>(
+                builder: (context, proveedorTutorias, child) {
+                  if (proveedorTutorias.estaCargandoPeticionEnNube &&
+                      proveedorTutorias.tutoriasPendientesGenerales.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-            // Manejo de vacio informativo
-            if (listado.isEmpty) {
-              return ListView(
-                physics: const AlwaysScrollableScrollPhysics(), // Fomenta que el gesto swipe-down siga funcionando a pesar del vacio
-                children: const [
-                  SizedBox(height: 100),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Text(
-                      'No hay tutorías pendientes por ahora. ¡Sé el primero en solicitar una!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                      ),
+                  final listadoCompleto =
+                      proveedorTutorias.tutoriasPendientesGenerales;
+
+                  // Lógica de filtrado en memoria local
+                  final listadoFiltrado = _terminoBusqueda.isEmpty
+                      ? listadoCompleto
+                      : listadoCompleto.where((tutoria) {
+                          final concuerdaMateria = tutoria.materiaOAsignatura
+                              .toLowerCase()
+                              .contains(_terminoBusqueda);
+                          final concuerdaTema = tutoria.temaEspecifico
+                              .toLowerCase()
+                              .contains(_terminoBusqueda);
+                          return concuerdaMateria || concuerdaTema;
+                        }).toList();
+
+                  if (listadoFiltrado.isEmpty) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 100),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Text(
+                            'No se encontraron tutorías con esos criterios de búsqueda.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  return ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
                     ),
-                  ),
-                ],
-              );
-            }
-
-            // Constructor de Tarjetas
-            return ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-              itemCount: listado.length,
-              itemBuilder: (context, indice) {
-                return _TarjetaDeTutoriaDinamica(datosTutoria: listado[indice]);
-              },
-            );
-          },
-        ),
+                    itemCount: listadoFiltrado.length,
+                    itemBuilder: (context, indice) {
+                      return _TarjetaDeTutoriaDinamica(
+                        datosTutoria: listadoFiltrado[indice],
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -106,8 +149,36 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
 
   const _TarjetaDeTutoriaDinamica({required this.datosTutoria});
 
-  Future<void> _ejecutarAccion(BuildContext context, UsuarioModel usuario) async {
+  Future<void> _ejecutarAccion(
+    BuildContext context,
+    UsuarioModel usuario,
+  ) async {
     final esProfesor = usuario.tieneRol(RolSistema.tutor);
+    final accionTexto = esProfesor
+        ? 'impartir esta tutoría'
+        : 'inscribirte en esta clase';
+
+    // HCI: Barrera de confirmación preventiva antes de alterar la base de datos
+    final confirmacion = await showDialog<bool>(
+      context: context,
+      builder: (contextDialogo) => AlertDialog(
+        title: const Text('Confirmar Acción'),
+        content: Text('¿Estás seguro de que deseas $accionTexto?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(contextDialogo, false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(contextDialogo, true),
+            child: const Text('Sí, confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmacion != true || !context.mounted) return;
+
     final proveedor = context.read<TutoriasProvider>();
     bool operacionConcretaExitosa = false;
 
@@ -123,22 +194,23 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
       );
     }
 
-    if (!operacionConcretaExitosa) {
-      if (context.mounted) {
-        final fallaMotivo = proveedor.mensajeDeErrorDelSistema;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(fallaMotivo),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
+    if (!operacionConcretaExitosa && context.mounted) {
+      final fallaMotivo = proveedor.mensajeDeErrorDelSistema;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(fallaMotivo), backgroundColor: Colors.redAccent),
+      );
+    } else if (operacionConcretaExitosa && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Acción procesada con éxito.'),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Escaneamos la identidad central
     final proveedorIdentidad = context.watch<AutenticacionProvider>();
     final elUsuario = proveedorIdentidad.usuarioActual;
 
@@ -147,74 +219,87 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
     final esTutor = elUsuario.tieneRol(RolSistema.tutor);
 
     return Card(
-      elevation: 3,
+      elevation: 2,
       margin: const EdgeInsets.only(bottom: 12.0),
-      color: Theme.of(context).cardColor, // Adherencia estricta al dark mode o configuracion actual de brillo
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(14.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Encabezado
             Text(
               datosTutoria.materiaOAsignatura,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontSize: 18),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               datosTutoria.temaEspecifico,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[400],
-                  ),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: 18),
-
-            // Informacion Compacta (Row)
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Grupo 1: Modalidad
                 Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      datosTutoria.modalidadDeClase.toLowerCase().contains('virtual')
+                      datosTutoria.modalidadDeClase.toLowerCase().contains(
+                            'virtual',
+                          )
                           ? Icons.computer
                           : Icons.meeting_room,
                       size: 20,
-                      color: Theme.of(context).colorScheme.primaryContainer,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(width: 8),
                     Text(datosTutoria.modalidadDeClase),
                   ],
                 ),
-                // Grupo 2: Cupos
                 Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.people_alt,
+                    Icon(
+                      datosTutoria.listaDeEstudiantesInscritos.length >=
+                              datosTutoria.cupoMaximo
+                          ? Icons.block
+                          : Icons.people_alt,
                       size: 20,
-                      color: Colors.blueAccent,
+                      color:
+                          datosTutoria.listaDeEstudiantesInscritos.length >=
+                              datosTutoria.cupoMaximo
+                          ? Colors.red
+                          : Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(width: 8),
-                    Text('${datosTutoria.listaDeEstudiantesInscritos.length} / ${datosTutoria.cupoMaximo}'),
+                    Text(
+                      '${datosTutoria.listaDeEstudiantesInscritos.length} / ${datosTutoria.cupoMaximo}',
+                      style: TextStyle(
+                        color:
+                            datosTutoria.listaDeEstudiantesInscritos.length >=
+                                datosTutoria.cupoMaximo
+                            ? Colors.red
+                            : null,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-
-            // Accion Dinamica
+            const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
+              child: FilledButton(
+                onPressed:
+                    datosTutoria.listaDeEstudiantesInscritos.length >=
+                            datosTutoria.cupoMaximo &&
+                        !esTutor
+                    ? null
+                    : () => _ejecutarAccion(context, elUsuario),
+                style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.secondary,
-                  foregroundColor: Theme.of(context).colorScheme.onSecondary,
                 ),
-                onPressed: () => _ejecutarAccion(context, elUsuario),
                 child: Text(esTutor ? 'Aceptar Tutoría' : 'Unirse a clase'),
               ),
             ),
