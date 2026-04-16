@@ -154,52 +154,116 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
     UsuarioModel usuario,
   ) async {
     final esProfesor = usuario.tieneRol(RolSistema.tutor);
-    final accionTexto = esProfesor
-        ? 'impartir esta tutoría'
-        : 'inscribirte en esta clase';
-
-    // HCI: Barrera de confirmación preventiva antes de alterar la base de datos
-    final confirmacion = await showDialog<bool>(
-      context: context,
-      builder: (contextDialogo) => AlertDialog(
-        title: const Text('Confirmar Acción'),
-        content: Text('¿Estás seguro de que deseas $accionTexto?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(contextDialogo, false),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(contextDialogo, true),
-            child: const Text('Sí, confirmar'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmacion != true || !context.mounted) return;
-
     final proveedor = context.read<TutoriasProvider>();
     bool operacionConcretaExitosa = false;
 
     if (esProfesor) {
+      // Flujo de confirmación pura para el maestro
+      final accionTexto = 'impartir esta tutoría';
+      final confirmacion = await showDialog<bool>(
+        context: context,
+        builder: (contextDialogo) => AlertDialog(
+          title: const Text('Confirmar Acción'),
+          content: Text('¿Estás seguro de que deseas $accionTexto?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(contextDialogo, false),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(contextDialogo, true),
+              child: const Text('Sí, confirmar'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmacion != true || !context.mounted) return;
+
       operacionConcretaExitosa = await proveedor.aceptarTutoria(
         datosTutoria.identificadorDeTutoria,
         usuario.identificadorUnico,
       );
     } else {
-      operacionConcretaExitosa = await proveedor.unirseAClaseMultitudinaria(
-        identificacionGlobalDeLaClase: datosTutoria.identificadorDeTutoria,
-        matriculaDeIdentidadDelEstudiante: usuario.identificadorUnico,
+      // Modulo específico de inscripción de Alumnos (Modal Interactivo)
+      final TextEditingController motivoCtrl = TextEditingController();
+      final TextEditingController enlaceCtrl = TextEditingController();
+      final formKey = GlobalKey<FormState>();
+
+      final confirmacion = await showDialog<bool>(
+        context: context,
+        builder: (contextDialogo) => AlertDialog(
+          title: Text('Confirmar Reserva: ${datosTutoria.materiaOAsignatura}'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: motivoCtrl,
+                    decoration: const InputDecoration(
+                      labelText: '¿Qué tema específico necesitas reforzar?',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Por favor ingresa un motivo detallado.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: enlaceCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Enlace a material (Drive, PDF, etc.)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(contextDialogo, false),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(contextDialogo, true);
+                }
+              },
+              child: const Text('Confirmar Inscripción'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmacion != true || !context.mounted) return;
+
+      final url = enlaceCtrl.text.trim();
+      final listadoLinks = url.isNotEmpty ? [url] : <String>[];
+
+      operacionConcretaExitosa = await proveedor.inscribirseEnTutoria(
+        datosTutoria.identificadorDeTutoria,
+        usuario.identificadorUnico,
+        motivoCtrl.text.trim(),
+        listadoLinks,
       );
     }
 
-    if (!operacionConcretaExitosa && context.mounted) {
+    if (!context.mounted) return;
+
+    if (!operacionConcretaExitosa) {
       final fallaMotivo = proveedor.mensajeDeErrorDelSistema;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(fallaMotivo), backgroundColor: Colors.redAccent),
       );
-    } else if (operacionConcretaExitosa && context.mounted) {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Acción procesada con éxito.'),
@@ -288,6 +352,31 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
+            // Detalles extendidos solicitados: Tutor y Fecha
+            Row(
+              children: [
+                const Icon(Icons.person, size: 16, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Tutor: ${datosTutoria.identificadorDelTutor.isEmpty ? "Por asignar" : datosTutoria.identificadorDelTutor}',
+                     style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.schedule, size: 16, color: Colors.grey),
+                const SizedBox(width: 8),
+                Text(
+                  '${datosTutoria.fechaHoraSugerida.day.toString().padLeft(2, '0')}/${datosTutoria.fechaHoraSugerida.month.toString().padLeft(2, '0')} - ${datosTutoria.fechaHoraSugerida.hour.toString().padLeft(2, '0')}:${datosTutoria.fechaHoraSugerida.minute.toString().padLeft(2, '0')} Hrs',
+                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerRight,
               child: FilledButton(
@@ -300,7 +389,7 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.secondary,
                 ),
-                child: Text(esTutor ? 'Aceptar Tutoría' : 'Unirse a clase'),
+                child: Text(esTutor ? 'Aceptar Tutoría' : 'Reservar'),
               ),
             ),
           ],

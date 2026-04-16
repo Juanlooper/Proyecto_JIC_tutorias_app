@@ -30,53 +30,56 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Compromisos Vigentes'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(icon: Icon(Icons.class_), text: 'Asistiendo'),
-              Tab(icon: Icon(Icons.co_present), text: 'Dictando'),
-            ],
-          ),
-        ),
-        body: Consumer2<AutenticacionProvider, TutoriasProvider>(
-          builder: (context, authProv, tutProv, child) {
-            final UsuarioModel? usuarioEnSesion = authProv.usuarioActual;
+    return Consumer2<AutenticacionProvider, TutoriasProvider>(
+      builder: (context, authProv, tutProv, child) {
+        final UsuarioModel? usuarioEnSesion = authProv.usuarioActual;
 
-            if (usuarioEnSesion == null || tutProv.estaCargandoPeticionEnNube) {
-              return const Center(child: CircularProgressIndicator());
-            }
+        if (usuarioEnSesion == null || tutProv.estaCargandoPeticionEnNube) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
 
-            final String uid = usuarioEnSesion.identificadorUnico;
-            final List<TutoriaModel> universoTutorias =
-                tutProv.tutoriasSuscritasDelUsuario;
+        final bool esTutorOAdmin = usuarioEnSesion.rolEnElSistema == RolSistema.tutor || 
+                                   usuarioEnSesion.rolEnElSistema == RolSistema.admin;
 
-            // Filtro dinámico en tiempo de ejecución
-            final listadoAsistiendo = universoTutorias
-                .where((tuto) => tuto.listaDeEstudiantesInscritos.contains(uid))
-                .toList();
-            final listadoDictando = universoTutorias
-                .where((tuto) => tuto.identificadorDelTutor == uid)
-                .toList();
+        final String uid = usuarioEnSesion.identificadorUnico;
+        final List<TutoriaModel> universoTutorias = tutProv.tutoriasSuscritasDelUsuario;
 
-            return TabBarView(
+        // Filtro dinámico en tiempo de ejecución
+        final listadoAsistiendo = universoTutorias
+            .where((tuto) => tuto.listaDeEstudiantesInscritos.contains(uid))
+            .toList();
+        final listadoDictando = universoTutorias
+            .where((tuto) => tuto.identificadorDelTutor == uid)
+            .toList();
+
+        return DefaultTabController(
+          length: esTutorOAdmin ? 2 : 1,
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('Compromisos Vigentes'),
+              bottom: TabBar(
+                tabs: [
+                  const Tab(icon: Icon(Icons.class_), text: 'Asistiendo'),
+                  if (esTutorOAdmin) const Tab(icon: Icon(Icons.co_present), text: 'Dictando'),
+                ],
+              ),
+            ),
+            body: TabBarView(
               children: [
                 _ModuloListaDeTutorias(
                   loteEspecifico: listadoAsistiendo,
                   esModoDictando: false,
                 ),
-                _ModuloListaDeTutorias(
-                  loteEspecifico: listadoDictando,
-                  esModoDictando: true,
-                ),
+                if (esTutorOAdmin)
+                  _ModuloListaDeTutorias(
+                    loteEspecifico: listadoDictando,
+                    esModoDictando: true,
+                  ),
               ],
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

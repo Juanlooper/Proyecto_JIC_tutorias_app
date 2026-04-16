@@ -61,10 +61,10 @@ class _LoginViewState extends State<LoginView> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(
-                  Icons.school,
-                  size: 80,
-                  color: AppTheme.primarioVerde,
+                Image.asset(
+                  'assets/images/logo_vecta.png',
+                  height: 80,
+                  errorBuilder: (context, error, stackTrace) => const Text("VECTA", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 40, color: AppTheme.primarioAzul)),
                 ),
                 const SizedBox(height: 16),
                 const Text(
@@ -79,40 +79,58 @@ class _LoginViewState extends State<LoginView> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Reserva fácil tu tutoría.\nConéctate con tutores calificados.',
+                  'Reserva facil tu tutoria.\nConectate con tutores calificados.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, color: Colors.black54),
                 ),
                 const SizedBox(height: 48),
 
-                TextFormField(
-                  controller: _correoController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Correo institucional (@utp.ac.pa)',
-                    prefixIcon: Icon(Icons.email_outlined),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty)
-                      return 'Ingresa tu correo';
-                    if (!value.contains('@')) return 'Correo no válido';
-                    return null;
-                  },
+                  child: TextFormField(
+                    controller: _correoController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: 'Correo institucional (@utp.ac.pa)',
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Ingresa tu correo';
+                      if (!value.contains('@')) return 'Correo no válido';
+                      return null;
+                    },
+                  ),
                 ),
                 const SizedBox(height: 16),
 
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Contraseña',
-                    prefixIcon: Icon(Icons.lock_outline),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty)
-                      return 'Ingresa tu contraseña';
-                    return null;
-                  },
+                  child: TextFormField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Contrasena',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Ingresa tu contraseña';
+                      return null;
+                    },
+                  ),
                 ),
 
                 Align(
@@ -126,15 +144,17 @@ class _LoginViewState extends State<LoginView> {
 
                 SizedBox(
                   height: 56,
-                  child: FilledButton(
-                    onPressed: authProvider.estaCargando
-                        ? null
-                        : _ejecutarLogin,
+                  child: ElevatedButton(
+                    onPressed: authProvider.estaCargando ? null : _ejecutarLogin,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primarioAzul,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                     child: authProvider.estaCargando
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
-                            'Iniciar sesión',
-                            style: TextStyle(fontSize: 18),
+                            'Iniciar Sesion',
+                            style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
                           ),
                   ),
                 ),

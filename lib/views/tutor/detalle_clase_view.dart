@@ -1,0 +1,323 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../models/tutoria_model.dart';
+import '../../core/theme/app_theme.dart';
+import '../../providers/tutorias_provider.dart';
+
+class DetalleClaseView extends StatefulWidget {
+  final TutoriaModel tutoria;
+
+  const DetalleClaseView({super.key, required this.tutoria});
+
+  @override
+  State<DetalleClaseView> createState() => _DetalleClaseViewState();
+}
+
+class _DetalleClaseViewState extends State<DetalleClaseView> {
+  bool _modoPaseDeLista = false;
+  final Map<String, bool> _asistenciaMapa = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // Por defecto marcamos a todos los estudiantes inscritos como presentes (true)
+    for (var uid in widget.tutoria.listaDeEstudiantesInscritos) {
+      _asistenciaMapa[uid] = true;
+    }
+  }
+
+  Future<void> _finalizarClase() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (contextDialogo) => AlertDialog(
+        title: const Text('Confirmar Cierre', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('¿Estás seguro? Esta acción cerrará la clase y aplicará faltas a los ausentes de forma irreversible.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(contextDialogo, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(contextDialogo, true),
+            child: const Text('Sí, Finalizar'),
+          ),
+        ],
+      )
+    );
+
+    if (confirmar == true && mounted) {
+      final proveedor = context.read<TutoriasProvider>();
+      final exito = await proveedor.registrarAsistenciaClase(
+        widget.tutoria.identificadorDeTutoria,
+        _asistenciaMapa,
+      );
+
+      if (mounted) {
+        if (exito) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Clase finalizada con éxito.'), backgroundColor: Colors.green),
+          );
+          Navigator.pop(context); // Volvemos al Dashboard
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(proveedor.mensajeDeErrorDelSistema), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tutoria = widget.tutoria;
+    final fecha = '${tutoria.fechaHoraSugerida.day.toString().padLeft(2, '0')}/${tutoria.fechaHoraSugerida.month.toString().padLeft(2, '0')} a las ${tutoria.fechaHoraSugerida.hour.toString().padLeft(2, '0')}:${tutoria.fechaHoraSugerida.minute.toString().padLeft(2, '0')} Hrs';
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Detalles de la Sesión'),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Panel Superior: Información de la clase
+            Card(
+              elevation: 0,
+              color: AppTheme.primarioAzul.withValues(alpha: 0.05),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: AppTheme.primarioAzul.withValues(alpha: 0.3)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tutoria.materiaOAsignatura,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: AppTheme.primarioAzul),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(Icons.topic, size: 18, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text('Tema: ${tutoria.temaEspecifico}', style: const TextStyle(fontSize: 16))),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.schedule, size: 18, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Text('Fecha pautada: $fecha', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.meeting_room, size: 18, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Text('Modalidad: ${tutoria.modalidadDeClase}', style: const TextStyle(fontSize: 16)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.people_alt, color: AppTheme.primarioVerde),
+                    SizedBox(width: 8),
+                    Text(
+                      'Estudiantes',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                if (tutoria.listaDeEstudiantesInscritos.isNotEmpty && !_modoPaseDeLista)
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _modoPaseDeLista = true;
+                      });
+                    },
+                    icon: const Icon(Icons.fact_check),
+                    label: const Text('Iniciar Pase de Lista'),
+                  ),
+              ],
+            ),
+            const Divider(),
+
+            // Panel Inferior: Lista de alumnos inscritos
+            if (tutoria.listaDeEstudiantesInscritos.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Center(
+                  child: Text(
+                    'Aún no hay estudiantes inscritos a tu clase.',
+                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: tutoria.listaDeEstudiantesInscritos.length,
+                itemBuilder: (context, index) {
+                  final uidAlumno = tutoria.listaDeEstudiantesInscritos[index];
+                  
+                  final mapaMotivos = tutoria.motivos_alumnos ?? {};
+                  final mapaEnlaces = tutoria.enlaces_adjuntos ?? {};
+                  
+                  final motivo = mapaMotivos[uidAlumno] ?? 'Sin comentarios del alumno.';
+                  final List<String> enlaces = mapaEnlaces[uidAlumno] ?? [];
+                  
+                  // Leer la bandera local del mapa stateful
+                  final presente = _asistenciaMapa[uidAlumno] ?? true;
+
+                  return Card(
+                    elevation: 1,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: _modoPaseDeLista && !presente 
+                               ? Colors.red.shade200 
+                               : Colors.grey.shade200
+                      ),
+                    ),
+                    color: _modoPaseDeLista && !presente ? Colors.red.shade50 : Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor: _modoPaseDeLista && !presente 
+                                                 ? Colors.red.shade300 
+                                                 : Colors.grey.shade300,
+                                child: const Icon(Icons.person, size: 18, color: Colors.white),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  uidAlumno.length > 8 ? 'Alumno ID: ${uidAlumno.substring(0, 8)}...' : 'Alumno ID: $uidAlumno',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                ),
+                              ),
+                              if (_modoPaseDeLista)
+                                Row(
+                                  children: [
+                                    Text(
+                                      presente ? 'Presente' : 'Ausente',
+                                      style: TextStyle(
+                                        color: presente ? Colors.green : Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    Switch(
+                                      value: presente,
+                                      activeColor: Colors.green,
+                                      inactiveThumbColor: Colors.red,
+                                      inactiveTrackColor: Colors.red.shade100,
+                                      onChanged: (val) {
+                                        setState(() {
+                                          _asistenciaMapa[uidAlumno] = val;
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const Text('Motivo para asistir:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 13)),
+                          const SizedBox(height: 6),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: _modoPaseDeLista && !presente ? Colors.white : AppTheme.fondoClaro,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade200),
+                            ),
+                            child: Text(
+                              motivo,
+                              style: const TextStyle(color: Colors.black87, fontStyle: FontStyle.italic, height: 1.4),
+                            ),
+                          ),
+                          
+                          if (enlaces.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            const Text('Material Adjuntado:', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primarioAzul, fontSize: 13)),
+                            const SizedBox(height: 6),
+                            ...enlaces.map((link) => Padding(
+                              padding: const EdgeInsets.only(bottom: 4.0),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.link, size: 18, color: Colors.blueAccent),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      link,
+                                      style: const TextStyle(color: Colors.blueAccent, decoration: TextDecoration.underline, height: 1.3),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
+                          ]
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _modoPaseDeLista
+          ? Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -5))
+                ],
+              ),
+              child: FilledButton.icon(
+                onPressed: _finalizarClase,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.primarioVerde,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('Finalizar Clase y Enviar Reporte', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            )
+          : null,
+    );
+  }
+}

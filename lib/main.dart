@@ -15,7 +15,7 @@ import 'providers/admin_provider.dart';
 
 // Vistas principales (Con la ruta corregida a la carpeta auth)
 import 'views/auth/login_view.dart';
-import 'views/main_navigation_view.dart';
+import 'views/navigation/enrutador_roles_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,7 +67,7 @@ class TutoriasApp extends StatelessWidget {
 
             // Si hay usuario, vamos al Dashboard. Si no, al Login.
             return auth.usuarioActual != null
-                ? const MainNavigationView()
+                ? const EnrutadorRolesView()
                 : const LoginView();
           },
         ),

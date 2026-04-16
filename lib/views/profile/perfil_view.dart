@@ -238,11 +238,37 @@ class _PerfilViewState extends State<PerfilView> {
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
+                    const SizedBox(height: 8),
+                    Chip(
+                      label: Text(
+                        _traducirRolAnalogo(elUsuarioActual.rolEnElSistema),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      backgroundColor: Colors.blue.shade100,
+                      side: BorderSide.none,
+                    ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 36),
+              const SizedBox(height: 24),
+
+              if (elUsuarioActual.strikes_inasistencia > 0) ...[
+                Card(
+                  color: Colors.red.shade50,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.red.shade200),
+                  ),
+                  child: ListTile(
+                    leading: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 36),
+                    title: const Text('Advertencia de Inasistencia', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    subtitle: Text('Tienes ${elUsuarioActual.strikes_inasistencia} strike(s). Si acumulas demasiados podrías ser penalizado o suspendido de la plataforma.', style: TextStyle(color: Colors.red.shade900)),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
 
               // Bloque 1: Inmutables del Sistema (Credenciales base)
               const Padding(
@@ -367,6 +393,29 @@ class _PerfilViewState extends State<PerfilView> {
               ),
 
               const SizedBox(height: 56),
+
+              // Botón Secundario: Postulación a Tutor
+              if (elUsuarioActual.rolEnElSistema == RolSistema.estudiante && elUsuarioActual.estado_solicitud_tutor == 'ninguna') ...[
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Sistema de postulaciones en desarrollo (Fase futura).')),
+                    );
+                  },
+                  icon: const Icon(Icons.star_outline),
+                  label: const Text(
+                    'Postularme para ser Tutor',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
 
               // Botón Definitivo de Control: Apagado y Limpieza
               FilledButton.icon(

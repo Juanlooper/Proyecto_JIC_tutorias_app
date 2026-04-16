@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/usuario_model.dart';
 import '../services/autenticacion_servicio.dart';
 import '../services/usuario_servicio.dart';
@@ -87,6 +88,14 @@ class AutenticacionProvider extends ChangeNotifier {
         );
 
     if (respuestaCrudaDelServidor == "Acceso Concedido") {
+      // Validación estricta de Email Verificado:
+      if (FirebaseAuth.instance.currentUser != null && !FirebaseAuth.instance.currentUser!.emailVerified) {
+        _mensajeDeError = "Debes verificar tu correo UTP para poder entrar. Revisa tu bandeja de entrada o SPAM.";
+        await salirDeLaSesionActual(); 
+        notifyListeners();
+        return false;
+      }
+
       // Éxito. Acudimos al baúl de base de datos a traer todo su expediente formal de la JIC.
       _usuarioActual = await _servicioIntegradoDeAutenticacion
           .obtenerDatosDelUsuarioActual();
@@ -251,30 +260,37 @@ class AutenticacionProvider extends ChangeNotifier {
     if (_usuarioActual == null) return false;
 
     _estaCargando = true;
+    _limpiarCualquierTextoDefectuosoAnterior();
     notifyListeners();
 
-    bool exito = await _usuarioServicio.actualizarDatosAcademicos(
-      idUsuario: _usuarioActual!.identificadorUnico,
-      nuevaFacultad: facultad,
-      nuevaCarrera: carrera,
-    );
-
-    if (exito) {
-      // Actualización atómica en memoria local
-      _usuarioActual = UsuarioModel(
-        identificadorUnico: _usuarioActual!.identificadorUnico,
-        nombreCompleto: _usuarioActual!.nombreCompleto,
-        correoElectronico: _usuarioActual!.correoElectronico,
-        rolEnElSistema: _usuarioActual!.rolEnElSistema,
-        listaDeTutoresSuscritos: _usuarioActual!.listaDeTutoresSuscritos,
-        facultad: facultad,
-        carrera: carrera,
+    try {
+      bool exito = await _usuarioServicio.actualizarDatosAcademicos(
+        idUsuario: _usuarioActual!.identificadorUnico,
+        nuevaFacultad: facultad,
+        nuevaCarrera: carrera,
       );
-    }
 
-    _estaCargando = false;
-    notifyListeners();
-    return exito;
+      if (exito) {
+        _usuarioActual = UsuarioModel(
+          identificadorUnico: _usuarioActual!.identificadorUnico,
+          nombreCompleto: _usuarioActual!.nombreCompleto,
+          correoElectronico: _usuarioActual!.correoElectronico,
+          rolEnElSistema: _usuarioActual!.rolEnElSistema,
+          listaDeTutoresSuscritos: _usuarioActual!.listaDeTutoresSuscritos,
+          facultad: facultad,
+          carrera: carrera,
+        );
+      }
+
+      _estaCargando = false;
+      notifyListeners();
+      return exito;
+    } catch (e) {
+      _mensajeDeError = 'Error al actualizar perfil: ${e.toString()}';
+      _estaCargando = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   // --- Motores Internos (Herramientas encapsuladas de Provider) ---
