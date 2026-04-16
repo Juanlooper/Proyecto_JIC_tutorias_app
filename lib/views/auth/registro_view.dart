@@ -198,7 +198,7 @@ class _RegistroViewState extends State<RegistroView> {
                   enabled: !semaforoCarga,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    labelText: 'Correo institucional (@utp.ac.pa)',
+                    labelText: 'Correo electrónico (@gmail.com)',
                     prefixIcon: const Icon(
                       Icons.email,
                       color: AppTheme.primarioAzul,
@@ -209,8 +209,8 @@ class _RegistroViewState extends State<RegistroView> {
                   ),
                   validator: (valor) {
                     if (valor == null || valor.isEmpty) return 'Requerido';
-                    if (!valor.trim().toLowerCase().endsWith('@utp.ac.pa')) {
-                      return 'Debe ser un correo UTP válido';
+                    if (!valor.trim().toLowerCase().endsWith('@gmail.com')) {
+                      return 'Debe ser un correo @gmail.com válido';
                     }
                     return null;
                   },
