@@ -28,7 +28,6 @@ class _LoginViewState extends State<LoginView> {
     if (_formKey.currentState!.validate()) {
       final authProvider = context.read<AutenticacionProvider>();
 
-      // Conectado con la lógica exacta de tu backend
       bool exito = await authProvider.ingresarConCorreoYClave(
         correoEscrito: _correoController.text.trim(),
         contrasenaEscrita: _passwordController.text.trim(),
@@ -36,10 +35,8 @@ class _LoginViewState extends State<LoginView> {
 
       if (!exito && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              authProvider.mensajeDeError,
-            ), // <-- Error manejado correctamente
+           SnackBar(
+            content: Text(authProvider.mensajeDeError),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -47,146 +44,278 @@ class _LoginViewState extends State<LoginView> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _construirPanelIzquierdo() {
     final authProvider = context.watch<AutenticacionProvider>();
 
-    return Scaffold(
-      body: Center(
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 24.0),
+      child: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Image.asset(
-                  'assets/images/logo_vecta.png',
-                  height: 80,
-                  errorBuilder: (context, error, stackTrace) => const Text("VECTA", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 40, color: AppTheme.primarioAzul)),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Flecha Superior Izquierda (mock)
+              const Align(
+                alignment: Alignment.topLeft,
+                child: Icon(Icons.arrow_back, color: AppTheme.primarioVerde, size: 32),
+              ),
+              const SizedBox(height: 24),
+              
+              // Logo Circular
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.grey.shade400, width: 1.5),
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'VECTA',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textoOscuro,
-                    letterSpacing: 2,
-                  ),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.transparent,
+                  backgroundImage: const AssetImage('assets/images/logo_vecta.png'),
+                  onBackgroundImageError: (_, __) {},
+                  child: const Icon(Icons.school, size: 50, color: AppTheme.primarioVerde), // Fallback
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Reserva facil tu tutoria.\nConectate con tutores calificados.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.black54),
+              ),
+              const SizedBox(height: 24),
+              
+              // Título
+              const Text(
+                'Portal Académico',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primarioVerde,
                 ),
-                const SizedBox(height: 48),
+              ),
+              const SizedBox(height: 48),
 
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
-                  ),
-                  child: TextFormField(
-                    controller: _correoController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: 'Correo institucional (@utp.ac.pa)',
-                      prefixIcon: const Icon(Icons.email_outlined),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return 'Ingresa tu correo';
-                      if (!value.contains('@')) return 'Correo no válido';
-                      return null;
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
-                  ),
-                  child: TextFormField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: 'Contrasena',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return 'Ingresa tu contraseña';
-                      return null;
-                    },
-                  ),
-                ),
-
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {},
-                    child: const Text('¿Olvidaste tu contraseña?'),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                SizedBox(
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: authProvider.estaCargando ? null : _ejecutarLogin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primarioAzul,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: authProvider.estaCargando
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Iniciar Sesion',
-                            style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              // Formulario
+              Form(
+                key: _formKey,
+                child: Column(
                   children: [
-                    const Text('¿No tienes cuenta?'),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const RegistroView(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        'Crea tu cuenta aquí',
-                        style: TextStyle(
-                          color: AppTheme.primarioAzul,
-                          fontWeight: FontWeight.bold,
+                    // Correo
+                    TextFormField(
+                      controller: _correoController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        hintText: 'Correo institucional (@utp.ac.pa)',
+                        hintStyle: TextStyle(color: Colors.blue.shade300),
+                        prefixIcon: Icon(Icons.email, color: Colors.blue.shade700),
+                        filled: true,
+                        fillColor: Colors.blue.shade50.withValues(alpha: 0.3),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.blue.shade200),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
                         ),
                       ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Ingresa tu correo';
+                        if (!value.contains('@')) return 'Correo no válido';
+                        return null;
+                      },
                     ),
+                    const SizedBox(height: 16),
+
+                    // Contraseña
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        hintText: 'Contraseña',
+                        hintStyle: TextStyle(color: Colors.blue.shade300),
+                        prefixIcon: Icon(Icons.lock, color: Colors.blue.shade700),
+                        filled: true,
+                        fillColor: Colors.blue.shade50.withValues(alpha: 0.3),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.blue.shade200),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Ingresa tu contraseña';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Botón Iniciar Sesión (Pill shape)
+                    SizedBox(
+                      width: 200,
+                      height: 45,
+                      child: ElevatedButton(
+                        onPressed: authProvider.estaCargando ? null : _ejecutarLogin,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primarioVerde,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: authProvider.estaCargando
+                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text(
+                                'Iniciar sesión',
+                                style: TextStyle(
+                                  fontSize: 16, 
+                                  color: Colors.white, 
+                                  fontWeight: FontWeight.bold
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Enlace Registro
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistroView()));
+                      },
+                      child: Text(
+                        '¿No tienes cuenta? Crea tu cuenta aquí',
+                        style: TextStyle(
+                          color: Colors.blue.shade400,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    )
                   ],
                 ),
-              ],
-            ),
+              )
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _construirTarjetaInformativa({required IconData icono, required String titulo, required String subtitulo}) {
+    return Container(
+      width: 320,
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 15,
+            offset: Offset(0, 8),
+          )
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(icono, color: AppTheme.primarioVerde, size: 28),
+          const SizedBox(height: 8),
+          Text(
+            titulo,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primarioVerde),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitulo,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.black87, fontSize: 13, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _construirPanelDerecho() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFE5EFF9), // Suave celeste claro
+            Color(0xFFC7DFF2), // Celeste intermedio
+            Color(0xFFDCD5E4), // Tinte pastel morado/gris leve
+          ],
+        ),
+      ),
+      child: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                '¿Cómo funciona?',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primarioVerde,
+                ),
+              ),
+              const SizedBox(height: 48),
+              _construirTarjetaInformativa(
+                icono: Icons.access_time,
+                titulo: 'Reserva fácil',
+                subtitulo: 'Agenda tutorías en segundos desde cualquier dispositivo',
+              ),
+              _construirTarjetaInformativa(
+                icono: Icons.support_agent,
+                titulo: 'Atención personalizada',
+                subtitulo: 'Envía tus dudas y recibe apoyo adaptado a tus necesidades',
+              ),
+              _construirTarjetaInformativa(
+                icono: Icons.verified,
+                titulo: 'Tutores calificados',
+                subtitulo: 'Aprende con estudiantes destacados y especializados',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Si la pantalla es ancha (Web/Escritorio)
+          if (constraints.maxWidth > 800) {
+            return Row(
+              children: [
+                Expanded(flex: 4, child: _construirPanelIzquierdo()),
+                Expanded(flex: 6, child: _construirPanelDerecho()),
+              ],
+            );
+          } else {
+            // Diseño móvil: Apilar los páneles
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: constraints.maxHeight * 0.85,
+                    child: _construirPanelIzquierdo(),
+                  ),
+                  SizedBox(
+                    height: 800,
+                    child: _construirPanelDerecho(),
+                  )
+                ],
+              ),
+            );
+          }
+        },
       ),
     );
   }

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../providers/autenticacion_provider.dart';
 import '../../providers/tutorias_provider.dart';
 import '../../models/usuario_model.dart';
 import '../../models/tutoria_model.dart';
-import 'crear_tutoria_view.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -27,20 +27,12 @@ class _HomeViewState extends State<HomeView> {
         _terminoBusqueda = _controladorBusqueda.text.toLowerCase().trim();
       });
     });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TutoriasProvider>().cargarListadoDeTutoriasPendientes();
-    });
   }
 
   @override
   void dispose() {
     _controladorBusqueda.dispose();
     super.dispose();
-  }
-
-  Future<void> _actualizarLista() async {
-    await context.read<TutoriasProvider>().cargarListadoDeTutoriasPendientes();
   }
 
   @override
@@ -69,17 +61,23 @@ class _HomeViewState extends State<HomeView> {
           ),
 
           Expanded(
-            child: RefreshIndicator(
-              onRefresh: _actualizarLista,
-              child: Consumer<TutoriasProvider>(
-                builder: (context, proveedorTutorias, child) {
-                  if (proveedorTutorias.estaCargandoPeticionEnNube &&
-                      proveedorTutorias.tutoriasPendientesGenerales.isEmpty) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('tutorias').where('estadoDeLaSolicitud', isEqualTo: 'pendiente').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-                  final listadoCompleto =
-                      proveedorTutorias.tutoriasPendientesGenerales;
+                if (snapshot.hasError) {
+                  return const Center(child: Text("Error cargando la cartelera."));
+                }
+
+                final universeDocs = snapshot.data?.docs ?? [];
+                // Se mapean los modelos limpios y se desechan las peticiones huérfanas con tutor ya tomado
+                final listadoCompleto = universeDocs
+                    .map((doc) => TutoriaModel.fromMap(doc.data() as Map<String, dynamic>))
+                    .where((tutoria) => tutoria.identificadorDelTutor.isNotEmpty)
+                    .toList();
 
                   // Lógica de filtrado en memoria local
                   final listadoFiltrado = _terminoBusqueda.isEmpty
@@ -124,21 +122,10 @@ class _HomeViewState extends State<HomeView> {
                       );
                     },
                   );
-                },
-              ),
+              },
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CrearTutoriaView()),
-          );
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Solicitar Tutoría'),
       ),
     );
   }
@@ -359,7 +346,33 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Tutor: ${datosTutoria.identificadorDelTutor.isEmpty ? "Por asignar" : datosTutoria.identificadorDelTutor}',
+                    'Tutor: ${datosTutoria.identificadorDelTutor.isEmpty ? "Por asignar" : (datosTutoria.nombre_tutor ?? "Tutor Asignado")}',
+                     style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Lugar: ${datosTutoria.lugar ?? "Por definir"}',
+                     style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.contact_mail, size: 16, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Contacto: ${datosTutoria.contacto_tutor ?? "Contacto pendiente"}',
                      style: const TextStyle(color: Colors.grey, fontSize: 13),
                   ),
                 ),
@@ -379,17 +392,29 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
             const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerRight,
-              child: FilledButton(
-                onPressed:
-                    datosTutoria.listaDeEstudiantesInscritos.length >=
-                            datosTutoria.cupoMaximo &&
-                        !esTutor
-                    ? null
-                    : () => _ejecutarAccion(context, elUsuario),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.secondary,
-                ),
-                child: Text(esTutor ? 'Aceptar Tutoría' : 'Reservar'),
+              child: Builder(
+                builder: (context) {
+                  final bool yaInscrito = datosTutoria.listaDeEstudiantesInscritos.contains(elUsuario.identificadorUnico);
+                  final bool estaLleno = datosTutoria.listaDeEstudiantesInscritos.length >= datosTutoria.cupoMaximo;
+
+                  final bool bloquearEstudiante = (yaInscrito || estaLleno) && !esTutor;
+
+                  return FilledButton(
+                    onPressed: bloquearEstudiante
+                        ? null
+                        : () => _ejecutarAccion(context, elUsuario),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: yaInscrito 
+                          ? Colors.grey 
+                          : Theme.of(context).colorScheme.secondary,
+                    ),
+                    child: Text(
+                      esTutor
+                          ? 'Aceptar Tutoría'
+                          : (yaInscrito ? 'Suscrito' : 'Reservar'),
+                    ),
+                  );
+                },
               ),
             ),
           ],

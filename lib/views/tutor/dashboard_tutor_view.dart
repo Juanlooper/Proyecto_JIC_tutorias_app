@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Implemented Realtime Listener
 
 import '../../providers/autenticacion_provider.dart';
 import '../../providers/tutorias_provider.dart';
@@ -7,7 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/tutoria_model.dart';
 import 'detalle_clase_view.dart';
 import 'aceptar_solicitud_view.dart';
-import '../profile/perfil_view.dart';
+
 
 class DashboardTutorView extends StatefulWidget {
   const DashboardTutorView({super.key});
@@ -27,6 +28,35 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
         context.read<TutoriasProvider>().cargarListadoDeTutoriasPendientes();
       }
     });
+  }
+
+  // Se encarga de conectarse al socket de nube para reflejar instantáneamente (StreamBuilder) cuando un alumno pide una clase nueva.
+  Widget _construirTabBolsaEnVivo() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('tutorias')
+          .where('estadoDeLaSolicitud', isEqualTo: 'solicitada') // Filtro Nativo #1
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: AppTheme.primarioAzul));
+        }
+        if (snapshot.hasError) {
+          return const Center(child: Text("Error conectando con la bolsa de solicitudes."));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return _construirLista([], 0); // Re-utilizamos el constructor de estado vacío natural
+        }
+
+        final documentosNube = snapshot.data!.docs;
+        final filtrados = documentosNube.map((doc) {
+          return TutoriaModel.fromMap(doc.data() as Map<String, dynamic>);
+        }).where((t) => t.identificadorDelTutor.isEmpty).toList(); // Filtro Restrictivo #2
+
+        return _construirLista(filtrados, 0); 
+      },
+    );
   }
 
   // tipo: 0 (Bolsa Libre), 1 (Pendientes en curso), 2 (Formatos finalizados)
@@ -86,12 +116,46 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
               ],
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.group, size: 20, color: Colors.grey),
-                const SizedBox(width: 8),
-                Text('Alumnos inscritos: ${tutoria.listaDeEstudiantesInscritos.length}', style: const TextStyle(fontSize: 14, color: Colors.black87)),
-              ],
+            
+            // Requisito: Motivos del alumno (solo se destaca si es tipo bolsa u otro)
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.format_quote_rounded, size: 16, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Motivos: ${tutoria.temaEspecifico}',
+                      style: const TextStyle(fontSize: 13, color: Colors.black87, fontStyle: FontStyle.italic),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Requisito: Indicador visual Chip destacado de Alumnos Interesados
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Chip(
+                avatar: const Icon(Icons.groups_rounded, size: 18, color: Colors.white),
+                label: Text(
+                  tipo == 0 
+                      ? 'Estudiantes apoyando: ${tutoria.estudiantesApoyando.length}'
+                      : 'Alumnos inscritos: ${tutoria.listaDeEstudiantesInscritos.length}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                backgroundColor: AppTheme.primarioVerde, // O un color vibrante como Naranja
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
             ),
             
             // Botonera de Acción Condicionada
@@ -108,7 +172,7 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: const Text('Ver y Aceptar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: const Text('Ver detalles y Aceptar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               )
             ] 
@@ -175,42 +239,17 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
   @override
   Widget build(BuildContext context) {
     final motorAuth = context.watch<AutenticacionProvider>();
-    final proveedorTutorias = context.watch<TutoriasProvider>();
     final usuario = motorAuth.usuarioActual;
 
     if (usuario == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final bolsaUber = proveedorTutorias.tutoriasPendientesGenerales.where((t) {
-      return t.identificadorDelTutor.trim().isEmpty &&
-             t.estadoDeLaSolicitud != 'finalizada' &&
-             t.estadoDeLaSolicitud != 'cancelada';
-    }).toList();
-
-    final pendientes = proveedorTutorias.tutoriasSuscritasDelUsuario.where((t) {
-      return t.identificadorDelTutor == usuario.identificadorUnico &&
-             t.estadoDeLaSolicitud != 'finalizada' &&
-             t.estadoDeLaSolicitud != 'cancelada';
-    }).toList();
-
-    final finalizadas = proveedorTutorias.tutoriasSuscritasDelUsuario.where((t) {
-      return t.identificadorDelTutor == usuario.identificadorUnico &&
-             (t.estadoDeLaSolicitud == 'finalizada' || t.estadoDeLaSolicitud == 'cancelada');
-    }).toList();
-
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          leading: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Image.asset(
-              'assets/images/logo_vecta.png',
-              height: 40,
-              errorBuilder: (context, error, stackTrace) => const Center(child: Text("VECTA", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white))),
-            ),
-          ),
+          automaticallyImplyLeading: false, // Quitar retroceso
           bottom: const TabBar(
             isScrollable: true,
             tabAlignment: TabAlignment.center,
@@ -223,39 +262,42 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
               Tab(text: "Finalizadas", icon: Icon(Icons.history)),
             ],
           ),
-          title: const Text('Mi Panel de Desempeño'),
+          title: const Text('Mi Panel de Desempeño', style: TextStyle(fontWeight: FontWeight.bold)),
           centerTitle: true,
-          actions: [
-             Padding(
-               padding: const EdgeInsets.symmetric(horizontal: 8.0),
-               child: IconButton(
-                  icon: const CircleAvatar(
-                    backgroundColor: Colors.white24,
-                    child: Icon(Icons.person, color: Colors.white),
-                  ),
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const PerfilView()));
-                  },
-               )
-             )
-          ],
           backgroundColor: AppTheme.primarioVerde,
           foregroundColor: Colors.white,
+          elevation: 0,
         ),
         backgroundColor: AppTheme.fondoClaro,
-        body: RefreshIndicator(
-          onRefresh: () async {
-            await proveedorTutorias.cargarTutoriasSuscritasDelUsuario(usuario.identificadorUnico);
+        body: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('tutorias').where('identificadorDelTutor', isEqualTo: usuario.identificadorUnico).snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator(color: AppTheme.primarioVerde));
+            }
+            if (snapshot.hasError) {
+              return const Center(child: Text("Error obteniendo datos del panel en la nube."));
+            }
+
+            final docsNube = snapshot.data?.docs ?? [];
+            final misTutoriasDictando = docsNube.map((doc) => TutoriaModel.fromMap(doc.data() as Map<String, dynamic>)).toList();
+
+            final pendientes = misTutoriasDictando.where((t) {
+              return t.estadoDeLaSolicitud != 'finalizada' && t.estadoDeLaSolicitud != 'cancelada';
+            }).toList();
+
+            final finalizadas = misTutoriasDictando.where((t) {
+              return t.estadoDeLaSolicitud == 'finalizada' || t.estadoDeLaSolicitud == 'cancelada';
+            }).toList();
+
+            return TabBarView(
+              children: [
+                _construirTabBolsaEnVivo(),
+                _construirLista(pendientes, 1),
+                _construirLista(finalizadas, 2),
+              ],
+            );
           },
-          child: proveedorTutorias.estaCargandoPeticionEnNube && pendientes.isEmpty && finalizadas.isEmpty && bolsaUber.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : TabBarView(
-                  children: [
-                    _construirLista(bolsaUber, 0),
-                    _construirLista(pendientes, 1),
-                    _construirLista(finalizadas, 2),
-                  ],
-                ),
         ),
       ),
     );

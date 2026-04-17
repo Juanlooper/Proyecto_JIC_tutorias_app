@@ -41,6 +41,13 @@ class UsuarioModel {
   /// Refleja la fase de postulación del usuario para convertirse en tutor. Posibles: 'ninguna', 'en_revision', 'aprobado'.
   final String estado_solicitud_tutor;
 
+  /// Breve descripción que el tutor se asigna a sí mismo para aparecer en la comunidad
+  final String? descripcionPerfil;
+
+  final String? telefonoPersonal;
+  final String? contactoEmergenciaNombre;
+  final String? contactoEmergenciaTelefono;
+
   /// Función constructora que inicializa o "crea" la representación del usuario cuando ya tenemos su información.
   UsuarioModel({
     required this.identificadorUnico,
@@ -53,6 +60,10 @@ class UsuarioModel {
     this.strikes_inasistencia = 0,
     this.esta_baneado = false,
     this.estado_solicitud_tutor = 'ninguna',
+    this.descripcionPerfil,
+    this.telefonoPersonal,
+    this.contactoEmergenciaNombre,
+    this.contactoEmergenciaTelefono,
   });
 
   /// Convierte la información del objeto de usuario actual a un formato de lista de parejas (Mapa/Diccionario).
@@ -69,6 +80,10 @@ class UsuarioModel {
       'strikes_inasistencia': strikes_inasistencia,
       'esta_baneado': esta_baneado,
       'estado_solicitud_tutor': estado_solicitud_tutor,
+      'descripcionPerfil': descripcionPerfil,
+      'telefonoPersonal': telefonoPersonal,
+      'contactoEmergenciaNombre': contactoEmergenciaNombre,
+      'contactoEmergenciaTelefono': contactoEmergenciaTelefono,
     };
   }
 
@@ -86,6 +101,7 @@ class UsuarioModel {
         strikes_inasistencia: 0,
         esta_baneado: false,
         estado_solicitud_tutor: 'ninguna',
+        descripcionPerfil: null,
       );
     }
 
@@ -110,6 +126,10 @@ class UsuarioModel {
       strikes_inasistencia: mapaDeDatos['strikes_inasistencia'] ?? 0,
       esta_baneado: mapaDeDatos['esta_baneado'] ?? false,
       estado_solicitud_tutor: mapaDeDatos['estado_solicitud_tutor'] ?? 'ninguna',
+      descripcionPerfil: mapaDeDatos['descripcionPerfil'],
+      telefonoPersonal: mapaDeDatos['telefonoPersonal'],
+      contactoEmergenciaNombre: mapaDeDatos['contactoEmergenciaNombre'],
+      contactoEmergenciaTelefono: mapaDeDatos['contactoEmergenciaTelefono'],
     );
   }
 
@@ -131,6 +151,10 @@ class UsuarioModel {
     int? strikes_inasistencia,
     bool? esta_baneado,
     String? estado_solicitud_tutor,
+    String? descripcionPerfil,
+    String? telefonoPersonal,
+    String? contactoEmergenciaNombre,
+    String? contactoEmergenciaTelefono,
   }) {
     return UsuarioModel(
       identificadorUnico: identificadorUnico ?? this.identificadorUnico,
@@ -143,6 +167,10 @@ class UsuarioModel {
       strikes_inasistencia: strikes_inasistencia ?? this.strikes_inasistencia,
       esta_baneado: esta_baneado ?? this.esta_baneado,
       estado_solicitud_tutor: estado_solicitud_tutor ?? this.estado_solicitud_tutor,
+      descripcionPerfil: descripcionPerfil ?? this.descripcionPerfil,
+      telefonoPersonal: telefonoPersonal ?? this.telefonoPersonal,
+      contactoEmergenciaNombre: contactoEmergenciaNombre ?? this.contactoEmergenciaNombre,
+      contactoEmergenciaTelefono: contactoEmergenciaTelefono ?? this.contactoEmergenciaTelefono,
     );
   }
 }

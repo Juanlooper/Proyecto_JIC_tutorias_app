@@ -5,10 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 
 import '../../providers/autenticacion_provider.dart';
-import '../../models/usuario_model.dart';
-import '../widgets/tutorial_vecta_widget.dart';
-import '../tutor/dashboard_tutor_view.dart';
 import 'main_navigation_view.dart';
+import '../widgets/tutorial_vecta_widget.dart';
 
 /// Este widget actúa como el cerebro de tráfico de la aplicación.
 /// Decide qué pantalla mostrar basándose exclusivamente en el rol del usuario.
@@ -69,13 +67,7 @@ class _EnrutadorRolesViewState extends State<EnrutadorRolesView> {
 
         // Flujo normal de distribución
         if (snapshot.hasData && usuario != null) {
-          if (usuario.tieneRol(RolSistema.admin)) {
-            return const MainNavigationView();
-          } else if (usuario.tieneRol(RolSistema.tutor)) {
-            return const DashboardTutorView();
-          } else {
-            return const MainNavigationView();
-          }
+          return const MainNavigationView();
         }
 
         // Si se nos cae la pantalla aquí y desautenticamos, evadimos crashes devolviendo espera

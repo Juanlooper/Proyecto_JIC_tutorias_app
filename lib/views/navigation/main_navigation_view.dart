@@ -10,8 +10,11 @@ import '../home/home_view.dart';
 import '../explore/explorar_view.dart';
 import '../profile/perfil_view.dart';
 import '../tutorias/mis_tutorias_view.dart';
+import '../estudiante/sugerir_tutoria_view.dart';
+import '../estudiante/mis_sugerencias_view.dart';
 
 // Importamos tu nueva pantalla diseñada hoy
+import '../tutor/dashboard_tutor_view.dart';
 import '../admin/admin_dashboard_view.dart';
 
 class MainNavigationView extends StatefulWidget {
@@ -90,13 +93,16 @@ class _MainNavigationViewState extends State<MainNavigationView> {
 
     final bool esAdmin = usuarioActual.tieneRol(RolSistema.admin);
 
-    // Listado modular de vistas unificado para evitar desincronización de IndexedStack
     final List<Map<String, dynamic>> modulosUI = [
       {'titulo': 'Cartelera', 'icono': Icons.dashboard_outlined, 'vista': const HomeView()},
       {'titulo': 'Mis Tutorias', 'icono': Icons.book_outlined, 'vista': const MisTutoriasView()},
+      {'titulo': 'Sugerencias', 'icono': Icons.lightbulb_outline_rounded, 'vista': const MisSugerenciasView()},
       {'titulo': 'Comunidad', 'icono': Icons.people_outline, 'vista': const ExplorarView()},
-      {'titulo': 'Perfil', 'icono': Icons.person_outline, 'vista': const PerfilView()},
     ];
+
+    if (usuarioActual.tieneRol(RolSistema.tutor)) {
+      modulosUI.insert(0, {'titulo': 'Tablero Tutor', 'icono': Icons.admin_panel_settings, 'vista': const DashboardTutorView()});
+    }
 
     if (esAdmin) {
       modulosUI.add({'titulo': 'Metricas', 'icono': Icons.analytics_outlined, 'vista': const AdminDashboardView()});
@@ -133,12 +139,17 @@ class _MainNavigationViewState extends State<MainNavigationView> {
           )
         ),
         centerTitle: true,
-        actions: const [
+        actions: [
            Padding(
-             padding: EdgeInsets.symmetric(horizontal: 16.0),
-             child: CircleAvatar(
-                backgroundColor: Colors.white24,
-                child: Icon(Icons.person, color: Colors.white),
+             padding: const EdgeInsets.symmetric(horizontal: 4.0),
+             child: IconButton(
+                icon: const CircleAvatar(
+                  backgroundColor: Colors.white24,
+                  child: Icon(Icons.person, color: Colors.white),
+                ),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PerfilView()));
+                },
              )
            )
         ],
@@ -146,6 +157,21 @@ class _MainNavigationViewState extends State<MainNavigationView> {
         foregroundColor: Colors.white,
       ),
       body: IndexedStack(index: _indiceActual, children: vistasSistema),
+      floatingActionButton: esAdmin 
+          ? null 
+          : FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SugerirTutoriaView()));
+              },
+              backgroundColor: const Color(0xFF6C63FF),
+              elevation: 4,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text(
+                "Sugerir Clase", 
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+              ),
+            ),
     );
   }
 }
+

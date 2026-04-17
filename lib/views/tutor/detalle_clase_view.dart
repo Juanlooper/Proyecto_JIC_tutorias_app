@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/tutoria_model.dart';
 import '../../core/theme/app_theme.dart';
@@ -145,8 +146,9 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
                     ),
                   ],
                 ),
-                if (tutoria.listaDeEstudiantesInscritos.isNotEmpty && !_modoPaseDeLista)
-                  FilledButton.icon(
+                if (tutoria.estadoDeLaSolicitud != 'finalizada' && tutoria.estadoDeLaSolicitud != 'cancelada')
+                  if (tutoria.listaDeEstudiantesInscritos.isNotEmpty && !_modoPaseDeLista)
+                    FilledButton.icon(
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
                     ),
@@ -219,9 +221,25 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Text(
-                                  uidAlumno.length > 8 ? 'Alumno ID: ${uidAlumno.substring(0, 8)}...' : 'Alumno ID: $uidAlumno',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                child: FutureBuilder<DocumentSnapshot>(
+                                  future: FirebaseFirestore.instance.collection('usuarios').doc(uidAlumno).get(),
+                                  builder: (context, docSnap) {
+                                      if (docSnap.connectionState == ConnectionState.waiting) {
+                                          return const Text("Cargando...", style: TextStyle(color: Colors.grey, fontSize: 12));
+                                      }
+                                      if (docSnap.hasData && docSnap.data!.exists) {
+                                          final map = docSnap.data!.data() as Map<String, dynamic>;
+                                          final nombre = map['nombreCompleto'] ?? 'Sin nombre';
+                                          return Text(
+                                            nombre,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                          );
+                                      }
+                                      return Text(
+                                        uidAlumno.length > 8 ? 'Alumno ID: ${uidAlumno.substring(0, 8)}...' : 'Alumno ID: $uidAlumno',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                      );
+                                  }
                                 ),
                               ),
                               if (_modoPaseDeLista)
@@ -237,7 +255,7 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
                                     ),
                                     Switch(
                                       value: presente,
-                                      activeColor: Colors.green,
+                                      activeThumbColor: Colors.green,
                                       inactiveThumbColor: Colors.red,
                                       inactiveTrackColor: Colors.red.shade100,
                                       onChanged: (val) {

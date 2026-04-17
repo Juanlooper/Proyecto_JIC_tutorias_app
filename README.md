@@ -1,6 +1,6 @@
-# 📚 VECTA — Plataforma de Tutorías Universitarias (JIC)
+# 📚  Plataforma de Tutorías  (JIC)
 
-> Sistema de gestión de tutorías peer-to-peer para la Universidad Tecnológica de Panamá.
+> Sistema de gestión de tutorías peer-to-peer para centros educativos.
 > Construido con **Flutter**, **Firebase Auth** y **Cloud Firestore**.
 
 ---
@@ -23,7 +23,7 @@
 
 ## 🌐 Descripción General
 
-**Vecta** es una aplicación móvil/web que conecta estudiantes que necesitan ayuda académica con tutores calificados dentro de la universidad. Opera bajo un **modelo tipo Uber**:
+es una aplicación móvil/web que conecta estudiantes que necesitan ayuda académica con tutores calificados dentro del centro educativo. Opera bajo un **modelo tipo Uber**:
 
 1. Un **estudiante** publica una solicitud de tutoría (materia, tema, fecha).
 2. La solicitud aparece en la **Bolsa de Solicitudes** visible para todos los tutores.
@@ -279,7 +279,7 @@ Controla notificaciones in-app para alertas y avisos.
 
 | Archivo | Descripción |
 |---|---|
-| `login_view.dart` | Formulario de login con logo Vecta, campos con sombra suave, botón azul oscuro full-width y enlace a registro. Incluye `errorBuilder` para logo en Web. |
+| `login_view.dart` | Portal Académico rediseñado basado en Vecta Branding. Implementa `LayoutBuilder` para diseño responsivo: Split-screen en Escritorio/Web (Formulario izquierdo + Tarjetas informativas derecha con gradiente) y apilamiento vertical en móviles. |
 | `registro_view.dart` | Formulario extenso con campos personales (nombre, cédula, celular), académicos (facultad, carrera, inglés), credenciales (correo, contraseña), botón de CV, checkbox legal. 11 controladores con `dispose()`. |
 
 ### Navegación (`views/navigation/`)
@@ -300,7 +300,7 @@ Controla notificaciones in-app para alertas y avisos.
 
 | Archivo | Descripción |
 |---|---|
-| `dashboard_tutor_view.dart` | **Centro de operaciones del tutor.** `DefaultTabController` con 3 pestañas: **Bolsa de Solicitudes** (tutorías sin tutor), **Mis Pendientes** (tutorías del tutor activo), **Finalizadas** (historial). Tarjetas con chips de estado colorimétricos y botones contextuales. Conectado a `PerfilView` vía avatar del AppBar. |
+| `dashboard_tutor_view.dart` | **Centro de operaciones del tutor.** `DefaultTabController` reactivo mediante un `StreamBuilder` generalizado. Pestañas: **Bolsa de Solicitudes**, **Mis Pendientes** y **Finalizadas**. Tarjetas colorimétricas auto-actualizables (sin recargas manuales). |
 | `aceptar_solicitud_view.dart` | Pantalla de revisión detallada de una solicitud. Muestra info del alumno solicitante, materia, fecha, motivos y enlaces adjuntos. Formulario con campos de Lugar y Contacto. Botón verde "ACEPTAR SOLICITUD" que ejecuta la transacción atómica. 2 controladores con `dispose()`. |
 | `detalle_clase_view.dart` | Detalle completo de una clase con funcionalidad de pase de asistencia. |
 
@@ -308,19 +308,20 @@ Controla notificaciones in-app para alertas y avisos.
 
 | Archivo | Descripción |
 |---|---|
-| `mis_tutorias_view.dart` | Listado personalizado de todas las tutorías asociadas al usuario actual. |
+| `mis_tutorias_view.dart` | `DefaultTabController` reactivo (`StreamBuilder`). Contiene 3 pestañas: **Calendario** interactivo (con filtrado por día), **Próximas** (a las que el alumno debe asistir) e **Historial** (pasadas para agilizar la evaluación). |
 
 ### Exploración (`views/explore/`)
 
 | Archivo | Descripción |
 |---|---|
-| `explorar_view.dart` | Vista de comunidad para descubrir y seguir tutores. |
+| `explorar_view.dart` | Vista de comunidad y búsqueda de tutores utilizando `StreamBuilder` para mantener un listado actualizado en tiempo real sin recargar, e incluye un `SearchBar` funcional. |
 
 ### Perfil (`views/profile/`)
 
 | Archivo | Descripción |
 |---|---|
-| `perfil_view.dart` | Perfil del usuario con edición de facultad/carrera y botón de cerrar sesión. Detecta rol automáticamente. |
+| `perfil_view.dart` | Perfil del usuario interactivo. Permite la edición dinámica de Carrera, Facultad y Datos de Contacto mediante diálogos superpuestos. Detecta el rol automáticamente y gestiona el cierre de sesión mediante alertas. |
+| `perfil_publico_tutor_view.dart` | Renderiza de manera elegante los datos públicos e historial de cualquier usuario. Presenta las métricas calculadas (Tutorías dadas, Estrellas promedio, etc.). Limita la visualización de datos privados siguiendo estrictas reglas de negocio basadas en los Roles. |
 
 ### Administración (`views/admin/`)
 
@@ -497,12 +498,12 @@ flutter run
 
 ---
 
-## 🔒 Seguridad y Reglas de Negocio
+## Seguridad y Reglas de Negocio
 
 ### Autenticación
-- ✅ Verificación de email obligatoria antes de permitir login.
-- ✅ Cierre de sesión forzado tras registro (el usuario debe verificar correo primero).
-- ⚠️ **Modo QA activo:** La validación de dominio `@utp.ac.pa` está temporalmente desactivada para pruebas.
+- Verificación de email obligatoria antes de permitir login.
+- Cierre de sesión forzado tras registro (el usuario debe verificar correo primero).
+- Modo QA activo: La validación de dominio `@utp.ac.pa` está temporalmente desactivada para pruebas.
 
 ### Transacciones Atómicas (Anti Race Condition)
 - `aceptarSolicitudEstudiante()` — Lee y escribe en una sola transacción Firestore. Si otro tutor se adelantó, lanza excepción sin corromper datos.
@@ -515,6 +516,7 @@ flutter run
 - Inasistencia genera strikes (incremento atómico en perfil del alumno).
 - Tutorías sin inscritos que pasen +30 min de su hora se cancelan automáticamente.
 - Perfiles incompletos (sin facultad/carrera) no pueden crear solicitudes.
+- Privacidad Estudiantil: Los estudiantes solo pueden ver perfiles públicos de tutores y administradores. Se ocultan por restricción de acceso los perfiles públicos directos entre estudiantes convencionales.
 
 ### Prevención de Memory Leaks
 - Todos los `TextEditingController` tienen su `dispose()` implementado.
@@ -522,7 +524,7 @@ flutter run
 
 ---
 
-## 👥 Equipo
+## Equipo
 
 - **JIC (Junta Interdisciplinaria de Claustros)** — Universidad Tecnológica de Panamá
 - **Branding:** Vecta

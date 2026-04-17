@@ -19,18 +19,18 @@ class _TutorialVectaWidgetState extends State<TutorialVectaWidget> {
     if (widget.rol == RolSistema.tutor) {
       return [
         {
-          "titulo": "Tu Dashboard",
-          "descripcion": "Mira tus clases pendientes y organiza tu tiempo para ayudar a tus companeros.",
+          "titulo": "Panel de Desempeño",
+          "descripcion": "Verifica la Bolsa de Solicitudes, administra tus clases Pendientes, e inspecciona tu panel de Finalizadas sin recargar la página.",
           "icono": "dashboard"
         },
         {
-          "titulo": "Pasa Lista",
-          "descripcion": "Es obligatorio pasar lista al final para liberar horas de labor social oficiales.",
+          "titulo": "Dictar y Evaluar",
+          "descripcion": "Es obligatorio pasar lista al final para liberar horas oficiales. Tus alumnos podrán dejarte reseñas que verás en tu perfil público.",
           "icono": "check_circle"
         },
         {
           "titulo": "Regla de 12 horas",
-          "descripcion": "Cancela con al menos 12 horas de anticipacion o seras reportado en el panel de quejas.",
+          "descripcion": "Cancela con al menos 12 horas de anticipación o serás reportado automáticamente en el panel disciplinario.",
           "icono": "warning"
         }
       ];
@@ -38,19 +38,19 @@ class _TutorialVectaWidgetState extends State<TutorialVectaWidget> {
       // Estudiantes y Admins (visualización estándar)
       return [
         {
-          "titulo": "Encuentra Tutorias",
-          "descripcion": "Explora la cartelera y busca tu materia para encontrar la ayuda que necesitas.",
+          "titulo": "Cartelera interactiva",
+          "descripcion": "Explora tutorías en la pantalla principal o sugiere una nueva clase para que otros se unan y un tutor la acepte.",
           "icono": "search"
         },
         {
-          "titulo": "Inscribete",
-          "descripcion": "Al apuntarte, justifica que necesitas aprender para que el tutor se prepare exitosamente.",
-          "icono": "edit_document"
+          "titulo": "Calendario y Pestañas",
+          "descripcion": "Revisa tus próximas clases, observa tu disponibilidad en el Calendario, e ingresa al Historial para evaluar a tu maestro.",
+          "icono": "calendar_month"
         },
         {
-          "titulo": "Asiste",
-          "descripcion": "Cuidado, las faltas injustificadas generan strikes y posibles baneos permanentes en VECTA.",
-          "icono": "event_busy"
+          "titulo": "Nuestra Comunidad",
+          "descripcion": "Accede al perfil público de los tutores de la universidad, mira sus reseñas y síguelos para mantenerte informado.",
+          "icono": "people"
         }
       ];
     }
@@ -58,12 +58,12 @@ class _TutorialVectaWidgetState extends State<TutorialVectaWidget> {
 
   IconData _convertirIcono(String icono) {
     switch (icono) {
-      case "dashboard": return Icons.dashboard;
+      case "dashboard": return Icons.dashboard_outlined;
       case "check_circle": return Icons.check_circle_outline;
       case "warning": return Icons.warning_amber_rounded;
       case "search": return Icons.search;
-      case "edit_document": return Icons.edit_document;
-      case "event_busy": return Icons.event_busy;
+      case "calendar_month": return Icons.calendar_month;
+      case "people": return Icons.people_outline;
       default: return Icons.star;
     }
   }

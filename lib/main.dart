@@ -9,8 +9,6 @@ import 'core/theme/app_theme.dart';
 // Importación de todos los Providers de lógica
 import 'providers/autenticacion_provider.dart';
 import 'providers/tutorias_provider.dart';
-import 'providers/evaluacion_provider.dart';
-import 'providers/notificaciones_provider.dart';
 import 'providers/admin_provider.dart';
 
 // Vistas principales (Con la ruta corregida a la carpeta auth)
@@ -40,13 +38,7 @@ class TutoriasApp extends StatelessWidget {
         // 2. Manejo de Tutorías
         ChangeNotifierProvider(create: (_) => TutoriasProvider()),
 
-        // 3. Sistema de Reputación y Calidad
-        ChangeNotifierProvider(create: (_) => EvaluacionProvider()),
-
-        // 4. Sistema de Notificaciones in-app
-        ChangeNotifierProvider(create: (_) => NotificacionesProvider()),
-
-        // 5. Panel Administrativo para métricas
+        // 3. Panel Administrativo para métricas
         ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
       child: MaterialApp(

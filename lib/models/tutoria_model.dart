@@ -75,7 +75,21 @@ class TutoriaModel {
   final String? lugar;
 
   /// Contacto rápido del tutor (Frecuentemente WhatsApp).
+  /// Contacto rápido del tutor (Frecuentemente WhatsApp).
   final String? contacto_tutor;
+
+  /// Nombre real del tutor (Desnormalización NoSQL para evitar consultas anidadas).
+  final String? nombre_tutor;
+
+  /// Lista de los identificadores únicos de los estudiantes que ya evaluaron esta sesión.
+  /// Sirve para evitar dobles evaluaciones y deshabilitar el botón de calificar.
+  final List<String> alumnosQueYaEvaluaron;
+
+  /// Lista de UID de estudiantes que apoyan la sugerencia comunitaria
+  final List<String> estudiantesApoyando;
+
+  /// Creador original de la solicitud (si era una tutoría sugerida)
+  final String? creador;
 
   /// Constructor base. Se encarga de ensamblar en la memoria RAM una tutoría cuando llamamos la clase.
   /// El atributo 'required' indica qué pieza es indispensable para considerarse legalmente una tutoría.
@@ -101,6 +115,10 @@ class TutoriaModel {
     this.justificacion_cancelacion,
     this.lugar,
     this.contacto_tutor,
+    this.nombre_tutor,
+    this.alumnosQueYaEvaluaron = const [],
+    this.estudiantesApoyando = const [],
+    this.creador,
   });
 
   /// Transforma nuestra estructura de datos de objeto a formato mapa de clave/valor.
@@ -129,6 +147,10 @@ class TutoriaModel {
       'justificacion_cancelacion': justificacion_cancelacion,
       'lugar': lugar,
       'contacto_tutor': contacto_tutor,
+      'nombre_tutor': nombre_tutor,
+      'alumnosQueYaEvaluaron': alumnosQueYaEvaluaron,
+      'estudiantesApoyando': estudiantesApoyando,
+      'creador': creador,
     };
   }
 
@@ -149,6 +171,9 @@ class TutoriaModel {
         fechaHoraSugerida: DateTime.now(), // Por si no hay fecha, no colapsa el motor
         cupoMaximo: 1,
         duracionMinutos: 60,
+        alumnosQueYaEvaluaron: [],
+        estudiantesApoyando: [],
+        creador: null,
       );
     }
 
@@ -211,6 +236,14 @@ class TutoriaModel {
       justificacion_cancelacion: mapaDeDatos['justificacion_cancelacion'],
       lugar: mapaDeDatos['lugar'],
       contacto_tutor: mapaDeDatos['contacto_tutor'],
+      nombre_tutor: mapaDeDatos['nombre_tutor'],
+      alumnosQueYaEvaluaron: mapaDeDatos['alumnosQueYaEvaluaron'] != null
+          ? List<String>.from(mapaDeDatos['alumnosQueYaEvaluaron'])
+          : [],
+      estudiantesApoyando: mapaDeDatos['estudiantesApoyando'] != null
+          ? List<String>.from(mapaDeDatos['estudiantesApoyando'])
+          : [],
+      creador: mapaDeDatos['creador'],
     );
   }
 
@@ -237,6 +270,10 @@ class TutoriaModel {
     String? justificacion_cancelacion,
     String? lugar,
     String? contacto_tutor,
+    String? nombre_tutor,
+    List<String>? alumnosQueYaEvaluaron,
+    List<String>? estudiantesApoyando,
+    String? creador,
   }) {
     return TutoriaModel(
       identificadorDeTutoria: identificadorDeTutoria ?? this.identificadorDeTutoria,
@@ -260,6 +297,10 @@ class TutoriaModel {
       justificacion_cancelacion: justificacion_cancelacion ?? this.justificacion_cancelacion,
       lugar: lugar ?? this.lugar,
       contacto_tutor: contacto_tutor ?? this.contacto_tutor,
+      nombre_tutor: nombre_tutor ?? this.nombre_tutor,
+      alumnosQueYaEvaluaron: alumnosQueYaEvaluaron ?? this.alumnosQueYaEvaluaron,
+      estudiantesApoyando: estudiantesApoyando ?? this.estudiantesApoyando,
+      creador: creador ?? this.creador,
     );
   }
 }

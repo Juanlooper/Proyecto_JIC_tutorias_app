@@ -8,6 +8,8 @@ import '../../models/tutoria_model.dart';
 import '../../models/usuario_model.dart';
 import '../../core/theme/app_theme.dart';
 
+import 'package:table_calendar/table_calendar.dart';
+
 class MisTutoriasView extends StatefulWidget {
   const MisTutoriasView({super.key});
 
@@ -16,81 +18,170 @@ class MisTutoriasView extends StatefulWidget {
 }
 
 class _MisTutoriasViewState extends State<MisTutoriasView> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final proveedorIdentidad = context.read<AutenticacionProvider>();
-      final uid = proveedorIdentidad.usuarioActual?.identificadorUnico;
-      if (uid != null) {
-        context.read<TutoriasProvider>().cargarTutoriasSuscritasDelUsuario(uid);
-      }
-    });
+  DateTime _diaSeleccionado = DateTime.now();
+  DateTime _diaFocal = DateTime.now();
+  CalendarFormat _formatoCalendario = CalendarFormat.month;
+
+  List<TutoriaModel> _obtenerEventosParaElDia(DateTime dia, List<TutoriaModel> todas) {
+    return todas.where((t) => 
+      t.fechaHoraSugerida.year == dia.year &&
+      t.fechaHoraSugerida.month == dia.month &&
+      t.fechaHoraSugerida.day == dia.day
+    ).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<AutenticacionProvider, TutoriasProvider>(
-      builder: (context, authProv, tutProv, child) {
-        final UsuarioModel? usuarioEnSesion = authProv.usuarioActual;
+    final authProv = context.watch<AutenticacionProvider>();
+    final UsuarioModel? usuarioEnSesion = authProv.usuarioActual;
 
-        if (usuarioEnSesion == null || tutProv.estaCargandoPeticionEnNube) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
+    if (usuarioEnSesion == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
-        final bool esTutorOAdmin = usuarioEnSesion.rolEnElSistema == RolSistema.tutor || 
-                                   usuarioEnSesion.rolEnElSistema == RolSistema.admin;
+    final String uid = usuarioEnSesion.identificadorUnico;
 
-        final String uid = usuarioEnSesion.identificadorUnico;
-        final List<TutoriaModel> universoTutorias = tutProv.tutoriasSuscritasDelUsuario;
-
-        // Filtro dinámico en tiempo de ejecución
-        final listadoAsistiendo = universoTutorias
-            .where((tuto) => tuto.listaDeEstudiantesInscritos.contains(uid))
-            .toList();
-        final listadoDictando = universoTutorias
-            .where((tuto) => tuto.identificadorDelTutor == uid)
-            .toList();
-
-        return DefaultTabController(
-          length: esTutorOAdmin ? 2 : 1,
-          child: Scaffold(
-            appBar: AppBar(
-              title: const Text('Compromisos Vigentes'),
-              bottom: TabBar(
-                tabs: [
-                  const Tab(icon: Icon(Icons.class_), text: 'Asistiendo'),
-                  if (esTutorOAdmin) const Tab(icon: Icon(Icons.co_present), text: 'Dictando'),
-                ],
-              ),
-            ),
-            body: TabBarView(
-              children: [
-                _ModuloListaDeTutorias(
-                  loteEspecifico: listadoAsistiendo,
-                  esModoDictando: false,
-                ),
-                if (esTutorOAdmin)
-                  _ModuloListaDeTutorias(
-                    loteEspecifico: listadoDictando,
-                    esModoDictando: true,
-                  ),
-              ],
-            ),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: AppTheme.fondoClaro,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          elevation: 0,
+          backgroundColor: Colors.white,
+          foregroundColor: AppTheme.textoOscuro,
+          title: const Text('Comunidad de Aprendizaje', style: TextStyle(fontWeight: FontWeight.bold)),
+          centerTitle: true,
+          bottom: const TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.center,
+            labelColor: AppTheme.primarioAzul,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: AppTheme.primarioAzul,
+            tabs: [
+              Tab(text: "Calendario", icon: Icon(Icons.calendar_month)),
+              Tab(text: "Próximas", icon: Icon(Icons.schedule)),
+              Tab(text: "Historial", icon: Icon(Icons.history_edu)),
+            ],
           ),
-        );
-      },
+        ),
+        body: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('tutorias').snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return const Center(child: Text('Error cargando historial de compromisos'));
+            }
+
+            final universeDocs = snapshot.data?.docs ?? [];
+            final universoTutorias = universeDocs.map((doc) => 
+                TutoriaModel.fromMap(doc.data() as Map<String, dynamic>)
+            ).toList();
+
+            // Filtrar tutorías del usuario donde ESTÁ INSCRITO COMO ALUMNO (o es su misma clase pero aquí importa el asistente base)
+            // Ya que el panel del tutor administra las "Dictando", aquí daremos prioridad visual del asistente.
+            final misTutoriasGlobales = universoTutorias.where((tuto) => 
+                tuto.listaDeEstudiantesInscritos.contains(uid) || tuto.identificadorDelTutor == uid
+            ).toList();
+
+            // Clasificación
+            final eventosDelDia = _obtenerEventosParaElDia(_diaSeleccionado, misTutoriasGlobales);
+            final proximasTutorias = misTutoriasGlobales.where((t) => t.estadoDeLaSolicitud != 'finalizada' && t.estadoDeLaSolicitud != 'cancelada').toList();
+            final historialTutorias = misTutoriasGlobales.where((t) => t.estadoDeLaSolicitud == 'finalizada' || t.estadoDeLaSolicitud == 'cancelada').toList();
+
+            return TabBarView(
+              children: [
+                // Tab 1: Calendario
+                Column(
+                  children: [
+                    TableCalendar<TutoriaModel>(
+                      firstDay: DateTime.utc(2023, 1, 1),
+                      lastDay: DateTime.utc(2030, 12, 31),
+                      focusedDay: _diaFocal,
+                      calendarFormat: _formatoCalendario,
+                      selectedDayPredicate: (day) => isSameDay(_diaSeleccionado, day),
+                      onDaySelected: (selectedDay, focusedDay) {
+                        setState(() {
+                          _diaSeleccionado = selectedDay;
+                          _diaFocal = focusedDay;
+                        });
+                      },
+                      onFormatChanged: (format) {
+                        if (_formatoCalendario != format) {
+                          setState(() {
+                            _formatoCalendario = format;
+                          });
+                        }
+                      },
+                      onPageChanged: (focusedDay) {
+                        _diaFocal = focusedDay;
+                      },
+                      eventLoader: (day) => _obtenerEventosParaElDia(day, misTutoriasGlobales),
+                      calendarStyle: CalendarStyle(
+                        todayDecoration: BoxDecoration(
+                          color: Colors.blue.shade200,
+                          shape: BoxShape.circle,
+                        ),
+                        selectedDecoration: const BoxDecoration(
+                          color: AppTheme.primarioAzul,
+                          shape: BoxShape.circle,
+                        ),
+                        markerDecoration: const BoxDecoration(
+                          color: AppTheme.primarioVerde,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      headerStyle: const HeaderStyle(
+                        formatButtonVisible: false,
+                        titleCentered: true,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: _ModuloListaDeTutorias(
+                        loteEspecifico: eventosDelDia,
+                        uidActual: uid,
+                        mensajeVacio: 'No hay tutorías agendadas para el día de este calendario.',
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Tab 2: Próximas Tutorías
+                _ModuloListaDeTutorias(
+                  loteEspecifico: proximasTutorias,
+                  uidActual: uid,
+                  mensajeVacio: 'No tienes nuevas tutorías activas por ahora.',
+                ),
+
+                // Tab 3: Historial y Evaluación
+                _ModuloListaDeTutorias(
+                  loteEspecifico: historialTutorias,
+                  uidActual: uid,
+                  mensajeVacio: 'No has asistido a ninguna tutoría en el pasado.',
+                ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }
 
 class _ModuloListaDeTutorias extends StatelessWidget {
   final List<TutoriaModel> loteEspecifico;
-  final bool esModoDictando;
+  final String uidActual;
+  final String mensajeVacio;
 
   const _ModuloListaDeTutorias({
     required this.loteEspecifico,
-    required this.esModoDictando,
+    required this.uidActual,
+    this.mensajeVacio = 'No hay tutorías agendadas.',
   });
 
   @override
@@ -102,14 +193,10 @@ class _ModuloListaDeTutorias extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                esModoDictando ? Icons.draw : Icons.auto_stories,
-                size: 64,
-                color: Colors.grey[600],
-              ),
+              const Icon(Icons.event_busy, size: 64, color: Colors.grey),
               const SizedBox(height: 16),
               Text(
-                'Aún no tienes compromisos en esta sección.',
+                mensajeVacio,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16, color: Colors.grey),
               ),
@@ -119,43 +206,47 @@ class _ModuloListaDeTutorias extends StatelessWidget {
       );
     }
 
-    return ListView.separated(
+    return ListView.builder(
       padding: const EdgeInsets.all(12),
       itemCount: loteEspecifico.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        return _TarjetaDeCompromiso(
+        return _TarjetaDeCompromisoFlat(
           datos: loteEspecifico[index],
-          esSeccionDictando: esModoDictando,
+          uidActual: uidActual,
         );
       },
     );
   }
 }
 
-class _TarjetaDeCompromiso extends StatelessWidget {
+class _TarjetaDeCompromisoFlat extends StatelessWidget {
   final TutoriaModel datos;
-  final bool esSeccionDictando;
+  final String uidActual;
 
-  const _TarjetaDeCompromiso({
+  const _TarjetaDeCompromisoFlat({
     required this.datos,
-    required this.esSeccionDictando,
+    required this.uidActual,
   });
+
+  Color _extraerColorPorEstadoBase() {
+    final estado = datos.estadoDeLaSolicitud.toLowerCase();
+    if (estado == 'pendiente') return Colors.orangeAccent;
+    if (estado == 'aceptada' || estado == 'abierta') return Colors.blueAccent;
+    if (estado == 'finalizada') return Colors.greenAccent;
+    if (estado == 'cancelada') return Colors.redAccent;
+    return Colors.grey;
+  }
 
   Future<void> _abrirEnlaceGenuino(BuildContext context) async {
     if (datos.enlaceOReunion == null || datos.enlaceOReunion!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'El profesor aún no ha provisto un enlace para esta materia.',
-          ),
+          content: Text('El profesor aún no ha provisto un enlace para esta materia.'),
           duration: Duration(seconds: 3),
         ),
       );
       return;
     }
-
-    // Aquí idealmente vendría un url_launcher general, pero respetamos la regla de negocio
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Navegando a: ${datos.enlaceOReunion}'),
@@ -173,25 +264,14 @@ class _TarjetaDeCompromiso extends StatelessWidget {
           '¿Estás seguro que deseas dar por culminada la clase? Esta acción generará el cierre de horas oficiales en tu récord.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Confirmar'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirmar')),
         ],
       ),
     );
 
     if (confirmarFin == true && context.mounted) {
       final proveedorNotificador = context.read<TutoriasProvider>();
-      final uId = context
-          .read<AutenticacionProvider>()
-          .usuarioActual
-          ?.identificadorUnico;
-
       try {
         await FirebaseFirestore.instance
             .collection('tutorias')
@@ -201,17 +281,11 @@ class _TarjetaDeCompromiso extends StatelessWidget {
               'horaFinReal': DateTime.now().toIso8601String(),
             });
 
-        if (uId != null && context.mounted) {
-          // Refrescamos Provider para que los contadores visuales cambien y lea la BD actualizada
-          await proveedorNotificador.cargarTutoriasSuscritasDelUsuario(uId);
-        }
-
         if (context.mounted) {
+          await proveedorNotificador.cargarTutoriasSuscritasDelUsuario(uidActual);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
-                '¡Tutoría finalizada! Horas oficiales dictadas actualizadas.',
-              ),
+              content: Text('¡Tutoría finalizada! Horas oficiales dictadas actualizadas.'),
               backgroundColor: Colors.green,
             ),
           );
@@ -220,9 +294,7 @@ class _TarjetaDeCompromiso extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
-                'Sucedió un error reportando la hora de fin a la Base de Datos.',
-              ),
+              content: Text('Sucedió un error reportando la hora de fin a la Base de Datos.'),
               backgroundColor: Colors.redAccent,
             ),
           );
@@ -231,13 +303,77 @@ class _TarjetaDeCompromiso extends StatelessWidget {
     }
   }
 
-  Color _extraerColorPorEstadoBase() {
-    final estado = datos.estadoDeLaSolicitud.toLowerCase();
-    if (estado == 'pendiente') return Colors.orangeAccent;
-    if (estado == 'aceptada' || estado == 'abierta') return Colors.blueAccent;
-    if (estado == 'finalizada') return Colors.greenAccent;
-    if (estado == 'cancelada') return Colors.redAccent;
-    return Colors.grey;
+  Future<void> _abandonarTutoriaEstudiante(BuildContext context) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Seguro que deseas salir?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('Perderás tu cupo en esta tutoría y la comunidad tendrá uno libre disponible.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Conservar cupo', style: TextStyle(color: Colors.blueGrey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Sí, abandonar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true && context.mounted) {
+      final proveedor = context.read<TutoriasProvider>();
+      bool exito = await proveedor.abandonarTutoria(datos.identificadorDeTutoria);
+
+      if (exito && context.mounted) {
+        await proveedor.cargarTutoriasSuscritasDelUsuario(uidActual);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Te has dado de baja exitosamente.'),
+            backgroundColor: Colors.black87,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(proveedor.mensajeDeErrorDelSistema),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _construirSelectorEstrellas(Function(int) alTocar, int valorActual) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: List.generate(5, (index) {
+          return IconButton(
+            icon: Icon(
+              index < valorActual ? Icons.star : Icons.star_border,
+              color: index < valorActual ? AppTheme.primarioAzul : Colors.grey.shade400,
+              size: 32,
+            ),
+            onPressed: () => alTocar(index + 1),
+          );
+        }),
+      ),
+    );
   }
 
   Future<void> _mostrarDialogoDeEvaluacion(BuildContext context) async {
@@ -247,216 +383,245 @@ class _TarjetaDeCompromiso extends StatelessWidget {
 
     await showDialog(
       context: context,
-      barrierDismissible:
-          false, // HCI: Obligatorio, no se cierra al tocar fuera
+      barrierDismissible: false,
       builder: (contextDialogo) {
         return StatefulBuilder(
-          // Necesario para que las estrellas cambien de color en el diálogo
           builder: (context, setEstadoInterno) {
-            return AlertDialog(
-              title: const Text(
-                'Evaluar Tutoría',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primarioAzul,
-                ),
-              ),
-              content: SingleChildScrollView(
+            return Dialog(
+              backgroundColor: Colors.grey.shade100, // Background gris global de la UI evaluacion
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('¿Qué tal fue el contenido de la clase?'),
-                    _construirSelectorEstrellas(
-                      (valor) => setEstadoInterno(() => notaClase = valor),
-                      notaClase,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('¿Cómo calificarías al tutor?'),
-                    _construirSelectorEstrellas(
-                      (valor) => setEstadoInterno(() => notaTutor = valor),
-                      notaTutor,
-                    ),
-                    const SizedBox(height: 16),
+                    const Text('Evaluar Tutoría', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: AppTheme.primarioAzul), textAlign: TextAlign.center),
+                    const SizedBox(height: 24),
+                    const Text('¿Qué tal fue el contenido de la clase?', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
+                    const SizedBox(height: 8),
+                    _construirSelectorEstrellas((valor) => setEstadoInterno(() => notaClase = valor), notaClase),
+                    
+                    const SizedBox(height: 24),
+                    
+                    const Text('¿Cómo calificarías al tutor?', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
+                    const SizedBox(height: 8),
+                    _construirSelectorEstrellas((valor) => setEstadoInterno(() => notaTutor = valor), notaTutor),
+                    
+                    const SizedBox(height: 32),
+                    
+                    const Text('Comentarios:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
+                    const SizedBox(height: 8),
                     TextField(
                       controller: ctrlComentario,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Comentario (opcional)',
-                        border: OutlineInputBorder(),
+                      maxLines: 5, // Gigantesco
+                      decoration: InputDecoration(
+                        hintText: 'Escribe tu opinión detallada aquí...',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(contextDialogo),
+                          child: const Text('CANCELAR', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                        ),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppTheme.primarioAzul,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+                          ),
+                          onPressed: (notaClase == 0 || notaTutor == 0)
+                              ? null
+                              : () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: contextDialogo,
+                                    builder: (ctx) => AlertDialog(
+                                      title: const Text('Verificación final', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      content: const Text('¿Estás seguro de enviar esta evaluación? No podrás modificarla después.'),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Regresar', style: TextStyle(color: Colors.grey))),
+                                        FilledButton(onPressed: () => Navigator.pop(ctx, true), style: FilledButton.styleFrom(backgroundColor: AppTheme.primarioAzul), child: const Text('Sí, enviar')),
+                                      ],
+                                    ),
+                                  );
+
+                                  if (confirm == true) {
+                                    final double calculoPromedio = (notaClase + notaTutor) / 2.0;
+                                    final proveedorRef = context.read<TutoriasProvider>();
+                                    bool fueExitoso = await proveedorRef.enviarEvaluacionTutoria(
+                                      datos.identificadorDeTutoria, datos.identificadorDelTutor, calculoPromedio, ctrlComentario.text.trim()
+                                    );
+                                    if (contextDialogo.mounted) Navigator.pop(contextDialogo);
+                                    if (context.mounted) {
+                                      if (fueExitoso) {
+                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('¡Aporte cualitativo guardado!'), backgroundColor: Colors.green, behavior: SnackBarBehavior.floating));
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(proveedorRef.mensajeDeErrorDelSistema), backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
+                                      }
+                                    }
+                                  }
+                                },
+                          child: const Text('ENVIAR EVALUACIÓN', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(contextDialogo),
-                  child: const Text(
-                    'CANCELAR',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppTheme.primarioVerde,
-                  ),
-                  onPressed: (notaClase == 0 || notaTutor == 0)
-                      ? null
-                      : () async {
-                          // Aquí se llamaría al provider: registrarEvaluacionCompleta
-                          // Por ahora, solo cerramos y simulamos éxito UI
-                          Navigator.pop(contextDialogo);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('¡Gracias por tu evaluación!'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        },
-                  child: const Text('ENVIAR EVALUACIÓN'),
-                ),
-              ],
             );
           },
         );
       },
     );
+    ctrlComentario.dispose();
   }
 
-  Widget _construirSelectorEstrellas(Function(int) alTocar, int valorActual) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(5, (index) {
-        return IconButton(
-          icon: Icon(
-            index < valorActual ? Icons.star : Icons.star_border,
-            color: index < valorActual ? Colors.amber : Colors.grey,
+  void _abrirDetallesTutoria(BuildContext context, bool esDictando) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(datos.materiaOAsignatura, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                  const SizedBox(height: 8),
+                  Text(datos.temaEspecifico, style: const TextStyle(fontSize: 16, color: Colors.grey), textAlign: TextAlign.center),
+                  const Divider(height: 32),
+                  ListTile(leading: const Icon(Icons.location_on), title: Text(datos.lugar ?? "Lugar por definir")),
+                  ListTile(leading: const Icon(Icons.person), title: Text(datos.nombre_tutor ?? (datos.identificadorDelTutor.isEmpty ? "Tutor por asignar" : "Tutor Asignado"))),
+                  ListTile(leading: const Icon(Icons.phone), title: Text(datos.contacto_tutor ?? "Contacto no provisto")),
+                  const SizedBox(height: 16),
+                  
+                  // Action buttons inside bottom sheet
+                  if (!esDictando && datos.enlaceOReunion != null && datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' && datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')
+                    FilledButton.icon(
+                      onPressed: () {
+                         Navigator.pop(context);
+                         _abrirEnlaceGenuino(context);
+                      },
+                      icon: const Icon(Icons.link),
+                      label: const Text('Entrar a la clase virtual / Ver enlace'),
+                    ),
+                  
+                  if (!esDictando && datos.estadoDeLaSolicitud.toLowerCase() == 'finalizada')
+                     datos.alumnosQueYaEvaluaron.contains(uidActual)
+                     ? const Center(child: Text('Ya evaluaste esta sesión.', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)))
+                     : FilledButton.icon(
+                         onPressed: () {
+                            Navigator.pop(context);
+                            _mostrarDialogoDeEvaluacion(context);
+                         },
+                         icon: const Icon(Icons.rate_review),
+                         label: const Text('Evaluar Sesión'),
+                       ),
+
+                  if (esDictando && (datos.estadoDeLaSolicitud.toLowerCase() == 'aceptada' || datos.estadoDeLaSolicitud.toLowerCase() == 'abierta'))
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(backgroundColor: Colors.deepOrange),
+                      onPressed: () {
+                         Navigator.pop(context);
+                         _culminarTutoriaDada(context);
+                      },
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('Dar por Culminada'),
+                    ),
+
+                  if (!esDictando && datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' && datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')
+                    TextButton(
+                      style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                      onPressed: () {
+                         Navigator.pop(context);
+                         _abandonarTutoriaEstudiante(context);
+                      },
+                      child: const Text('Abandonar Clase'),
+                    ),
+                ],
+              ),
+            ),
           ),
-          onPressed: () => alTocar(index + 1),
         );
-      }),
+      }
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final fecha = datos.fechaHoraSugerida;
+    final esDictando = datos.identificadorDelTutor == uidActual;
     final colorDeEstado = _extraerColorPorEstadoBase();
 
     return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade300, width: 1),
+      ),
+      color: Colors.white,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: CircleAvatar(
+          backgroundColor: esDictando ? AppTheme.primarioAzul.withValues(alpha: 0.1) : Colors.teal.shade50,
+          child: Icon(
+            esDictando ? Icons.co_present : Icons.import_contacts,
+            color: esDictando ? AppTheme.primarioAzul : Colors.teal.shade600,
+          ),
+        ),
+        title: Text(
+          datos.materiaOAsignatura,
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+        ),
+        subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    datos.materiaOAsignatura,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorDeEstado.withAlpha(50),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: colorDeEstado, width: 1.5),
-                  ),
-                  child: Text(
-                    datos.estadoDeLaSolicitud.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: colorDeEstado,
-                    ),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 4),
+            Text(
+              '${datos.fechaHoraSugerida.hour.toString().padLeft(2, '0')}:${datos.fechaHoraSugerida.minute.toString().padLeft(2, '0')} Hrs - ${datos.temaEspecifico}',
+              style: const TextStyle(color: Colors.grey),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
-            Text(
-              datos.temaEspecifico,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[400]),
-            ),
-            const Divider(height: 24),
             Row(
               children: [
-                const Icon(Icons.event, size: 20, color: Colors.grey),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: colorDeEstado.withAlpha(50),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                     datos.estadoDeLaSolicitud.toUpperCase(),
+                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colorDeEstado),
+                  ),
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year} - ${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}',
-                  style: const TextStyle(fontSize: 14),
-                ),
+                  esDictando ? '(Soy el Tutor)' : '(Asistente)',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54),
+                )
               ],
-            ),
-            const SizedBox(height: 16),
-
-            // Acciones Principal y Condicional
-            Align(
-              alignment: Alignment.centerRight,
-              child: Builder(
-                builder: (ctx) {
-                  if (!esSeccionDictando && datos.enlaceOReunion != null) {
-                    return FilledButton.icon(
-                      onPressed: () => _abrirEnlaceGenuino(ctx),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
-                      ),
-                      icon: const Icon(Icons.link),
-                      label: const Text('Ver enlace/aula'),
-                    );
-                  }
-
-                  if (esSeccionDictando &&
-                      (datos.estadoDeLaSolicitud.toLowerCase() == 'aceptada' ||
-                          datos.estadoDeLaSolicitud.toLowerCase() ==
-                              'abierta')) {
-                    return FilledButton.icon(
-                      onPressed: () => _culminarTutoriaDada(ctx),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.deepOrange,
-                      ),
-                      icon: const Icon(Icons.check_circle_outline),
-                      label: const Text('Finalizar Tutoría'),
-                    );
-                  }
-
-                  if (!esSeccionDictando &&
-                      datos.estadoDeLaSolicitud.toLowerCase() == 'finalizada') {
-                    return FilledButton.icon(
-                      onPressed: () => _mostrarDialogoDeEvaluacion(ctx),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppTheme.primarioVerde,
-                      ),
-                      icon: const Icon(Icons.rate_review),
-                      label: const Text('Evaluar Sesión'),
-                    );
-                  }
-
-                  return const SizedBox.shrink();
-                },
-              ),
-            ),
+            )
           ],
         ),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        onTap: () => _abrirDetallesTutoria(context, esDictando),
       ),
     );
   }

@@ -94,6 +94,142 @@ class TutoriasProvider extends ChangeNotifier {
     }
   }
 
+  /// Sistema de "Solicitudes Huérfanas" (Crowdsourcing de tutorías).
+  /// Permite a la comunidad sugerir una tutoría que aún no cuenta con profesor ('identificadorDelTutor' está vacío).
+  Future<bool> crearSolicitudHuerfana(TutoriaModel sugerencia) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final uidEstudiante = FirebaseAuth.instance.currentUser?.uid;
+      if (uidEstudiante == null) {
+        throw Exception("Sesión inactiva. Vuelve a ingresar para solicitar una clase.");
+      }
+
+      // 1. Inicialización Estricta (Blindaje Backend)
+      // En lugar de arrastrar basura del formulario, forzamos que el array 
+      // de apoyos nazca protegido con el UID del estudiante activo.
+      List<String> apoyadoresIniciales = [uidEstudiante];
+
+      final collectionRef = FirebaseFirestore.instance.collection('tutorias');
+      String docId = sugerencia.identificadorDeTutoria.isEmpty 
+          ? collectionRef.doc().id 
+          : sugerencia.identificadorDeTutoria;
+
+      // 1. Aplicar las reglas estrictas de la arquitectura
+      TutoriaModel solicitudProcesada = sugerencia.copyWith(
+        identificadorDeTutoria: docId,
+        identificadorDelTutor: "", // String vacío para ser permitida
+        estadoDeLaSolicitud: 'solicitada', // Distinguir de 'pendiente'
+        listaDeEstudiantesInscritos: [], // El estudiante NO inicia inscrito (Regla de negocio nueva)
+        estudiantesApoyando: apoyadoresIniciales,
+      );
+
+      Map<String, dynamic> datosNube = solicitudProcesada.toMap();
+      datosNube['creador'] = uidEstudiante; // Guardar trazabilidad explícita del estudiante (creador original)
+
+      // 2. Transmitir el documento a la colección en Firebase
+      await collectionRef.doc(docId).set(datosNube);
+
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _mensajeDeErrorDelSistema = e.toString().contains("Exception: ") ? e.toString().split("Exception: ").last : "Error al procesar la solicitud huérfana en la nube.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Permite al estudiante arrepentirse y borrar de la bolsa una solicitud huérfana que él creó.
+  Future<bool> cancelarSolicitudHuerfana(String tutoriaId) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+    try {
+      // Aplicación de patrón Soft Delete para respetar políticas de seguridad en roles Estudiante.
+      // La sugerencia desaparece orgánicamente de la vista gracias al StreamBuilder filtrado.
+      await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).update({
+        'estadoDeLaSolicitud': 'cancelada'
+      });
+      
+      // Sincronizamos las listas globales por si alguien más la veía
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _mensajeDeErrorDelSistema = "No logramos eliminar la sugerencia de la bolsa.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Permite a la comunidad añadir su "voto" o apoyo sumándose a la listaDeEstudiantesInscritos de una sugerencia.
+  Future<bool> apoyarSugerencia(String tutoriaId) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final uidUsuarioActual = FirebaseAuth.instance.currentUser?.uid;
+      if (uidUsuarioActual == null) throw Exception("Debes iniciar sesión para apoyar una clase.");
+
+      // Operación atómica y eficiente sugerida por la arquitectura Firestore
+      await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).update({
+        'estudiantesApoyando': FieldValue.arrayUnion([uidUsuarioActual])
+      });
+
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _mensajeDeErrorDelSistema = "Tuvimos un problema al intentar sumarte a esta tutoría comunitaria.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Permite a un estudiante darse de baja (retirar su apoyo/inscripción) de una tutoría, de manera rápida y eficiente sin mutar arrays locales manualmente.
+  Future<bool> abandonarTutoria(String tutoriaId) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final uidUsuarioActual = FirebaseAuth.instance.currentUser?.uid;
+      if (uidUsuarioActual == null) throw Exception("Debes iniciar sesión para realizar esta acción.");
+
+      // Como abandonarTutoria se usaba también para retirar el apoyo, necesitamos saber si era una sugerencia
+      final docSnapshot = await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).get();
+      if (!docSnapshot.exists) throw Exception("Tutoría no encontrada.");
+      
+      final data = docSnapshot.data()!;
+      if (data['estadoDeLaSolicitud'] == 'solicitada') {
+        await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).update({
+          'estudiantesApoyando': FieldValue.arrayRemove([uidUsuarioActual])
+        });
+      } else {
+        await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).update({
+          'listaDeEstudiantesInscritos': FieldValue.arrayRemove([uidUsuarioActual])
+        });
+      }
+
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _mensajeDeErrorDelSistema = "Hubo un error al intentar retirarte de la tutoría.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
+
   /// Implementación transaccional para inscribirse en tutorías, añadiendo los motivos y links.
   Future<bool> inscribirseEnTutoria(String tutoriaId, String uid, String textoMotivo, List<String> listaLinks) async {
     _iluminarSenalIndicadoraDeEspera();
@@ -257,7 +393,7 @@ class TutoriasProvider extends ChangeNotifier {
       
       for (var querySnapshot in resultados) {
         for (var doc in querySnapshot.docs) {
-          final modelo = TutoriaModel.fromMap(doc.data() as Map<String, dynamic>);
+          final modelo = TutoriaModel.fromMap(doc.data());
           mapaUnico[modelo.identificadorDeTutoria] = modelo;
         }
       }
@@ -406,19 +542,19 @@ class TutoriasProvider extends ChangeNotifier {
     }
   }
 
-  /// Escudo lógico de validación algorítmica para inscripciones.
-  /// Evita auto-inscripción cruzada.
-  bool _puedeInscribirse(TutoriaModel tutoria, String uidUsuarioActual) {
-    if (uidUsuarioActual == tutoria.identificadorDelTutor) {
-      return false; // Cruce detectado: el maestro es el mismo alumno
-    }
-    return true;
-  }
+  // /// Escudo lógico de validación algorítmica para inscripciones.
+  // /// Evita auto-inscripción cruzada.
+  // bool _puedeInscribirse(TutoriaModel tutoria, String uidUsuarioActual) {
+  //   if (uidUsuarioActual == tutoria.identificadorDelTutor) {
+  //     return false; // Cruce detectado: el maestro es el mismo alumno
+  //   }
+  //   return true;
+  // }
 
   /// LÓGICA DE NEGOCIO CRÍTICA (Modelo Uber):
   /// Asigna a un tutor una petición "huérfana" elaborada por un estudiante.
   /// Contiene un escudo de Transacción Atómica contra Condición de Carrera.
-  Future<bool> aceptarSolicitudEstudiante(String tutoriaId, String lugar, String contacto) async {
+  Future<bool> aceptarSolicitudSugerida(TutoriaModel modeloDefinitivo) async {
     _iluminarSenalIndicadoraDeEspera();
     _purgarCasillasDeAdvertencias();
 
@@ -426,7 +562,7 @@ class TutoriasProvider extends ChangeNotifier {
       final uidTutor = FirebaseAuth.instance.currentUser?.uid;
       if (uidTutor == null) throw Exception("Sesión inactiva. Vuelve a ingresar.");
 
-      final docRef = FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId);
+      final docRef = FirebaseFirestore.instance.collection('tutorias').doc(modeloDefinitivo.identificadorDeTutoria);
       
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final docSnapshot = await transaction.get(docRef);
@@ -439,22 +575,20 @@ class TutoriasProvider extends ChangeNotifier {
         final String? tutorAsignado = data['identificadorDelTutor'];
         
         // Bloqueo Anti-Choques Atómico: 
-        // Si no está vacío en el milisegundo en que la transacción hace el "get", 
-        // entonces abortar inyección a la Base de Datos.
         if (tutorAsignado != null && tutorAsignado.trim().isNotEmpty) {
            throw Exception("Esta tutoría ya fue aceptada por otro tutor.");
         }
         
-        // Transacción permitida. Nos apoderamos de la clase.
-        transaction.update(docRef, {
-          'identificadorDelTutor': uidTutor,
-          'estadoDeLaSolicitud': 'pendiente',
-          'lugar': lugar,
-          'contacto_tutor': contacto,
-        });
+        // Inyectamos validaciones finales antes de subir
+        TutoriaModel modeloAEnviar = modeloDefinitivo.copyWith(
+           identificadorDelTutor: uidTutor,
+           estadoDeLaSolicitud: 'pendiente', // Permanece pendiente para que los estudiantes se puedan inscribir
+           esGrupal: modeloDefinitivo.cupoMaximo > 1,
+        );
+        
+        transaction.update(docRef, modeloAEnviar.toMap());
       });
 
-      // Regenerar el feed para limpiar el cartel de la cartelera global
       await cargarListadoDeTutoriasPendientes();
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
@@ -464,6 +598,47 @@ class TutoriasProvider extends ChangeNotifier {
       _mensajeDeErrorDelSistema = e.toString().contains("Exception: ") ? e.toString().split("Exception: ").last : "Interrupción durante la asignación.";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
+      return false;
+    }
+  }
+  /// Envía la evaluación de una tutoría, previniendo dobles envíos mediante operaciones atómicas 
+  /// y almacenando retroalimentación de calidad nativamente dentro del perfil del tutor.
+  Future<bool> enviarEvaluacionTutoria(String tutoriaId, String tutorId, double estrellas, String comentario) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final uidAlumno = FirebaseAuth.instance.currentUser?.uid;
+      if (uidAlumno == null) throw Exception("Sesión inactiva. Vuelve a ingresar.");
+
+      final db = FirebaseFirestore.instance;
+      final docTutoria = db.collection('tutorias').doc(tutoriaId);
+      final docTutorEval = db.collection('usuarios').doc(tutorId).collection('evaluaciones').doc();
+
+      // Ejecución paralela cruzada bajo una sola validación de red:
+      await db.runTransaction((transaction) async {
+        // Transacción 1: Marcar al alumno en la matriz para que el UI deshabilite dinámicamente este evento.
+        transaction.update(docTutoria, {
+          'alumnosQueYaEvaluaron': FieldValue.arrayUnion([uidAlumno])
+        });
+
+        // Transacción 2: Anotamos la evaluación como una micro-pieza atómica en la subcolección del Tutor
+        transaction.set(docTutorEval, {
+          'estrellas': estrellas,
+          'comentario': comentario,
+          'fecha': DateTime.now().toIso8601String(),
+          'uid_alumno': uidAlumno,
+          'tutoria_id': tutoriaId,
+        });
+      });
+
+      _apagarSenalIndicadoraDeEspera();
+      // Delegamos la reactividad 100% al StreamBuilder. No invocamos notifyListeners() extra ni recargamos listas locales manualmente.
+      return true;
+    } catch (e) {
+      _mensajeDeErrorDelSistema = "Fallo en la matriz de red intentando asentar la calificación.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners(); // Se necesita para mostrar el error localmente
       return false;
     }
   }

@@ -73,18 +73,24 @@ class _RegistroViewState extends State<RegistroView> {
       correoEscrito: correoLimpio,
       contrasenaEscrita: claveLimpa,
       nombreEscrito: nombreEnsamblado,
-      facultadElegidaEnMenu: _ctrlFacultad.text.trim().isNotEmpty ? _ctrlFacultad.text.trim() : null,
-      carreraElegidaEnMenu: _ctrlCarrera.text.trim().isNotEmpty ? _ctrlCarrera.text.trim() : null,
+      facultadElegidaEnMenu: _ctrlFacultad.text.trim().isNotEmpty
+          ? _ctrlFacultad.text.trim()
+          : null,
+      carreraElegidaEnMenu: _ctrlCarrera.text.trim().isNotEmpty
+          ? _ctrlCarrera.text.trim()
+          : null,
     );
 
     if (exitoRegistrando && mounted) {
       await motorDeIdentidad.dispararVerificacionDeCorreo();
       await motorDeIdentidad.salirDeLaSesionActual();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Cuenta creada. Por favor verifica tu correo UTP antes de iniciar sesion.'),
+            content: Text(
+              'Cuenta creada. Por favor verifica tu correo UTP antes de iniciar sesion.',
+            ),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 5),
           ),
@@ -141,11 +147,17 @@ class _RegistroViewState extends State<RegistroView> {
                   decoration: BoxDecoration(
                     color: AppTheme.primarioAzul.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.primarioAzul.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppTheme.primarioAzul.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: const Text(
                     '¡Hola, Bienvenido! Gracias por tu interés en ser tutor. Por favor completa los siguientes campos y adjunta tu hoja de vida. Te notificaremos pronto el estado de tu postulación.',
-                    style: TextStyle(fontSize: 14, color: AppTheme.textoOscuro, height: 1.5),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.textoOscuro,
+                      height: 1.5,
+                    ),
                     textAlign: TextAlign.justify,
                   ),
                 ),
@@ -223,11 +235,19 @@ class _RegistroViewState extends State<RegistroView> {
                 Row(
                   children: [
                     Expanded(
-                      child: _construirCampoTexto('Facultad', _ctrlFacultad, Icons.account_balance),
+                      child: _construirCampoTexto(
+                        'Facultad',
+                        _ctrlFacultad,
+                        Icons.account_balance,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _construirCampoTexto('Carrera', _ctrlCarrera, Icons.school),
+                      child: _construirCampoTexto(
+                        'Carrera',
+                        _ctrlCarrera,
+                        Icons.school,
+                      ),
                     ),
                   ],
                 ),
@@ -237,7 +257,11 @@ class _RegistroViewState extends State<RegistroView> {
                 Row(
                   children: [
                     Expanded(
-                      child: _construirCampoTexto('Nivel de Inglés', _ctrlIngles, Icons.language),
+                      child: _construirCampoTexto(
+                        'Nivel de Inglés',
+                        _ctrlIngles,
+                        Icons.language,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -245,15 +269,23 @@ class _RegistroViewState extends State<RegistroView> {
                         height: 48,
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.attach_file, size: 18),
-                          label: const Text('Subir Hoja de Vida', style: TextStyle(fontSize: 12), textAlign: TextAlign.center),
+                          label: const Text(
+                            'Subir Hoja de Vida',
+                            style: TextStyle(fontSize: 12),
+                            textAlign: TextAlign.center,
+                          ),
                           style: OutlinedButton.styleFrom(
-                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                             side: const BorderSide(color: AppTheme.primarioAzul),
-                             foregroundColor: AppTheme.primarioAzul
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            side: const BorderSide(
+                              color: AppTheme.primarioAzul,
+                            ),
+                            foregroundColor: AppTheme.primarioAzul,
                           ),
                           onPressed: () {},
                         ),
-                      )
+                      ),
                     ),
                   ],
                 ),
@@ -290,7 +322,7 @@ class _RegistroViewState extends State<RegistroView> {
                   validator: (valor) {
                     if (valor == null || valor.isEmpty) return 'Requerido';
 
-                    // DOWNGRADE DE SEGURIDAD (Pruebas Locales) 
+                    // DOWNGRADE DE SEGURIDAD (Pruebas Locales)
                     // Ya no filtramos a que solo sea @utp.ac.pa
                     if (!valor.contains('@')) {
                       return 'Debe ser un correo válido';
