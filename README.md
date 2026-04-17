@@ -18,6 +18,8 @@
 - [Sistema de Diseño (Branding Vecta)](#-sistema-de-diseño-branding-vecta)
 - [Configuración y Ejecución](#-configuración-y-ejecución)
 - [Seguridad y Reglas de Negocio](#-seguridad-y-reglas-de-negocio)
+- [Autores Principales](#-autores-principales)
+- [Contexto del Proyecto](#-contexto-del-proyecto)
 
 ---
 
@@ -524,10 +526,28 @@ flutter run
 
 ---
 
-## Equipo
+## 🧑‍💻 Autores Principales
 
-- **JIC (Junta Interdisciplinaria de Claustros)** — Universidad Tecnológica de Panamá
-- **Branding:** Vecta
+| Autor | Rol | Responsabilidades |
+|---|---|---|
+| **Juan Rodriguez** | Programador & Gestor del Proyecto | Arquitectura del sistema, desarrollo backend y frontend, integración con Firebase, gestión de sprint y coordinación general del equipo. |
+| **Alejandra Falcon** | Diseñadora Principal de Frontend | Diseño UI/UX, maquetación de pantallas, sistema de diseño visual, branding, prototipado, experiencia de usuario y coherencia estética en toda la aplicación. |
+| **Miguel Oliver** | Auditor & Programador | Auditoría de código, revisión de calidad (QA), pruebas de estabilidad, corrección de bugs, optimización de rendimiento y validación de reglas de negocio. |
+
+---
+
+## 🌎 Contexto del Proyecto
+
+**Plataforma de Tutorías** es un proyecto desarrollado de manera **grupal** para la **JIC (Jornada de Iniciación Científica)** de **Panamá**, en el marco de la Universidad Tecnológica de Panamá.
+
+### Pruebas con Grupo Vecta
+
+Durante la fase de desarrollo y validación, se utilizó al **Grupo Vecta** como medio para realizar las **pruebas de producto iniciales**. El branding, la identidad visual y los datos de prueba están basados en este grupo, lo que permitió iterar sobre la plataforma con usuarios reales en un entorno educativo controlado.
+
+### Adaptabilidad
+
+> [!IMPORTANT]
+> Aunque las pruebas iniciales se realizaron con Vecta, **la plataforma está pensada y diseñada para ser adaptada a cualquier centro educativo**. La arquitectura modular, los roles configurables y el sistema de diseño parametrizado permiten que cualquier institución académica pueda adoptar la herramienta con mínimas modificaciones — basta con ajustar el branding, las reglas de dominio de correo y la configuración de Firebase.
 
 ---
 
