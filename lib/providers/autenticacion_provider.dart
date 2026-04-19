@@ -25,6 +25,10 @@ class AutenticacionProvider extends ChangeNotifier {
   /// para impedir sobrecargas en la base de datos mientras validamos un registro o ingreso.
   bool _estaCargando = false;
 
+  /// Indicador exclusivo para el arranque de la app. 
+  /// Evita que re-construyamos MaterialApp entero durante transacciones normales de Login.
+  bool _estaInicializando = true;
+
   /// Almacena un mensaje de disculpa o error para comunicarle al usuario si se equivocó de clave o se fue el internet.
   String _mensajeDeError = '';
 
@@ -32,6 +36,7 @@ class AutenticacionProvider extends ChangeNotifier {
   // pero jamás podrán destruirlo o modificarlo corruptamente burlando a Maiky.
   UsuarioModel? get usuarioActual => _usuarioActual;
   bool get estaCargando => _estaCargando;
+  bool get estaInicializando => _estaInicializando;
   String get mensajeDeError => _mensajeDeError;
 
   /// Auditoría de estado: Retorna true solo si el usuario actual definió su nombre, facultad y carrera.
@@ -62,12 +67,14 @@ class AutenticacionProvider extends ChangeNotifier {
   /// Función esencial. Verifica si había una persona conectada previamente
   /// (Ideal para cuando cierras la App y la vuelves a abrir de golpe horas después).
   Future<void> inicializarSesionAlAbrirApp() async {
+    _estaInicializando = true;
     _activarIndicadorDeCargaEnPantalla();
 
     // Pedimos al servicio que busque de inmediato si existe un "fantasma" de sesión válida en el teléfono
     _usuarioActual = await _servicioIntegradoDeAutenticacion
         .obtenerDatosDelUsuarioActual();
 
+    _estaInicializando = false;
     _desactivarIndicadorDeCargaEnPantalla();
     // Anunciamos por el altavoz universal el cambio de estado para que reaccionen las páginas de navegación.
     notifyListeners();
@@ -81,13 +88,14 @@ class AutenticacionProvider extends ChangeNotifier {
     _activarIndicadorDeCargaEnPantalla();
     _limpiarCualquierTextoDefectuosoAnterior();
 
-    String respuestaCrudaDelServidor = await _servicioIntegradoDeAutenticacion
+    String? mensajeDeError = await _servicioIntegradoDeAutenticacion
         .iniciarSesion(
           correoElectronico: correoEscrito,
           contrasenaSecreta: contrasenaEscrita,
         );
 
-    if (respuestaCrudaDelServidor == "Acceso Concedido") {
+    // Si mensajeDeError es null, el inicio de sesión fue exitoso en Firebase
+    if (mensajeDeError == null) {
       // Validación estricta de Email Verificado:
       if (FirebaseAuth.instance.currentUser != null && !FirebaseAuth.instance.currentUser!.emailVerified) {
         String mensajeRetenido = "Debes verificar tu correo para poder entrar. Revisa tu bandeja de entrada o SPAM.";
@@ -104,8 +112,8 @@ class AutenticacionProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } else {
-      // Fracaso controlado. Guardamos la disculpa amigable para que Alejandra la pinte en rojo brillante.
-      _mensajeDeError = respuestaCrudaDelServidor;
+      // Fracaso controlado. Guardamos la disculpa amigable para que la UI la muestre en el SnackBar.
+      _mensajeDeError = mensajeDeError;
       _desactivarIndicadorDeCargaEnPantalla();
       notifyListeners();
       return false;

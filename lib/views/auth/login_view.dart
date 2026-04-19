@@ -37,7 +37,7 @@ class _LoginViewState extends State<LoginView> {
 
       if (!exito && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(
+          SnackBar(
             content: Text(authProvider.mensajeDeError),
             backgroundColor: Colors.redAccent,
           ),
@@ -52,16 +52,23 @@ class _LoginViewState extends State<LoginView> {
   }
 
   void _mostrarDialogoRecuperarPassword() {
-    final TextEditingController correoRecuperacion = TextEditingController(text: _correoController.text);
+    final TextEditingController correoRecuperacion = TextEditingController(
+      text: _correoController.text,
+    );
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Recuperar Contraseña', style: TextStyle(color: AppTheme.primarioVerde)),
+          title: const Text(
+            'Recuperar Contraseña',
+            style: TextStyle(color: AppTheme.primarioVerde),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Ingresa tu correo institucional para recibir un enlace de recuperación.'),
+              const Text(
+                'Ingresa tu correo institucional para recibir un enlace de recuperación.',
+              ),
               const SizedBox(height: 16),
               TextField(
                 controller: correoRecuperacion,
@@ -83,12 +90,20 @@ class _LoginViewState extends State<LoginView> {
                 if (correoRecuperacion.text.trim().isEmpty) return;
                 Navigator.pop(context); // cerramos dialogo
                 final authProvider = context.read<AutenticacionProvider>();
-                bool enviado = await authProvider.solicitarCambioDeContrasena(correoRecuperacion.text.trim());
+                bool enviado = await authProvider.solicitarCambioDeContrasena(
+                  correoRecuperacion.text.trim(),
+                );
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(enviado ? 'Enlace de recuperación enviado. Revisa tu correo.' : authProvider.mensajeDeError),
-                      backgroundColor: enviado ? Colors.green : Colors.redAccent,
+                      content: Text(
+                        enviado
+                            ? 'Enlace de recuperación enviado. Revisa tu correo.'
+                            : authProvider.mensajeDeError,
+                      ),
+                      backgroundColor: enviado
+                          ? Colors.green
+                          : Colors.redAccent,
                     ),
                   );
                 }
@@ -116,10 +131,14 @@ class _LoginViewState extends State<LoginView> {
               // Flecha Superior Izquierda (mock)
               const Align(
                 alignment: Alignment.topLeft,
-                child: Icon(Icons.arrow_back, color: AppTheme.primarioVerde, size: 32),
+                child: Icon(
+                  Icons.arrow_back,
+                  color: AppTheme.primarioVerde,
+                  size: 32,
+                ),
               ),
               const SizedBox(height: 24),
-              
+
               // Logo Circular
               Container(
                 padding: const EdgeInsets.all(8),
@@ -130,13 +149,14 @@ class _LoginViewState extends State<LoginView> {
                 child: CircleAvatar(
                   radius: 50,
                   backgroundColor: Colors.transparent,
-                  backgroundImage: const AssetImage('assets/images/logo_vecta.png'),
+                  backgroundImage: const AssetImage(
+                    'assets/images/logo_vecta.png',
+                  ),
                   onBackgroundImageError: (_, __) {},
-                  child: const Icon(Icons.school, size: 50, color: AppTheme.primarioVerde), // Fallback
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Título
               const Text(
                 'Portal Académico',
@@ -160,21 +180,30 @@ class _LoginViewState extends State<LoginView> {
                       decoration: InputDecoration(
                         hintText: 'Correo institucional (@utp.ac.pa)',
                         hintStyle: TextStyle(color: Colors.blue.shade300),
-                        prefixIcon: Icon(Icons.email, color: Colors.blue.shade700),
+                        prefixIcon: Icon(
+                          Icons.email,
+                          color: Colors.blue.shade700,
+                        ),
                         filled: true,
                         fillColor: Colors.blue.shade50.withValues(alpha: 0.3),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                        ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(color: Colors.blue.shade200),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+                          borderSide: BorderSide(
+                            color: Colors.blue.shade400,
+                            width: 2,
+                          ),
                         ),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) return 'Ingresa tu correo';
+                        if (value == null || value.isEmpty)
+                          return 'Ingresa tu correo';
                         if (!value.contains('@')) return 'Correo no válido';
                         return null;
                       },
@@ -188,9 +217,17 @@ class _LoginViewState extends State<LoginView> {
                       decoration: InputDecoration(
                         hintText: 'Contraseña',
                         hintStyle: TextStyle(color: Colors.blue.shade300),
-                        prefixIcon: Icon(Icons.lock, color: Colors.blue.shade700),
+                        prefixIcon: Icon(
+                          Icons.lock,
+                          color: Colors.blue.shade700,
+                        ),
                         suffixIcon: IconButton(
-                          icon: Icon(_obscureText ? Icons.visibility_off : Icons.visibility, color: Colors.blue.shade700),
+                          icon: Icon(
+                            _obscureText
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.blue.shade700,
+                          ),
                           onPressed: () {
                             setState(() {
                               _obscureText = !_obscureText;
@@ -199,18 +236,24 @@ class _LoginViewState extends State<LoginView> {
                         ),
                         filled: true,
                         fillColor: Colors.blue.shade50.withValues(alpha: 0.3),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                        ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(color: Colors.blue.shade200),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+                          borderSide: BorderSide(
+                            color: Colors.blue.shade400,
+                            width: 2,
+                          ),
                         ),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) return 'Ingresa tu contraseña';
+                        if (value == null || value.isEmpty)
+                          return 'Ingresa tu contraseña';
                         return null;
                       },
                     ),
@@ -221,7 +264,9 @@ class _LoginViewState extends State<LoginView> {
                       width: 200,
                       height: 45,
                       child: ElevatedButton(
-                        onPressed: authProvider.estaCargando ? null : _ejecutarLogin,
+                        onPressed: authProvider.estaCargando
+                            ? null
+                            : _ejecutarLogin,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primarioVerde,
                           shape: RoundedRectangleBorder(
@@ -229,13 +274,20 @@ class _LoginViewState extends State<LoginView> {
                           ),
                         ),
                         child: authProvider.estaCargando
-                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
                             : const Text(
                                 'Iniciar sesión',
                                 style: TextStyle(
-                                  fontSize: 16, 
-                                  color: Colors.white, 
-                                  fontWeight: FontWeight.bold
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                       ),
@@ -258,7 +310,12 @@ class _LoginViewState extends State<LoginView> {
                     // Enlace Registro
                     InkWell(
                       onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistroView()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RegistroView(),
+                          ),
+                        );
                       },
                       child: Text(
                         '¿No tienes cuenta? Crea tu cuenta aquí',
@@ -267,10 +324,10 @@ class _LoginViewState extends State<LoginView> {
                           decoration: TextDecoration.underline,
                         ),
                       ),
-                    )
+                    ),
                   ],
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -278,7 +335,11 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  Widget _construirTarjetaInformativa({required IconData icono, required String titulo, required String subtitulo}) {
+  Widget _construirTarjetaInformativa({
+    required IconData icono,
+    required String titulo,
+    required String subtitulo,
+  }) {
     return Container(
       width: 320,
       margin: const EdgeInsets.only(bottom: 24),
@@ -291,7 +352,7 @@ class _LoginViewState extends State<LoginView> {
             color: Colors.black12,
             blurRadius: 15,
             offset: Offset(0, 8),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -301,13 +362,21 @@ class _LoginViewState extends State<LoginView> {
           Text(
             titulo,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primarioVerde),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: AppTheme.primarioVerde,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitulo,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.black87, fontSize: 13, height: 1.4),
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 13,
+              height: 1.4,
+            ),
           ),
         ],
       ),
@@ -344,17 +413,20 @@ class _LoginViewState extends State<LoginView> {
               _construirTarjetaInformativa(
                 icono: Icons.access_time,
                 titulo: 'Reserva fácil',
-                subtitulo: 'Agenda tutorías en segundos desde cualquier dispositivo',
+                subtitulo:
+                    'Agenda tutorías en segundos desde cualquier dispositivo',
               ),
               _construirTarjetaInformativa(
                 icono: Icons.support_agent,
                 titulo: 'Atención personalizada',
-                subtitulo: 'Envía tus dudas y recibe apoyo adaptado a tus necesidades',
+                subtitulo:
+                    'Envía tus dudas y recibe apoyo adaptado a tus necesidades',
               ),
               _construirTarjetaInformativa(
                 icono: Icons.verified,
                 titulo: 'Tutores calificados',
-                subtitulo: 'Aprende con estudiantes destacados y especializados',
+                subtitulo:
+                    'Aprende con estudiantes destacados y especializados',
               ),
             ],
           ),
@@ -385,10 +457,7 @@ class _LoginViewState extends State<LoginView> {
                     height: constraints.maxHeight * 0.85,
                     child: _construirPanelIzquierdo(),
                   ),
-                  SizedBox(
-                    height: 800,
-                    child: _construirPanelDerecho(),
-                  )
+                  SizedBox(height: 800, child: _construirPanelDerecho()),
                 ],
               ),
             );

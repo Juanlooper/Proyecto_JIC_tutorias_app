@@ -77,9 +77,21 @@ class AutenticacionServicio {
     }
   }
 
-  /// Permite ingresar a alguien que ya creó su cuenta en el pasado.
-  /// Compara el usuario indicado validando la contraseña contra los servidores.
-  Future<String> iniciarSesion({
+  /// Permite iniciar sesión a un usuario existente en la plataforma.
+  ///
+  /// Conecta con Firebase Auth. En caso de éxito, la función retorna `null`
+  /// para dar paso libre al inicio de la sesión.
+  /// Durante el proceso capturamos excepciones del tipo [FirebaseAuthException]
+  /// y retornamos un [String]? conteniendo el mensaje de error traducido,
+  /// que será empleado en la interfaz gráfica para dar feedback al usuario.
+  ///
+  /// Flujo de Excepciones:
+  /// - `user-not-found`: Se dispara al no existir usuario vinculado con el correo.
+  /// - `wrong-password`: El usuario erró la contraseña indicada.
+  /// - `invalid-email`: El input de correo es un texto sin el formato esperado.
+  /// - `user-disabled`: El usuario existe pero su acceso está bloqueado administrativamente.
+  /// - Exception general (`catch` default): Errores varios, usualmente de red o sistema.
+  Future<String?> iniciarSesion({
     required String correoElectronico,
     required String contrasenaSecreta,
   }) async {
@@ -90,19 +102,26 @@ class AutenticacionServicio {
         password: contrasenaSecreta,
       );
       
-      return "Acceso Concedido";
+      // Retornamos null para simbolizar el éxito del proceso
+      return null;
 
-    } on FirebaseAuthException catch (errorFirebase) {
-      // Lógica amigable para interpretar los errores de entrada
-      if (errorFirebase.code == 'invalid-email') {
-        return "El formato del correo es inválido.";
-      } else if (errorFirebase.code == 'user-not-found' || errorFirebase.code == 'invalid-credential' || errorFirebase.code == 'wrong-password') {
-        return "Correo o contraseña incorrectos. Verifica tus datos e intenta otra vez.";
-      } else {
-        return "Hubo un inconveniente para acceder: Revisa tus credenciales.";
+    } on FirebaseAuthException catch (e) {
+      // Lógica precisa para interceder por los errores de FirebaseAuth
+      switch (e.code) {
+        case 'user-not-found':
+          return "El correo electrónico no se encuentra registrado";
+        case 'wrong-password':
+          return "La contraseña ingresada es incorrecta";
+        case 'invalid-email':
+          return "El formato del correo es inválido (ejemplo@utp.ac.pa)";
+        case 'user-disabled':
+          return "Esta cuenta ha sido deshabilitada por el administrador";
+        default:
+          return "Error inesperado al intentar iniciar sesión. Inténtelo de nuevo";
       }
-    } catch (errorGeneral) {
-      return "El servidor de la aplicación está teniendo inconvenientes. Intenta más tarde.";
+    } catch (e) {
+      // Atrapamos errores generales
+      return "Error inesperado al intentar iniciar sesión. Inténtelo de nuevo";
     }
   }
 

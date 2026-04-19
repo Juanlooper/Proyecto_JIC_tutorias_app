@@ -50,8 +50,8 @@ class TutoriasApp extends StatelessWidget {
 
         home: Consumer<AutenticacionProvider>(
           builder: (context, auth, _) {
-            // Pantalla de carga mientras verifica la sesión
-            if (auth.estaCargando && auth.usuarioActual == null) {
+            // Pantalla de carga MIENTRAS verifica la sesión al abrir la app.
+            if (auth.estaInicializando) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
               );

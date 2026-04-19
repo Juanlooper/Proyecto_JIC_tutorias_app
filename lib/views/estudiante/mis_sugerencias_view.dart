@@ -30,7 +30,10 @@ class MisSugerenciasView extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           "Bolsa de Sugerencias",
-          style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -57,7 +60,10 @@ class MisSugerenciasView extends StatelessWidget {
 
           // Filtrar adicionalmente por seguridad
           final sugerenciasActivas = snapshot.data!.docs
-              .map((doc) => TutoriaModel.fromMap(doc.data() as Map<String, dynamic>))
+              .map(
+                (doc) =>
+                    TutoriaModel.fromMap(doc.data() as Map<String, dynamic>),
+              )
               .where((m) => m.identificadorDelTutor.isEmpty)
               .toList();
 
@@ -66,7 +72,11 @@ class MisSugerenciasView extends StatelessWidget {
           }
 
           // ORDENAMIENTO (De mayor apoyo a menor)
-          sugerenciasActivas.sort((a, b) => b.estudiantesApoyando.length.compareTo(a.estudiantesApoyando.length));
+          sugerenciasActivas.sort(
+            (a, b) => b.estudiantesApoyando.length.compareTo(
+              a.estudiantesApoyando.length,
+            ),
+          );
 
           return ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -94,7 +104,11 @@ class MisSugerenciasView extends StatelessWidget {
           const SizedBox(height: 16),
           const Text(
             "La bolsa está vacía.",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black45),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black45,
+            ),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -123,15 +137,21 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
     final provider = context.read<TutoriasProvider>();
     bool exito;
     if (yaApoya) {
-      exito = await provider.abandonarTutoria(sugerencia.identificadorDeTutoria);
+      exito = await provider.abandonarTutoria(
+        sugerencia.identificadorDeTutoria,
+      );
     } else {
-      exito = await provider.apoyarSugerencia(sugerencia.identificadorDeTutoria);
+      exito = await provider.apoyarSugerencia(
+        sugerencia.identificadorDeTutoria,
+      );
     }
-    
+
     if (exito && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(yaApoya ? 'Apoyo retirado.' : '¡Has apoyado esta sugerencia!'),
+          content: Text(
+            yaApoya ? 'Apoyo retirado.' : '¡Has apoyado esta sugerencia!',
+          ),
           backgroundColor: yaApoya ? Colors.orange : AppTheme.primarioVerde,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
@@ -145,16 +165,29 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Asumir Tutoría'),
-        content: const Text('Al aceptar esta sugerencia, serás promovido como su tutor oficial y deberás configurarla con detalles como modalidad, horarios finales y enlace de reunión. ¿Aceptar?'),
+        content: const Text(
+          'Al aceptar esta sugerencia, serás promovido como su tutor oficial y deberás configurarla con detalles como modalidad, horarios finales y enlace de reunión. ¿Aceptar?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ahora no')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sí, Aceptar y Configurar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Ahora no'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sí, Aceptar y Configurar'),
+          ),
         ],
       ),
     );
 
     if (confirmar == true && context.mounted) {
-       Navigator.push(context, MaterialPageRoute(builder: (_) => AceptarSolicitudView(tutoria: sugerencia)));
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AceptarSolicitudView(tutoria: sugerencia),
+        ),
+      );
     }
   }
 
@@ -164,28 +197,38 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Eliminar Petición'),
-        content: const Text('¿Deseas retirar defintivamente tu sugerencia de la bolsa comunitaria?'),
+        content: const Text(
+          '¿Deseas retirar defintivamente tu sugerencia de la bolsa comunitaria?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Conservar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Conservar'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true), 
-            child: const Text('Sí, eliminar')
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sí, eliminar'),
           ),
         ],
       ),
     );
 
     if (confirmar == true && context.mounted) {
-      await provider.cancelarSolicitudHuerfana(sugerencia.identificadorDeTutoria);
+      await provider.cancelarSolicitudHuerfana(
+        sugerencia.identificadorDeTutoria,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final int cantidadApoyos = sugerencia.estudiantesApoyando.length;
-    final bool yoApoyoEsto = sugerencia.estudiantesApoyando.contains(usuarioActual.identificadorUnico);
-    final bool esMiCreacion = sugerencia.creador == usuarioActual.identificadorUnico;
+    final bool yoApoyoEsto = sugerencia.estudiantesApoyando.contains(
+      usuarioActual.identificadorUnico,
+    );
+    final bool esMiCreacion =
+        sugerencia.creador == usuarioActual.identificadorUnico;
 
     // Tarjeta plana, borde fino
     return Card(
@@ -207,21 +250,34 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
                 Expanded(
                   child: Text(
                     sugerencia.materiaOAsignatura,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B)),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: Color(0xFF1E293B),
+                    ),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
-                     children: [
-                        const Icon(Icons.people, size: 14, color: Colors.orange),
-                        const SizedBox(width: 4),
-                        Text('$cantidadApoyos', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
-                     ]
+                    children: [
+                      const Icon(Icons.people, size: 14, color: Colors.orange),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$cantidadApoyos',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -237,44 +293,48 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                 if (!esTutor) 
-                    Row(
-                       children: [
-                          IconButton(
-                            icon: Icon(
-                               yoApoyoEsto ? Icons.thumb_down : Icons.thumb_up, 
-                               color: yoApoyoEsto ? Colors.redAccent : AppTheme.primarioVerde
-                            ),
-                            tooltip: yoApoyoEsto ? 'Retirar apoyo' : 'Apoyar',
-                            onPressed: () => _ejecutarApoyo(context, yoApoyoEsto),
-                          ),
-                          Text(
-                             yoApoyoEsto ? 'Apoyado' : 'Apoyar', 
-                             style: TextStyle(
-                               color: yoApoyoEsto ? Colors.redAccent : AppTheme.primarioVerde, 
-                               fontWeight: FontWeight.bold
-                             ),
-                          ),
-                       ],
-                    ),
-                 
-                 if (esTutor)
-                    FilledButton.icon(
-                       onPressed: () => _aceptarClaseComoTutor(context),
-                       icon: const Icon(Icons.check, size: 18),
-                       label: const Text('Postularme como Tutor'),
-                       style: FilledButton.styleFrom(
-                          backgroundColor: AppTheme.primarioAzul,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                       ),
-                    ),
+                if (!esTutor)
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          yoApoyoEsto ? Icons.thumb_down : Icons.thumb_up,
+                          color: yoApoyoEsto
+                              ? Colors.redAccent
+                              : AppTheme.primarioVerde,
+                        ),
+                        tooltip: yoApoyoEsto ? 'Retirar apoyo' : 'Apoyar',
+                        onPressed: () => _ejecutarApoyo(context, yoApoyoEsto),
+                      ),
+                      Text(
+                        yoApoyoEsto ? 'Retirar apoyo' : 'Apoyar',
+                        style: TextStyle(
+                          color: yoApoyoEsto
+                              ? Colors.redAccent
+                              : AppTheme.primarioVerde,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
 
-                 if (!esTutor && esMiCreacion)
-                    IconButton(
-                       icon: const Icon(Icons.delete_outline, color: Colors.grey),
-                       tooltip: 'Eliminar mi sugerencia',
-                       onPressed: () => _borrarMisugerenciaPropia(context),
+                if (esTutor)
+                  FilledButton.icon(
+                    onPressed: () => _aceptarClaseComoTutor(context),
+                    icon: const Icon(Icons.check, size: 18),
+                    label: const Text('Postularme como Tutor'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.primarioAzul,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                     ),
+                  ),
+
+                if (!esTutor && esMiCreacion)
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.grey),
+                    tooltip: 'Eliminar mi sugerencia',
+                    onPressed: () => _borrarMisugerenciaPropia(context),
+                  ),
               ],
             ),
           ],
