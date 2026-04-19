@@ -108,6 +108,8 @@ class AutenticacionServicio {
     } on FirebaseAuthException catch (e) {
       // Lógica precisa para interceder por los errores de FirebaseAuth
       switch (e.code) {
+        case 'invalid-credential':
+          return "Credenciales incorrectas. Verifique su correo y contraseña.";
         case 'user-not-found':
           return "El correo electrónico no se encuentra registrado";
         case 'wrong-password':
