@@ -121,7 +121,7 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
       );
     }
 
-    // Verificamos si ya seguimos a este tutor
+    final esAdmin = miIdentidad?.rolEnElSistema.toString() == "RolSistema.admin";
     final yaSuscrito = miIdentidad?.listaDeTutoresSuscritos.contains(widget.mentor.identificadorUnico) ?? false;
     final esTutor = widget.mentor.rolEnElSistema == RolSistema.tutor;
 
@@ -133,6 +133,14 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textoOscuro,
         elevation: 0,
+        actions: [
+          if (esTutor && !esAdmin)
+            IconButton(
+              icon: const Icon(Icons.report_problem, color: Colors.redAccent),
+              tooltip: 'Levantar Queja',
+              onPressed: () => _mostrarDialogoDeQuejas(context),
+            )
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -260,11 +268,103 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
                 ],
               ),
             ),
+            
+            // Sección: Comentarios y Reseñas
+            if (esTutor) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                color: Colors.white,
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Reseñas de Estudiantes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textoOscuro)),
+                    const SizedBox(height: 16),
+                    StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance.collection('usuarios').doc(widget.mentor.identificadorUnico).collection('evaluaciones').orderBy('fecha', descending: true).snapshots(),
+                      builder: (context, snapshot) {
+                         if (snapshot.connectionState == ConnectionState.waiting) return const CircularProgressIndicator();
+                         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const Text("Este tutor aún no tiene valoraciones.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic));
+                         
+                         return ListView.builder(
+                           shrinkWrap: true,
+                           physics: const NeverScrollableScrollPhysics(),
+                           itemCount: snapshot.data!.docs.length,
+                           itemBuilder: (ctx, index) {
+                             final rese = snapshot.data!.docs[index];
+                             final datos = rese.data() as Map<String, dynamic>;
+                             return ListTile(
+                               contentPadding: EdgeInsets.zero,
+                               leading: const CircleAvatar(backgroundColor: Color(0xFFFFF7E6), child: Icon(Icons.star, color: Colors.orange)),
+                               title: Row(
+                                 children: [
+                                    Text('${datos['estrellas'] ?? 0} Estrellas', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    const Spacer(),
+                                    if (esAdmin)
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.red, size: 18),
+                                        onPressed: () {
+                                          rese.reference.delete();
+                                          _calcularMetricas();
+                                        },
+                                      )
+                                 ],
+                               ),
+                               subtitle: Text('"${datos['comentario'] ?? 'Sin comentario'}"', style: const TextStyle(fontStyle: FontStyle.italic)),
+                             );
+                           },
+                         );
+                      },
+                    )
+                  ],
+                ),
+              )
+            ],
 
             const SizedBox(height: 48), // Padding inferior
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _mostrarDialogoDeQuejas(BuildContext context) async {
+    final TextEditingController txtQueja = TextEditingController();
+    await showDialog(
+      context: context, 
+      builder: (ctx) => AlertDialog(
+        title: const Text("Levantar Queja contra Tutor", style: TextStyle(color: Colors.red)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Si sufriste alguna falta de respeto, ausencia o comportamiento inapropiado, descríbelo aquí. Esto será investigado de manera anónima por el Tribunal de VECTA."),
+            const SizedBox(height: 16),
+            TextField(controller: txtQueja, decoration: const InputDecoration(labelText: "Descripción de los hechos", border: OutlineInputBorder()), maxLines: 4),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              if (txtQueja.text.trim().isEmpty) return;
+              await FirebaseFirestore.instance.collection('quejas').add({
+                'tutorId': widget.mentor.identificadorUnico,
+                'tutoriaId': 'Reporte Comunitario',
+                'fechaQueja': DateTime.now().toIso8601String(),
+                'motivo_sistema': 'Reporte Comunitario / Abuso',
+                'justificacion': txtQueja.text.trim(),
+              });
+              if (ctx.mounted) {
+                 Navigator.pop(ctx);
+                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Queja enviada al Tribunal. Gracias por tu reporte."), backgroundColor: Colors.orange));
+              }
+            }, 
+            child: const Text("Enviar Queja")
+          ),
+        ]
+      )
     );
   }
 }

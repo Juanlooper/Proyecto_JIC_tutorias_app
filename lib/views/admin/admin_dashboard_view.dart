@@ -113,15 +113,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       },
                     ),
                     _TarjetaMenu(
-                      titulo: 'Quejas y Cancelaciones',
-                      icono: Icons.report_problem,
-                      colorRef: Colors.orange,
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const QuejasView()));
-                      },
-                    ),
-                    _TarjetaMenu(
-                      titulo: 'Métricas y Gráficas',
+                      titulo: 'Métricas, Moderación y Gráficas',
                       icono: Icons.bar_chart,
                       colorRef: AppTheme.primarioVerde,
                       onTap: () {

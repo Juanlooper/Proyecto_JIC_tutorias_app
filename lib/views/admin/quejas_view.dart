@@ -3,13 +3,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_theme.dart';
 
 class QuejasView extends StatelessWidget {
-  const QuejasView({super.key});
+  final bool ocultarAppBar;
+
+  const QuejasView({super.key, this.ocultarAppBar = false});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.fondoClaro,
-      appBar: AppBar(
+      appBar: ocultarAppBar ? null : AppBar(
         title: const Text('Registro de Quejas'),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,

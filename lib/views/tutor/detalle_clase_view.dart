@@ -136,14 +136,52 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.people_alt, color: AppTheme.primarioVerde),
-                    SizedBox(width: 8),
+                    const Icon(Icons.people_alt, color: AppTheme.primarioVerde),
+                    const SizedBox(width: 8),
                     Text(
-                      'Estudiantes',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      'Estudiantes (${tutoria.listaDeEstudiantesInscritos.length}/${tutoria.cupoMaximo})',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
+                    if (tutoria.estadoDeLaSolicitud != 'finalizada' && tutoria.estadoDeLaSolicitud != 'cancelada')
+                      IconButton(
+                        icon: const Icon(Icons.edit, size: 18, color: Colors.grey),
+                        tooltip: "Editar Cupo",
+                        onPressed: () async {
+                          final tc = TextEditingController(text: tutoria.cupoMaximo.toString());
+                          final nav = Navigator.of(context);
+                          final scaffoldMsg = ScaffoldMessenger.of(context);
+                          final provider = context.read<TutoriasProvider>();
+                          final res = await showDialog<String>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text("Editar Cupo"),
+                              content: TextField(
+                                controller: tc,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(labelText: "Nuevo Cupo Máximo", hintText: "Ej. 15"),
+                              ),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+                                FilledButton(onPressed: () => Navigator.pop(ctx, tc.text), child: const Text("Guardar")),
+                              ],
+                            )
+                          );
+                          if (res != null && res.trim().isNotEmpty) {
+                            final val = int.tryParse(res.trim());
+                            if (val != null) {
+                               bool ok = await provider.editarCupoMaximo(tutoria.identificadorDeTutoria, val);
+                               if (ok) {
+                                 scaffoldMsg.showSnackBar(const SnackBar(content: Text("Cupo actualizado exitosamente.")));
+                                 nav.pop(); // Go back to refresh
+                               } else {
+                                 scaffoldMsg.showSnackBar(SnackBar(content: Text(provider.mensajeDeErrorDelSistema), backgroundColor: Colors.red));
+                               }
+                            }
+                          }
+                        },
+                      )
                   ],
                 ),
                 if (tutoria.estadoDeLaSolicitud != 'finalizada' && tutoria.estadoDeLaSolicitud != 'cancelada')
@@ -297,7 +335,7 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
                                   const Icon(Icons.link, size: 18, color: Colors.blueAccent),
                                   const SizedBox(width: 8),
                                   Expanded(
-                                    child: Text(
+                                    child: SelectableText(
                                       link,
                                       style: const TextStyle(color: Colors.blueAccent, decoration: TextDecoration.underline, height: 1.3),
                                     ),

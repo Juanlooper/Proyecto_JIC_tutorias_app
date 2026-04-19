@@ -168,8 +168,158 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
             );
           },
         ),
+        floatingActionButton: authProv.usuarioActual?.rolEnElSistema.toString() == "RolSistema.tutor" 
+            ? FloatingActionButton.extended(
+                onPressed: () => _mostrarDialogoCrearClaseFija(context, uid),
+                icon: const Icon(Icons.add),
+                label: const Text('Crear Clase Fija'),
+                backgroundColor: AppTheme.primarioAzul,
+                foregroundColor: Colors.white,
+              )
+            : null,
       ),
     );
+  }
+
+  Future<void> _mostrarDialogoCrearClaseFija(BuildContext context, String uidTutor) async {
+    final _formKey = GlobalKey<FormState>();
+    final _materiaController = TextEditingController();
+    final _temaController = TextEditingController();
+    final _cupoController = TextEditingController(text: "10");
+    DateTime? _fecha;
+    TimeOfDay? _hora;
+    String _modalidad = "Virtual";
+    int _semanasRepeticion = 1;
+
+    final exito = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          title: const Text("Crear Clase Fija", style: TextStyle(color: AppTheme.primarioAzul)),
+          content: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   TextFormField(
+                     controller: _materiaController,
+                     decoration: const InputDecoration(labelText: "Materia", filled: true),
+                     validator: (v) => v!.isEmpty ? "Requerido" : null,
+                   ),
+                   const SizedBox(height: 12),
+                   TextFormField(
+                     controller: _temaController,
+                     decoration: const InputDecoration(labelText: "Tema", filled: true),
+                     validator: (v) => v!.isEmpty ? "Requerido" : null,
+                   ),
+                   const SizedBox(height: 12),
+                   DropdownButtonFormField<String>(
+                     value: _modalidad,
+                     decoration: const InputDecoration(labelText: "Modalidad", filled: true),
+                     items: const [
+                       DropdownMenuItem(value: "Virtual", child: Text("Virtual")),
+                       DropdownMenuItem(value: "Presencial", child: Text("Presencial"))
+                     ],
+                     onChanged: (v) => setStateDialog(() => _modalidad = v!),
+                   ),
+                   const SizedBox(height: 12),
+                   TextFormField(
+                     controller: _cupoController,
+                     keyboardType: TextInputType.number,
+                     decoration: const InputDecoration(labelText: "Cupo (Min 10)", filled: true),
+                     validator: (v) => (int.tryParse(v ?? '') ?? 0) < 1 ? "Error" : null,
+                   ),
+                   const SizedBox(height: 12),
+                   Row(
+                     children: [
+                       Expanded(
+                         child: OutlinedButton(
+                           onPressed: () async {
+                              final d = await showDatePicker(context: ctx, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 30)));
+                              if (d != null) setStateDialog(() => _fecha = d);
+                           },
+                           child: Text(_fecha == null ? "Fecha" : "${_fecha!.day}/${_fecha!.month}")
+                         ),
+                       ),
+                       const SizedBox(width: 8),
+                       Expanded(
+                         child: OutlinedButton(
+                           onPressed: () async {
+                              final t = await showTimePicker(context: ctx, initialTime: TimeOfDay.now());
+                              if (t != null) setStateDialog(() => _hora = t);
+                           },
+                           child: Text(_hora == null ? "Hora" : _hora!.format(ctx))
+                         ),
+                       ),
+                     ],
+                   ),
+                   const SizedBox(height: 12),
+                   DropdownButtonFormField<int>(
+                     value: _semanasRepeticion,
+                     decoration: const InputDecoration(labelText: "Repetición Semanal", filled: true),
+                     items: const [
+                       DropdownMenuItem(value: 1, child: Text("Solo 1 clase (Sin repetir)")),
+                       DropdownMenuItem(value: 4, child: Text("Mensual (4 semanas)")),
+                       DropdownMenuItem(value: 8, child: Text("Bimestral (8 semanas)")),
+                       DropdownMenuItem(value: 16, child: Text("Todo el Semestre (16 semanas)")),
+                     ],
+                     onChanged: (v) => setStateDialog(() => _semanasRepeticion = v!),
+                   ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text("Cancelar", style: TextStyle(color: Colors.grey)),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppTheme.primarioAzul),
+              onPressed: () async {
+                if (_formKey.currentState!.validate() && _fecha != null && _hora != null) {
+                   final fechaFinal = DateTime(_fecha!.year, _fecha!.month, _fecha!.day, _hora!.hour, _hora!.minute);
+                   
+                   int creadas = 0;
+                   final prove = context.read<TutoriasProvider>();
+
+                   for (int i = 0; i < _semanasRepeticion; i++) {
+                     final fechaIteracion = fechaFinal.add(Duration(days: 7 * i));
+                     final clasePlano = TutoriaModel(
+                       identificadorDeTutoria: '',
+                       materiaOAsignatura: _materiaController.text,
+                       temaEspecifico: _temaController.text,
+                       carrera: 'General',
+                       identificadorDelTutor: uidTutor,
+                       listaDeEstudiantesInscritos: [],
+                       modalidadDeClase: _modalidad,
+                       estadoDeLaSolicitud: 'pendiente',
+                       fechaHoraSugerida: fechaIteracion,
+                       duracionMinutos: 60,
+                       cupoMaximo: int.tryParse(_cupoController.text) ?? 10,
+                       esGrupal: true,
+                     );
+                     
+                     final ok = await prove.crearClaseFijaTutor(clasePlano);
+                     if (ok) creadas++;
+                   }
+                   
+                   Navigator.pop(ctx, creadas > 0);
+                } else {
+                   ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text("Completa y elige fecha/hora")));
+                }
+              },
+              child: const Text("Crear"),
+            )
+          ],
+        )
+      )
+    );
+
+    if (exito == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("¡Clase fija creada con éxito!"), backgroundColor: Colors.green));
+    }
   }
 }
 
@@ -521,7 +671,9 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                     ),
                   
                   if (!esDictando && datos.estadoDeLaSolicitud.toLowerCase() == 'finalizada')
-                     datos.alumnosQueYaEvaluaron.contains(uidActual)
+                     (datos.registro_asistencia != null && datos.registro_asistencia![uidActual] == false)
+                     ? const Center(child: Text('No asisiste a esta sesión. Sin evaluación.', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)))
+                     : datos.alumnosQueYaEvaluaron.contains(uidActual)
                      ? const Center(child: Text('Ya evaluaste esta sesión.', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)))
                      : FilledButton.icon(
                          onPressed: () {

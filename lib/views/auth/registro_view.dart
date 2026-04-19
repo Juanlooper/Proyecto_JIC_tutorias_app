@@ -24,7 +24,6 @@ class _RegistroViewState extends State<RegistroView> {
   final TextEditingController _ctrlCelular = TextEditingController();
   final TextEditingController _ctrlFacultad = TextEditingController();
   final TextEditingController _ctrlCarrera = TextEditingController();
-  final TextEditingController _ctrlIngles = TextEditingController();
 
   // Controladores de Credenciales
   final TextEditingController _ctrlCorreo = TextEditingController();
@@ -32,6 +31,7 @@ class _RegistroViewState extends State<RegistroView> {
 
   // Estado de los Checkboxes
   bool _aceptoTerminos = false;
+  bool _obscureText = true;
 
   @override
   void dispose() {
@@ -43,7 +43,6 @@ class _RegistroViewState extends State<RegistroView> {
     _ctrlCelular.dispose();
     _ctrlFacultad.dispose();
     _ctrlCarrera.dispose();
-    _ctrlIngles.dispose();
     _ctrlCorreo.dispose();
     _ctrlContrasena.dispose();
     super.dispose();
@@ -89,10 +88,10 @@ class _RegistroViewState extends State<RegistroView> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Cuenta creada. Por favor verifica tu correo UTP antes de iniciar sesion.',
+              'Cuenta creada. Por favor verifica tu correo (revisa la carpeta de spam o correo no deseado) antes de iniciar sesión.',
             ),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 5),
+            duration: Duration(seconds: 8),
           ),
         );
         Navigator.pop(context);
@@ -152,7 +151,7 @@ class _RegistroViewState extends State<RegistroView> {
                     ),
                   ),
                   child: const Text(
-                    '¡Hola, Bienvenido! Gracias por tu interés en ser tutor. Por favor completa los siguientes campos y adjunta tu hoja de vida. Te notificaremos pronto el estado de tu postulación.',
+                    '¡Hola, Bienvenido! Por favor completa los siguientes campos para crear tu perfil en la plataforma.',
                     style: TextStyle(
                       fontSize: 14,
                       color: AppTheme.textoOscuro,
@@ -251,44 +250,6 @@ class _RegistroViewState extends State<RegistroView> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-
-                // Fila 5: Inglés y CV
-                Row(
-                  children: [
-                    Expanded(
-                      child: _construirCampoTexto(
-                        'Nivel de Inglés',
-                        _ctrlIngles,
-                        Icons.language,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: SizedBox(
-                        height: 48,
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.attach_file, size: 18),
-                          label: const Text(
-                            'Subir Hoja de Vida',
-                            style: TextStyle(fontSize: 12),
-                            textAlign: TextAlign.center,
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            side: const BorderSide(
-                              color: AppTheme.primarioAzul,
-                            ),
-                            foregroundColor: AppTheme.primarioAzul,
-                          ),
-                          onPressed: () {},
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
 
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24.0),
@@ -336,12 +297,20 @@ class _RegistroViewState extends State<RegistroView> {
                 TextFormField(
                   controller: _ctrlContrasena,
                   enabled: !semaforoCarga,
-                  obscureText: true,
+                  obscureText: _obscureText,
                   decoration: InputDecoration(
-                    labelText: 'Contrasena (min. 6 caracteres)',
+                    labelText: 'Contraseña (min. 6 caracteres)',
                     prefixIcon: const Icon(
                       Icons.lock,
                       color: AppTheme.primarioAzul,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscureText ? Icons.visibility_off : Icons.visibility, color: AppTheme.primarioAzul),
+                      onPressed: () {
+                        setState(() {
+                          _obscureText = !_obscureText;
+                        });
+                      },
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -438,7 +407,7 @@ class _RegistroViewState extends State<RegistroView> {
         isDense: true,
       ),
       validator: obligatorio
-          ? (valor) => valor == null || valor.isEmpty ? '*' : null
+          ? (valor) => valor == null || valor.isEmpty ? 'Campo requerido' : null
           : null,
     );
   }

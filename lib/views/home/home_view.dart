@@ -73,10 +73,12 @@ class _HomeViewState extends State<HomeView> {
                 }
 
                 final universeDocs = snapshot.data?.docs ?? [];
-                // Se mapean los modelos limpios y se desechan las peticiones huérfanas con tutor ya tomado
+                final elUsuario = context.read<AutenticacionProvider>().usuarioActual;
+                final myUid = elUsuario?.identificadorUnico ?? '';
+
                 final listadoCompleto = universeDocs
                     .map((doc) => TutoriaModel.fromMap(doc.data() as Map<String, dynamic>))
-                    .where((tutoria) => tutoria.identificadorDelTutor.isNotEmpty)
+                    .where((tutoria) => tutoria.identificadorDelTutor.isNotEmpty && tutoria.identificadorDelTutor != myUid)
                     .toList();
 
                   // Lógica de filtrado en memoria local
@@ -140,41 +142,12 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
     BuildContext context,
     UsuarioModel usuario,
   ) async {
-    final esProfesor = usuario.tieneRol(RolSistema.tutor);
     final proveedor = context.read<TutoriasProvider>();
     bool operacionConcretaExitosa = false;
 
-    if (esProfesor) {
-      // Flujo de confirmación pura para el maestro
-      final accionTexto = 'impartir esta tutoría';
-      final confirmacion = await showDialog<bool>(
-        context: context,
-        builder: (contextDialogo) => AlertDialog(
-          title: const Text('Confirmar Acción'),
-          content: Text('¿Estás seguro de que deseas $accionTexto?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(contextDialogo, false),
-              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(contextDialogo, true),
-              child: const Text('Sí, confirmar'),
-            ),
-          ],
-        ),
-      );
-
-      if (confirmacion != true || !context.mounted) return;
-
-      operacionConcretaExitosa = await proveedor.aceptarTutoria(
-        datosTutoria.identificadorDeTutoria,
-        usuario.identificadorUnico,
-      );
-    } else {
-      // Modulo específico de inscripción de Alumnos (Modal Interactivo)
-      final TextEditingController motivoCtrl = TextEditingController();
-      final TextEditingController enlaceCtrl = TextEditingController();
+    // Modulo específico de inscripción de Alumnos (Modal Interactivo)
+    final TextEditingController motivoCtrl = TextEditingController();
+    final TextEditingController enlaceCtrl = TextEditingController();
       final formKey = GlobalKey<FormState>();
 
       final confirmacion = await showDialog<bool>(
@@ -241,7 +214,6 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
         motivoCtrl.text.trim(),
         listadoLinks,
       );
-    }
 
     if (!context.mounted) return;
 
@@ -397,7 +369,7 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                   final bool yaInscrito = datosTutoria.listaDeEstudiantesInscritos.contains(elUsuario.identificadorUnico);
                   final bool estaLleno = datosTutoria.listaDeEstudiantesInscritos.length >= datosTutoria.cupoMaximo;
 
-                  final bool bloquearEstudiante = (yaInscrito || estaLleno) && !esTutor;
+                  final bool bloquearEstudiante = (yaInscrito || estaLleno);
 
                   return FilledButton(
                     onPressed: bloquearEstudiante
@@ -408,11 +380,7 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                           ? Colors.grey 
                           : Theme.of(context).colorScheme.secondary,
                     ),
-                    child: Text(
-                      esTutor
-                          ? 'Aceptar Tutoría'
-                          : (yaInscrito ? 'Suscrito' : 'Reservar'),
-                    ),
+                    child: Text(yaInscrito ? 'Suscrito' : 'Reservar'),
                   );
                 },
               ),

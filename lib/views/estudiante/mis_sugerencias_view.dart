@@ -7,6 +7,7 @@ import '../../models/usuario_model.dart';
 import '../../providers/autenticacion_provider.dart';
 import '../../providers/tutorias_provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../tutor/aceptar_solicitud_view.dart';
 
 class MisSugerenciasView extends StatelessWidget {
   const MisSugerenciasView({super.key});
@@ -140,29 +141,20 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
   }
 
   void _aceptarClaseComoTutor(BuildContext context) async {
-    final provider = context.read<TutoriasProvider>();
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Asumir Tutoría'),
-        content: const Text('Al aceptar esta sugerencia, serás el tutor oficial y se publicará en la Cartelera principal. ¿Aceptar?'),
+        content: const Text('Al aceptar esta sugerencia, serás promovido como su tutor oficial y deberás configurarla con detalles como modalidad, horarios finales y enlace de reunión. ¿Aceptar?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ahora no')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sí, Aceptar')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sí, Aceptar y Configurar')),
         ],
       ),
     );
 
     if (confirmar == true && context.mounted) {
-      bool exito = await provider.aceptarSolicitudSugerida(sugerencia);
-      if (exito && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('¡Eres el tutor oficial! Revisa tu cartelera.'),
-            backgroundColor: AppTheme.primarioVerde,
-          ),
-        );
-      }
+       Navigator.push(context, MaterialPageRoute(builder: (_) => AceptarSolicitudView(tutoria: sugerencia)));
     }
   }
 

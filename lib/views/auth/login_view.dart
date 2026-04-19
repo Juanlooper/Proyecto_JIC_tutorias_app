@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/autenticacion_provider.dart';
+import '../navigation/enrutador_roles_view.dart';
 import 'registro_view.dart';
 
 class LoginView extends StatefulWidget {
@@ -16,6 +17,7 @@ class _LoginViewState extends State<LoginView> {
   final _formKey = GlobalKey<FormState>();
   final _correoController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _obscureText = true;
 
   @override
   void dispose() {
@@ -40,8 +42,63 @@ class _LoginViewState extends State<LoginView> {
             backgroundColor: Colors.redAccent,
           ),
         );
+      } else if (exito && mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const EnrutadorRolesView()),
+        );
       }
     }
+  }
+
+  void _mostrarDialogoRecuperarPassword() {
+    final TextEditingController correoRecuperacion = TextEditingController(text: _correoController.text);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Recuperar Contraseña', style: TextStyle(color: AppTheme.primarioVerde)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Ingresa tu correo institucional para recibir un enlace de recuperación.'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: correoRecuperacion,
+                decoration: const InputDecoration(
+                  labelText: 'Correo electrónico',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (correoRecuperacion.text.trim().isEmpty) return;
+                Navigator.pop(context); // cerramos dialogo
+                final authProvider = context.read<AutenticacionProvider>();
+                bool enviado = await authProvider.solicitarCambioDeContrasena(correoRecuperacion.text.trim());
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(enviado ? 'Enlace de recuperación enviado. Revisa tu correo.' : authProvider.mensajeDeError),
+                      backgroundColor: enviado ? Colors.green : Colors.redAccent,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Enviar Enlace'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _construirPanelIzquierdo() {
@@ -127,11 +184,19 @@ class _LoginViewState extends State<LoginView> {
                     // Contraseña
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: true,
+                      obscureText: _obscureText,
                       decoration: InputDecoration(
                         hintText: 'Contraseña',
                         hintStyle: TextStyle(color: Colors.blue.shade300),
                         prefixIcon: Icon(Icons.lock, color: Colors.blue.shade700),
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscureText ? Icons.visibility_off : Icons.visibility, color: Colors.blue.shade700),
+                          onPressed: () {
+                            setState(() {
+                              _obscureText = !_obscureText;
+                            });
+                          },
+                        ),
                         filled: true,
                         fillColor: Colors.blue.shade50.withValues(alpha: 0.3),
                         contentPadding: const EdgeInsets.symmetric(vertical: 16),
@@ -175,7 +240,20 @@ class _LoginViewState extends State<LoginView> {
                               ),
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 16),
+
+                    // Recuperar clave
+                    InkWell(
+                      onTap: _mostrarDialogoRecuperarPassword,
+                      child: Text(
+                        '¿Olvidaste tu contraseña?',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
                     // Enlace Registro
                     InkWell(

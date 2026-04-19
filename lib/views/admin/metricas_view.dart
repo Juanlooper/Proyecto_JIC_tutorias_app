@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../core/theme/app_theme.dart';
 import 'lista_estudiantes_view.dart';
 import 'historial_tutorias_view.dart';
+import 'quejas_view.dart';
 
 class MetricasView extends StatefulWidget {
   const MetricasView({super.key});
@@ -80,16 +81,9 @@ class _MetricasViewState extends State<MetricasView> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.fondoClaro,
-      appBar: AppBar(
-        title: const Text('Métricas y Análisis'),
-        backgroundColor: AppTheme.primarioVerde,
-        foregroundColor: Colors.white,
-      ),
-      body: _estaCargando 
+
+  Widget _buildContenidoMetricas() {
+    return _estaCargando 
         ? const Center(child: CircularProgressIndicator()) 
         : SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -141,7 +135,36 @@ class _MetricasViewState extends State<MetricasView> {
                 const SizedBox(height: 48), // Padding inferior
               ],
             ),
+          );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: AppTheme.fondoClaro,
+        appBar: AppBar(
+          title: const Text('Métricas y Análisis'),
+          backgroundColor: AppTheme.primarioVerde,
+          foregroundColor: Colors.white,
+          bottom: const TabBar(
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white60,
+            indicatorColor: Colors.white,
+            tabs: [
+              Tab(icon: Icon(Icons.bar_chart), text: 'Estadísticas'),
+              Tab(icon: Icon(Icons.security), text: 'Moderación'),
+            ],
           ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildContenidoMetricas(),
+            const QuejasView(ocultarAppBar: true),
+          ],
+        ),
+      ),
     );
   }
 

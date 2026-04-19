@@ -326,6 +326,8 @@ class TutoriasProvider extends ChangeNotifier {
 
       if (resolucionDeLaPeticion.contains("Extraordinario")) {
         await cargarListadoDeTutoriasPendientes();
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null) await cargarTutoriasSuscritasDelUsuario(uid);
         _apagarSenalIndicadoraDeEspera();
         notifyListeners();
         return true;
@@ -452,6 +454,8 @@ class TutoriasProvider extends ChangeNotifier {
 
       // Refrescar y avisar exito
       await cargarListadoDeTutoriasPendientes();
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) await cargarTutoriasSuscritasDelUsuario(uid);
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return true;
@@ -493,6 +497,9 @@ class TutoriasProvider extends ChangeNotifier {
       });
 
       await cargarListadoDeTutoriasPendientes();
+      if (FirebaseAuth.instance.currentUser != null) {
+        await cargarTutoriasSuscritasDelUsuario(FirebaseAuth.instance.currentUser!.uid);
+      }
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return true;
@@ -531,6 +538,9 @@ class TutoriasProvider extends ChangeNotifier {
       }
 
       await cargarListadoDeTutoriasPendientes();
+      if (FirebaseAuth.instance.currentUser != null) {
+        await cargarTutoriasSuscritasDelUsuario(FirebaseAuth.instance.currentUser!.uid);
+      }
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return true;
@@ -583,13 +593,15 @@ class TutoriasProvider extends ChangeNotifier {
         TutoriaModel modeloAEnviar = modeloDefinitivo.copyWith(
            identificadorDelTutor: uidTutor,
            estadoDeLaSolicitud: 'pendiente', // Permanece pendiente para que los estudiantes se puedan inscribir
-           esGrupal: modeloDefinitivo.cupoMaximo > 1,
+           esGrupal: true,
+           cupoMaximo: 10,
         );
         
         transaction.update(docRef, modeloAEnviar.toMap());
       });
 
       await cargarListadoDeTutoriasPendientes();
+      await cargarTutoriasSuscritasDelUsuario(uidTutor);
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return true;
@@ -639,6 +651,60 @@ class TutoriasProvider extends ChangeNotifier {
       _mensajeDeErrorDelSistema = "Fallo en la matriz de red intentando asentar la calificación.";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners(); // Se necesita para mostrar el error localmente
+      return false;
+    }
+  }
+
+  /// Permite a un tutor crear una clase fija propia, desde cero.
+  Future<bool> crearClaseFijaTutor(TutoriaModel claseFija) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+    try {
+      final collectionRef = FirebaseFirestore.instance.collection('tutorias');
+      String docId = collectionRef.doc().id;
+      TutoriaModel aGuardar = claseFija.copyWith(
+        identificadorDeTutoria: docId,
+        estadoDeLaSolicitud: 'pendiente',
+        cupoMaximo: claseFija.cupoMaximo < 10 ? 10 : claseFija.cupoMaximo,
+      );
+      await collectionRef.doc(docId).set(aGuardar.toMap());
+      await cargarListadoDeTutoriasPendientes();
+      final uidTutor = FirebaseAuth.instance.currentUser?.uid;
+      if (uidTutor != null) {
+        await cargarTutoriasSuscritasDelUsuario(uidTutor);
+      }
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _mensajeDeErrorDelSistema = "Error al crear la clase fija.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Permite a un tutor editar el cupo máximo de una clase existente.
+  Future<bool> editarCupoMaximo(String idTutoria, int nuevoCupoMaximo) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+    try {
+      if (nuevoCupoMaximo < 1) throw "El cupo no puede ser menor a 1.";
+      await FirebaseFirestore.instance.collection('tutorias').doc(idTutoria).update({
+         'cupoMaximo': nuevoCupoMaximo,
+      });
+      final uidTutor = FirebaseAuth.instance.currentUser?.uid;
+      if (uidTutor != null) {
+        await cargarTutoriasSuscritasDelUsuario(uidTutor);
+      }
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch(e) {
+      _mensajeDeErrorDelSistema = "Error editando cupo.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
       return false;
     }
   }

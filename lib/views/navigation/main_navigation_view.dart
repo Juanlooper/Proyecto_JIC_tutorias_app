@@ -157,7 +157,7 @@ class _MainNavigationViewState extends State<MainNavigationView> {
         foregroundColor: Colors.white,
       ),
       body: IndexedStack(index: _indiceActual, children: vistasSistema),
-      floatingActionButton: esAdmin 
+      floatingActionButton: esAdmin || ['Mis Tutorias', 'Tablero Tutor', 'Perfil'].contains(modulosUI[_indiceActual]['titulo'])
           ? null 
           : FloatingActionButton.extended(
               onPressed: () {

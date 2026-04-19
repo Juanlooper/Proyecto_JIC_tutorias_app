@@ -315,24 +315,47 @@ class _AceptarSolicitudViewState extends State<AceptarSolicitudView> {
                       ],
                     ),
                     const SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _seleccionarFecha,
-                            icon: const Icon(Icons.calendar_month),
-                            label: Text(
-                              _fechaSeleccionada == null ? 'Fijar Fecha' : '${_fechaSeleccionada!.day}/${_fechaSeleccionada!.month}',
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300)
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.calendar_month, color: Colors.grey),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _fechaSeleccionada == null ? 'Sin fecha' : '${_fechaSeleccionada!.day}/${_fechaSeleccionada!.month}',
+                                  style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w500),
+                                ),
+                              ],
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _seleccionarHora,
-                            icon: const Icon(Icons.access_time),
-                            label: Text(
-                              _horaSeleccionada == null ? 'Fijar Hora' : _horaSeleccionada!.format(context),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300)
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.access_time, color: Colors.grey),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _horaSeleccionada == null ? 'Sin hora' : _horaSeleccionada!.format(context),
+                                  style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w500),
+                                ),
+                              ],
                             ),
                           ),
                         ),

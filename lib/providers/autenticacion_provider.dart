@@ -90,8 +90,9 @@ class AutenticacionProvider extends ChangeNotifier {
     if (respuestaCrudaDelServidor == "Acceso Concedido") {
       // Validación estricta de Email Verificado:
       if (FirebaseAuth.instance.currentUser != null && !FirebaseAuth.instance.currentUser!.emailVerified) {
-        _mensajeDeError = "Debes verificar tu correo UTP para poder entrar. Revisa tu bandeja de entrada o SPAM.";
+        String mensajeRetenido = "Debes verificar tu correo para poder entrar. Revisa tu bandeja de entrada o SPAM.";
         await salirDeLaSesionActual(); 
+        _mensajeDeError = mensajeRetenido;
         notifyListeners();
         return false;
       }
