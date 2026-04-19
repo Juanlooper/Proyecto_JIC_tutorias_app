@@ -94,10 +94,10 @@ class AutenticacionServicio {
 
     } on FirebaseAuthException catch (errorFirebase) {
       // Lógica amigable para interpretar los errores de entrada
-      if (errorFirebase.code == 'user-not-found' || errorFirebase.code == 'invalid-email' || errorFirebase.code == 'invalid-credential') {
-        return "No hemos encontrado nadie con ese correo. Verifica tus datos e intenta otra vez.";
-      } else if (errorFirebase.code == 'wrong-password') {
-        return "Contraseña incorrecta. Piénsalo bien e intenta otra vez.";
+      if (errorFirebase.code == 'invalid-email') {
+        return "El formato del correo es inválido.";
+      } else if (errorFirebase.code == 'user-not-found' || errorFirebase.code == 'invalid-credential' || errorFirebase.code == 'wrong-password') {
+        return "Correo o contraseña incorrectos. Verifica tus datos e intenta otra vez.";
       } else {
         return "Hubo un inconveniente para acceder: Revisa tus credenciales.";
       }

@@ -59,6 +59,38 @@ class TutoriaModel {
   /// Propiedad que define si la sesión permite múltiples usuarios al mismo tiempo.
   final bool esGrupal;
 
+  /// Motivos de los alumnos. La llave es el UID del alumno y el valor es el tema a reforzar.
+  final Map<String, String>? motivos_alumnos;
+
+  /// Enlaces adjuntos a la tutoría. La llave es el UID y el valor es la lista de URLs.
+  final Map<String, List<String>>? enlaces_adjuntos;
+
+  /// Registro de asistencia. La llave es el UID, el valor es true (asistió) o false (faltó).
+  final Map<String, bool>? registro_asistencia;
+
+  /// Justificación en caso de que la tutoría sea cancelada.
+  final String? justificacion_cancelacion;
+
+  /// Ubicación acordada (Salón físico o enlace de plataforma virtual).
+  final String? lugar;
+
+  /// Contacto rápido del tutor (Frecuentemente WhatsApp).
+  /// Contacto rápido del tutor (Frecuentemente WhatsApp).
+  final String? contacto_tutor;
+
+  /// Nombre real del tutor (Desnormalización NoSQL para evitar consultas anidadas).
+  final String? nombre_tutor;
+
+  /// Lista de los identificadores únicos de los estudiantes que ya evaluaron esta sesión.
+  /// Sirve para evitar dobles evaluaciones y deshabilitar el botón de calificar.
+  final List<String> alumnosQueYaEvaluaron;
+
+  /// Lista de UID de estudiantes que apoyan la sugerencia comunitaria
+  final List<String> estudiantesApoyando;
+
+  /// Creador original de la solicitud (si era una tutoría sugerida)
+  final String? creador;
+
   /// Constructor base. Se encarga de ensamblar en la memoria RAM una tutoría cuando llamamos la clase.
   /// El atributo 'required' indica qué pieza es indispensable para considerarse legalmente una tutoría.
   TutoriaModel({
@@ -77,6 +109,16 @@ class TutoriaModel {
     this.horaInicioReal,
     this.horaFinReal,
     this.esGrupal = false,
+    this.motivos_alumnos,
+    this.enlaces_adjuntos,
+    this.registro_asistencia,
+    this.justificacion_cancelacion,
+    this.lugar,
+    this.contacto_tutor,
+    this.nombre_tutor,
+    this.alumnosQueYaEvaluaron = const [],
+    this.estudiantesApoyando = const [],
+    this.creador,
   });
 
   /// Transforma nuestra estructura de datos de objeto a formato mapa de clave/valor.
@@ -99,6 +141,16 @@ class TutoriaModel {
       'horaInicioReal': horaInicioReal?.toIso8601String(),
       'horaFinReal': horaFinReal?.toIso8601String(),
       'esGrupal': esGrupal,
+      'motivos_alumnos': motivos_alumnos,
+      'enlaces_adjuntos': enlaces_adjuntos,
+      'registro_asistencia': registro_asistencia,
+      'justificacion_cancelacion': justificacion_cancelacion,
+      'lugar': lugar,
+      'contacto_tutor': contacto_tutor,
+      'nombre_tutor': nombre_tutor,
+      'alumnosQueYaEvaluaron': alumnosQueYaEvaluaron,
+      'estudiantesApoyando': estudiantesApoyando,
+      'creador': creador,
     };
   }
 
@@ -119,6 +171,9 @@ class TutoriaModel {
         fechaHoraSugerida: DateTime.now(), // Por si no hay fecha, no colapsa el motor
         cupoMaximo: 1,
         duracionMinutos: 60,
+        alumnosQueYaEvaluaron: [],
+        estudiantesApoyando: [],
+        creador: null,
       );
     }
 
@@ -167,6 +222,85 @@ class TutoriaModel {
       horaInicioReal: mapaDeDatos['horaInicioReal'] != null ? DateTime.tryParse(mapaDeDatos['horaInicioReal']) : null,
       horaFinReal: mapaDeDatos['horaFinReal'] != null ? DateTime.tryParse(mapaDeDatos['horaFinReal']) : null,
       esGrupal: mapaDeDatos['esGrupal'] ?? false,
+      motivos_alumnos: mapaDeDatos['motivos_alumnos'] != null 
+          ? Map<String, String>.from(mapaDeDatos['motivos_alumnos']) 
+          : null,
+      enlaces_adjuntos: mapaDeDatos['enlaces_adjuntos'] != null 
+          ? (mapaDeDatos['enlaces_adjuntos'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<String>.from(v)),
+            ) 
+          : null,
+      registro_asistencia: mapaDeDatos['registro_asistencia'] != null 
+          ? Map<String, bool>.from(mapaDeDatos['registro_asistencia']) 
+          : null,
+      justificacion_cancelacion: mapaDeDatos['justificacion_cancelacion'],
+      lugar: mapaDeDatos['lugar'],
+      contacto_tutor: mapaDeDatos['contacto_tutor'],
+      nombre_tutor: mapaDeDatos['nombre_tutor'],
+      alumnosQueYaEvaluaron: mapaDeDatos['alumnosQueYaEvaluaron'] != null
+          ? List<String>.from(mapaDeDatos['alumnosQueYaEvaluaron'])
+          : [],
+      estudiantesApoyando: mapaDeDatos['estudiantesApoyando'] != null
+          ? List<String>.from(mapaDeDatos['estudiantesApoyando'])
+          : [],
+      creador: mapaDeDatos['creador'],
+    );
+  }
+
+  /// Genera una copia de la tutoría actual con la posibilidad de modificar propiedades específicas.
+  TutoriaModel copyWith({
+    String? identificadorDeTutoria,
+    String? materiaOAsignatura,
+    String? temaEspecifico,
+    String? carrera,
+    String? identificadorDelTutor,
+    List<String>? listaDeEstudiantesInscritos,
+    String? modalidadDeClase,
+    String? estadoDeLaSolicitud,
+    DateTime? fechaHoraSugerida,
+    String? enlaceOReunion,
+    int? cupoMaximo,
+    int? duracionMinutos,
+    DateTime? horaInicioReal,
+    DateTime? horaFinReal,
+    bool? esGrupal,
+    Map<String, String>? motivos_alumnos,
+    Map<String, List<String>>? enlaces_adjuntos,
+    Map<String, bool>? registro_asistencia,
+    String? justificacion_cancelacion,
+    String? lugar,
+    String? contacto_tutor,
+    String? nombre_tutor,
+    List<String>? alumnosQueYaEvaluaron,
+    List<String>? estudiantesApoyando,
+    String? creador,
+  }) {
+    return TutoriaModel(
+      identificadorDeTutoria: identificadorDeTutoria ?? this.identificadorDeTutoria,
+      materiaOAsignatura: materiaOAsignatura ?? this.materiaOAsignatura,
+      temaEspecifico: temaEspecifico ?? this.temaEspecifico,
+      carrera: carrera ?? this.carrera,
+      identificadorDelTutor: identificadorDelTutor ?? this.identificadorDelTutor,
+      listaDeEstudiantesInscritos: listaDeEstudiantesInscritos ?? this.listaDeEstudiantesInscritos,
+      modalidadDeClase: modalidadDeClase ?? this.modalidadDeClase,
+      estadoDeLaSolicitud: estadoDeLaSolicitud ?? this.estadoDeLaSolicitud,
+      fechaHoraSugerida: fechaHoraSugerida ?? this.fechaHoraSugerida,
+      enlaceOReunion: enlaceOReunion ?? this.enlaceOReunion,
+      cupoMaximo: cupoMaximo ?? this.cupoMaximo,
+      duracionMinutos: duracionMinutos ?? this.duracionMinutos,
+      horaInicioReal: horaInicioReal ?? this.horaInicioReal,
+      horaFinReal: horaFinReal ?? this.horaFinReal,
+      esGrupal: esGrupal ?? this.esGrupal,
+      motivos_alumnos: motivos_alumnos ?? this.motivos_alumnos,
+      enlaces_adjuntos: enlaces_adjuntos ?? this.enlaces_adjuntos,
+      registro_asistencia: registro_asistencia ?? this.registro_asistencia,
+      justificacion_cancelacion: justificacion_cancelacion ?? this.justificacion_cancelacion,
+      lugar: lugar ?? this.lugar,
+      contacto_tutor: contacto_tutor ?? this.contacto_tutor,
+      nombre_tutor: nombre_tutor ?? this.nombre_tutor,
+      alumnosQueYaEvaluaron: alumnosQueYaEvaluaron ?? this.alumnosQueYaEvaluaron,
+      estudiantesApoyando: estudiantesApoyando ?? this.estudiantesApoyando,
+      creador: creador ?? this.creador,
     );
   }
 }

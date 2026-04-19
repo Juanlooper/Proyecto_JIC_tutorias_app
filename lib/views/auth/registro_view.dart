@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/autenticacion_provider.dart';
 import '../../core/theme/app_theme.dart';
-import '../main_navigation_view.dart';
 
 /// Vista de Registro (Fase 2 UI)
 /// Implementa la interfaz del PDF sin alterar el backend actual.
@@ -23,6 +22,8 @@ class _RegistroViewState extends State<RegistroView> {
   final TextEditingController _ctrlSegundoApellido = TextEditingController();
   final TextEditingController _ctrlCedula = TextEditingController();
   final TextEditingController _ctrlCelular = TextEditingController();
+  final TextEditingController _ctrlFacultad = TextEditingController();
+  final TextEditingController _ctrlCarrera = TextEditingController();
 
   // Controladores de Credenciales
   final TextEditingController _ctrlCorreo = TextEditingController();
@@ -30,6 +31,22 @@ class _RegistroViewState extends State<RegistroView> {
 
   // Estado de los Checkboxes
   bool _aceptoTerminos = false;
+  bool _obscureText = true;
+
+  @override
+  void dispose() {
+    _ctrlPrimerNombre.dispose();
+    _ctrlSegundoNombre.dispose();
+    _ctrlPrimerApellido.dispose();
+    _ctrlSegundoApellido.dispose();
+    _ctrlCedula.dispose();
+    _ctrlCelular.dispose();
+    _ctrlFacultad.dispose();
+    _ctrlCarrera.dispose();
+    _ctrlCorreo.dispose();
+    _ctrlContrasena.dispose();
+    super.dispose();
+  }
 
   /// Lógica de puente: Toma los datos de la UI y los adapta al backend existente
   Future<void> _procesarInscripcionVisual() async {
@@ -37,7 +54,7 @@ class _RegistroViewState extends State<RegistroView> {
     if (!_aceptoTerminos) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Debes aceptar los términos para continuar.'),
+          content: Text('Debes aceptar los terminos para continuar.'),
         ),
       );
       return;
@@ -55,16 +72,30 @@ class _RegistroViewState extends State<RegistroView> {
       correoEscrito: correoLimpio,
       contrasenaEscrita: claveLimpa,
       nombreEscrito: nombreEnsamblado,
-      // Pasamos null temporalmente a facultad y carrera ya que no están en esta pantalla UI
-      facultadElegidaEnMenu: null,
-      carreraElegidaEnMenu: null,
+      facultadElegidaEnMenu: _ctrlFacultad.text.trim().isNotEmpty
+          ? _ctrlFacultad.text.trim()
+          : null,
+      carreraElegidaEnMenu: _ctrlCarrera.text.trim().isNotEmpty
+          ? _ctrlCarrera.text.trim()
+          : null,
     );
 
     if (exitoRegistrando && mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainNavigationView()),
-      );
+      await motorDeIdentidad.dispararVerificacionDeCorreo();
+      await motorDeIdentidad.salirDeLaSesionActual();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Cuenta creada. Por favor verifica tu correo (revisa la carpeta de spam o correo no deseado) antes de iniciar sesión.',
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 8),
+          ),
+        );
+        Navigator.pop(context);
+      }
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -108,6 +139,26 @@ class _RegistroViewState extends State<RegistroView> {
                     fontSize: 20,
                   ),
                   textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primarioAzul.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppTheme.primarioAzul.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: const Text(
+                    '¡Hola, Bienvenido! Por favor completa los siguientes campos para crear tu perfil en la plataforma.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.textoOscuro,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.justify,
+                  ),
                 ),
                 const SizedBox(height: 24),
 
@@ -162,7 +213,7 @@ class _RegistroViewState extends State<RegistroView> {
                   children: [
                     Expanded(
                       child: _construirCampoTexto(
-                        'Cédula',
+                        'Cedula',
                         _ctrlCedula,
                         Icons.credit_card,
                       ),
@@ -173,6 +224,28 @@ class _RegistroViewState extends State<RegistroView> {
                         'Celular',
                         _ctrlCelular,
                         Icons.phone_android,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Fila 4: Académicos
+                Row(
+                  children: [
+                    Expanded(
+                      child: _construirCampoTexto(
+                        'Facultad',
+                        _ctrlFacultad,
+                        Icons.account_balance,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _construirCampoTexto(
+                        'Carrera',
+                        _ctrlCarrera,
+                        Icons.school,
                       ),
                     ),
                   ],
@@ -209,24 +282,38 @@ class _RegistroViewState extends State<RegistroView> {
                   ),
                   validator: (valor) {
                     if (valor == null || valor.isEmpty) return 'Requerido';
-                    if (!valor.trim().toLowerCase().endsWith('@gmail.com')) {
-                      return 'Debe ser un correo @gmail.com válido';
+
+                    // DOWNGRADE DE SEGURIDAD (Pruebas Locales)
+                    // Ya no filtramos a que solo sea @utp.ac.pa
+                    if (!valor.contains('@')) {
+                      return 'Debe ser un correo válido';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
 
-                // Contraseña
+                // Contrasena
                 TextFormField(
                   controller: _ctrlContrasena,
                   enabled: !semaforoCarga,
-                  obscureText: true,
+                  obscureText: _obscureText,
                   decoration: InputDecoration(
                     labelText: 'Contraseña (min. 6 caracteres)',
                     prefixIcon: const Icon(
                       Icons.lock,
                       color: AppTheme.primarioAzul,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureText ? Icons.visibility_off : Icons.visibility,
+                        color: AppTheme.primarioAzul,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscureText = !_obscureText;
+                        });
+                      },
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -240,7 +327,7 @@ class _RegistroViewState extends State<RegistroView> {
                 ),
                 const SizedBox(height: 24),
 
-                // Checkbox de términos (HCI: Prevención de errores legales)
+                // Checkbox de terminos (HCI: Prevención de errores legales)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -262,7 +349,7 @@ class _RegistroViewState extends State<RegistroView> {
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Text(
-                        'Autorizo que se almacenen y gestionen mis datos personales según la Ley 81 de Protección de Datos Personales.',
+                        'Autorizo que se almacenen y gestionen mis datos personales según la Ley 81 de Proteccion de Datos Personales.',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppTheme.grisTexto,
@@ -323,7 +410,7 @@ class _RegistroViewState extends State<RegistroView> {
         isDense: true,
       ),
       validator: obligatorio
-          ? (valor) => valor == null || valor.isEmpty ? '*' : null
+          ? (valor) => valor == null || valor.isEmpty ? 'Campo requerido' : null
           : null,
     );
   }

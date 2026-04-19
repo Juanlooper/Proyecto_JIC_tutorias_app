@@ -22,8 +22,7 @@ class AppTheme {
         seedColor: primarioAzul,
         primary: primarioAzul,
         secondary: primarioVerde,
-        surface: Colors.white,
-        background: fondoClaro,
+        surface: fondoClaro, // Fusiona background y surface en Flutter 3.22+
       ),
       // Tipografía base: Poppins para títulos, Inter para lectura (legibilidad HCI)
       textTheme: GoogleFonts.interTextTheme().copyWith(

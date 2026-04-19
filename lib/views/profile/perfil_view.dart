@@ -19,8 +19,9 @@ class _PerfilViewState extends State<PerfilView> {
     String campoActual,
     String valorPrevio,
     String titulo,
-    String llaveFirestore,
-  ) async {
+    String llaveFirestore, {
+    bool esMultilinea = false,
+  }) async {
     final TextEditingController controladorCampo = TextEditingController(
       text: valorPrevio,
     );
@@ -35,6 +36,7 @@ class _PerfilViewState extends State<PerfilView> {
             key: llaveFormulario,
             child: TextFormField(
               controller: controladorCampo,
+              maxLines: esMultilinea ? 5 : 1,
               decoration: InputDecoration(
                 labelText: 'Nuevo $titulo',
                 border: const OutlineInputBorder(),
@@ -72,6 +74,9 @@ class _PerfilViewState extends State<PerfilView> {
         );
       },
     );
+    
+    // HCI Defensive: Limpiar la memoria del controlador para evitar escapes de memoria
+    controladorCampo.dispose();
   }
 
   /*
@@ -183,216 +188,379 @@ class _PerfilViewState extends State<PerfilView> {
     }
   }
 
-  /// Extrae con precisión las dos primeras iniciales o recae en la predeterminada.
-  String _obtenerIniciales(String nombreCompleto) {
-    if (nombreCompleto.isEmpty) return 'U';
-    final fragmentos = nombreCompleto.trim().split(' ');
-    if (fragmentos.length > 1) {
-      return '${fragmentos[0][0]}${fragmentos[1][0]}'.toUpperCase();
-    }
-    return fragmentos[0][0].toUpperCase();
-  }
 
   @override
   Widget build(BuildContext context) {
     final motorAutenticacion = context.watch<AutenticacionProvider>();
     final elUsuarioActual = motorAutenticacion.usuarioActual;
 
-    // Resiliencia Visual Categórica
     if (elUsuarioActual == null || motorAutenticacion.estaCargando) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    // Adaptación a la UI solicitada en el Mockup 5
     return Scaffold(
-      appBar: AppBar(title: const Text('Mi Perfil')),
+      backgroundColor: Colors.grey.shade50,
+      appBar: AppBar(
+        title: const Text('Mi Perfil', style: TextStyle(color: Colors.black87)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
+        actions: [
+           IconButton(
+             icon: const Icon(Icons.logout, color: Colors.redAccent),
+             onPressed: () => _procesoDeCierreDeSesion(context),
+           )
+        ],
+      ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Área Principal (Cápsula de Identidad)
-              Center(
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      child: Text(
-                        _obtenerIniciales(elUsuarioActual.nombreCompleto),
-                        style: TextStyle(
-                          fontSize: 36,
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          children: [
+            // Sección Superior Refinada: Avatar y Datos Categóricos
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.grey.shade400,
+                  child: const Icon(Icons.person, size: 70, color: Colors.white),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        elUsuarioActual.nombreCompleto,
+                        style: const TextStyle(
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
+                          color: Colors.teal, // Verde del mockup
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Rol: ${_traducirRolAnalogo(elUsuarioActual.rolEnElSistema).toUpperCase()}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      InkWell(
+                        onTap: () => _mostrarDialogoDeEdicion(context, 'Carrera', elUsuarioActual.carrera ?? '', 'Ingresa tu carrera (Ej. Ing. Sistemas)', 'carrera'),
+                        borderRadius: BorderRadius.circular(4),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.school, size: 24, color: Colors.teal),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                elUsuarioActual.carrera?.isNotEmpty == true 
+                                  ? elUsuarioActual.carrera! 
+                                  : 'Editar Carrera...',
+                               style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                              ),
+                            ),
+                            const Icon(Icons.edit, size: 14, color: Colors.teal),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: () => _mostrarDialogoDeEdicion(context, 'Facultad', elUsuarioActual.facultad ?? '', 'Ingresa tu facultad (Ej. FISC)', 'facultad'),
+                        borderRadius: BorderRadius.circular(4),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.account_balance, size: 20, color: Colors.teal),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                elUsuarioActual.facultad?.isNotEmpty == true 
+                                  ? elUsuarioActual.facultad! 
+                                  : 'Editar Facultad...',
+                               style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey, fontSize: 13),
+                              ),
+                            ),
+                            const Icon(Icons.edit, size: 14, color: Colors.teal),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            
+            // Sección Emails y Cédula (Mockup inferior del avatar)
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: Colors.teal.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                  child: const Icon(Icons.email, color: Colors.teal),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Correo Institucional', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      Text(elUsuarioActual.correoElectronico, style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 15)),
+                    ],
+                  ),
+                )
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: Colors.teal.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                  child: const Icon(Icons.badge, color: Colors.teal),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Identificador Interno', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      Text(elUsuarioActual.identificadorUnico.substring(0, 8).toUpperCase(), style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 15)),
+                    ],
+                  ),
+                )
+              ],
+            ),
+            
+            const SizedBox(height: 32),
+
+            // Card Interactiva de Datos de Contacto (Mockup 5)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 5))
+                ]
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                         const Text('Datos de contacto', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigoAccent)),
+                         Icon(Icons.edit, color: Colors.teal, size: 20),
+                      ],
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      elUsuarioActual.nombreCompleto,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                    _construirCajaEditaRapida(
+                      context, 
+                      'Teléfono personal',
+                      Icons.smartphone, 
+                      elUsuarioActual.telefonoPersonal,
+                      'telefonoPersonal'
+                    ),
+                    const SizedBox(height: 16),
+                    _construirCajaEditaRapida(
+                      context, 
+                      'Contacto de Emergencia',
+                      Icons.local_hospital_outlined, 
+                      elUsuarioActual.contactoEmergenciaNombre,
+                      'contactoEmergenciaNombre'
+                    ),
+                    const SizedBox(height: 16),
+                    _construirCajaEditaRapida(
+                      context, 
+                      'Teléfono de Emergencia',
+                      Icons.phone, 
+                      elUsuarioActual.contactoEmergenciaTelefono,
+                      'contactoEmergenciaTelefono'
                     ),
                   ],
                 ),
               ),
+            ),
+            
+            const SizedBox(height: 32),
 
-              const SizedBox(height: 36),
+            // SECCIÓN DE COMUNIDAD (SÓLO TUTORES)
+            if (elUsuarioActual.rolEnElSistema == RolSistema.tutor)
+               _construirSeccionPerfilComunidad(context, elUsuarioActual),
 
-              // Bloque 1: Inmutables del Sistema (Credenciales base)
-              const Padding(
-                padding: EdgeInsets.only(left: 8.0, bottom: 8.0),
-                child: Text(
-                  'Datos de la Cuenta',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey,
-                  ),
-                ),
-              ),
+            // LÓGICA DE POSTULACIÓN A TUTOR
+            if (elUsuarioActual.rolEnElSistema == RolSistema.estudiante)
+               _construirSeccionPostulacion(elUsuarioActual),
 
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(
-                        Icons.email,
-                        color: Colors.blueAccent,
-                      ),
-                      title: const Text('Correo Electrónico'),
-                      subtitle: Text(elUsuarioActual.correoElectronico),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(
-                        Icons.verified_user,
-                        color: Colors.green,
-                      ),
-                      title: const Text('Nivel de Acceso'),
-                      subtitle: Text(
-                        _traducirRolAnalogo(elUsuarioActual.rolEnElSistema),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
 
-              const SizedBox(height: 24),
-
-              // Bloque 2: Información Mutante Académica
-              const Padding(
-                padding: EdgeInsets.only(left: 8.0, bottom: 8.0),
-                child: Text(
-                  'Información Académica',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey,
-                  ),
-                ),
-              ),
-
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(
-                        Icons.account_balance,
-                        color: Colors.orangeAccent,
-                      ),
-                      title: const Text('Facultad'),
-                      subtitle: Text(
-                        elUsuarioActual.facultad?.isNotEmpty == true
-                            ? elUsuarioActual.facultad!
-                            : 'Aún no configurada',
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(
-                          Icons.edit,
-                          size: 20,
-                          color: Colors.grey,
-                        ),
-                        onPressed: () => _mostrarDialogoDeEdicion(
-                          context,
-                          'Facultad',
-                          elUsuarioActual.facultad ?? '',
-                          'Facultad',
-                          'facultad',
-                        ),
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(
-                        Icons.school,
-                        color: Colors.deepPurpleAccent,
-                      ),
-                      title: const Text('Carrera o Especialidad'),
-                      subtitle: Text(
-                        elUsuarioActual.carrera?.isNotEmpty == true
-                            ? elUsuarioActual.carrera!
-                            : 'Aún no configurada',
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(
-                          Icons.edit,
-                          size: 20,
-                          color: Colors.grey,
-                        ),
-                        onPressed: () => _mostrarDialogoDeEdicion(
-                          context,
-                          'Carrera',
-                          elUsuarioActual.carrera ?? '',
-                          'Carrera especial',
-                          'carrera',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 56),
-
-              // Botón Definitivo de Control: Apagado y Limpieza
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red[700],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed: () => _procesoDeCierreDeSesion(context),
-                icon: const Icon(Icons.logout),
-                label: const Text(
-                  'CERRAR SESIÓN',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
+  Widget _construirSeccionPerfilComunidad(BuildContext context, UsuarioModel elUsuarioActual) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 5))
+        ]
+      ),
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+               const Text('Perfil en Comunidad', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal)),
+               const Icon(Icons.people_alt, color: Colors.teal, size: 20),
             ],
           ),
+          const SizedBox(height: 8),
+          const Text(
+            'Esta información será visible públicamente para que los estudiantes conozcan más sobre tu metodología o experiencia.',
+            style: TextStyle(fontSize: 13, color: Colors.grey, height: 1.4),
+          ),
+          const SizedBox(height: 16),
+          InkWell(
+            onTap: () => _mostrarDialogoDeEdicion(
+              context, 
+              'Descripción de Perfil', 
+              elUsuarioActual.descripcionPerfil ?? '', 
+              'Descripción o Metodología', 
+              'descripcionPerfil', 
+              esMultilinea: true
+            ),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.teal.shade50,
+                border: Border.all(color: Colors.teal.shade200),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Sobre mí', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
+                      Icon(Icons.edit, color: Colors.teal.shade700, size: 16),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    elUsuarioActual.descripcionPerfil?.isNotEmpty == true 
+                      ? elUsuarioActual.descripcionPerfil! 
+                      : 'Toca aquí para escribir una presentación corta sobre ti y lo que enseñas...',
+                    style: TextStyle(color: elUsuarioActual.descripcionPerfil?.isNotEmpty == true ? Colors.black87 : Colors.teal.shade700, height: 1.5),
+                  )
+                ],
+              ),
+            ),
+          )
+        ],
+      )
+    );
+  }
+
+  Widget _construirCajaEditaRapida(BuildContext context, String etiqueta, IconData icono, String? valorActual, String llaveFirestore) {
+     return Column(
+       crossAxisAlignment: CrossAxisAlignment.start,
+       children: [
+          Text(etiqueta, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          const SizedBox(height: 4),
+          InkWell(
+            onTap: () => _mostrarDialogoDeEdicion(context, etiqueta, valorActual ?? '', etiqueta, llaveFirestore),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.indigoAccent.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(icono, color: Colors.indigoAccent.withValues(alpha: 0.7), size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      valorActual?.isNotEmpty == true ? valorActual! : 'Toca para añadir...',
+                      style: const TextStyle(color: Colors.indigoAccent, fontSize: 14),
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ),
+       ],
+     );
+  }
+
+  Widget _construirSeccionPostulacion(UsuarioModel usuario) {
+    if (usuario.estado_solicitud_tutor == 'en_revision') {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.shade200)),
+        child: const Row(
+          children: [
+            Icon(Icons.access_time_filled, color: Colors.orange),
+            SizedBox(width: 12),
+            Expanded(child: Text('Tu postulación está en revisión. Presenta tus créditos al Administrador.', style: TextStyle(color: Colors.deepOrange))),
+          ],
         ),
+      );
+    } 
+
+    if (usuario.estado_solicitud_tutor == 'aprobado') {
+      return const SizedBox.shrink(); 
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        style: FilledButton.styleFrom(
+          backgroundColor: Colors.indigo,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+        ),
+        icon: const Icon(Icons.school),
+        label: const Text('Postularme como Tutor', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        onPressed: () async {
+          final confirmacion = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Postulación a Tutor', style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
+              content: const Text('Para ser promovido, preséntate al tribunal administrativo con tus créditos (oficiales o no) para una entrevista rápida.\n\n¿Deseas entrar en la lista de revisión?'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+                FilledButton(onPressed: () => Navigator.pop(ctx, true), style: FilledButton.styleFrom(backgroundColor: Colors.teal), child: const Text('Entrar en Espera')),
+              ],
+            )
+          );
+
+          if (confirmacion == true && context.mounted) {
+             await _actualizarCampoEnFirestore(context, 'estado_solicitud_tutor', 'en_revision');
+          }
+        },
       ),
     );
   }

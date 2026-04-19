@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../providers/autenticacion_provider.dart';
 import '../../providers/tutorias_provider.dart';
 import '../../models/tutoria_model.dart';
 import '../../models/usuario_model.dart';
-import '../../core/theme/app_theme.dart';
 
 class CrearTutoriaView extends StatefulWidget {
   const CrearTutoriaView({super.key});
@@ -17,6 +15,7 @@ class CrearTutoriaView extends StatefulWidget {
 class _CrearTutoriaViewState extends State<CrearTutoriaView> {
   final _formKey = GlobalKey<FormState>();
 
+  // Controladores de los campos de texto
   final _materiaController = TextEditingController();
   final _temaController = TextEditingController();
   final _cupoController = TextEditingController(text: '1');
@@ -41,19 +40,8 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
       initialDate: DateTime.now().add(const Duration(days: 1)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 30)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.primarioAzul,
-              onPrimary: Colors.white,
-              onSurface: AppTheme.textoOscuro,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
+
     if (fechaElegida != null) {
       setState(() {
         _fechaSeleccionada = fechaElegida;
@@ -65,17 +53,8 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
     final TimeOfDay? horaElegida = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.primarioAzul,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
+
     if (horaElegida != null) {
       setState(() {
         _horaSeleccionada = horaElegida;
@@ -84,13 +63,15 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
   }
 
   Future<void> _confirmarYSubirTutoria(UsuarioModel usuarioCreador) async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     if (_fechaSeleccionada == null || _horaSeleccionada == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Por favor, selecciona tanto la fecha como la hora sugerida.',
+            'Por favor, selecciona tanto la fecha como la hora sugerida para la tutoría.',
           ),
           backgroundColor: Colors.redAccent,
         ),
@@ -98,6 +79,15 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
       return;
     }
 
+    /*
+     * Proceso de combinación de Date y Time en un único DateTime:
+     * Para lograr una marca de tiempo absoluta y estandarizada, capturamos el año,
+     * mes y día del objeto DateTime provisto por 'showDatePicker'. A estos pilares
+     * esenciales les acoplamos la hora y los minutos extraídos del objeto TimeOfDay 
+     * retornado por 'showTimePicker'.
+     * Esta fusión permite el almacenamiento fluido, el orden cronológico estricto 
+     * y el filtrado ultra rápido dentro de las colecciones de Firebase Firestore.
+     */
     final DateTime fechaHoraFinalSugerida = DateTime(
       _fechaSeleccionada!.year,
       _fechaSeleccionada!.month,
@@ -106,8 +96,10 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
       _horaSeleccionada!.minute,
     );
 
+    // Generamos una huella digital temporal inquebrantable para el documento
     final String identificadorUnico = DateTime.now().millisecondsSinceEpoch
         .toString();
+
     final int cuposElegidos = int.tryParse(_cupoController.text) ?? 1;
     final int minutosDuracion = int.tryParse(_duracionController.text) ?? 60;
 
@@ -116,8 +108,11 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
       materiaOAsignatura: _materiaController.text.trim(),
       temaEspecifico: _temaController.text.trim(),
       carrera: usuarioCreador.carrera ?? 'General',
-      identificadorDelTutor: '',
-      listaDeEstudiantesInscritos: [usuarioCreador.identificadorUnico],
+      identificadorDelTutor:
+          '', // Se inicializa vacío a la espera de que un profesor del sistema acepte el encargo
+      listaDeEstudiantesInscritos: [
+        usuarioCreador.identificadorUnico,
+      ], // El autor solicitante ocupa automáticamente la primera plaza
       modalidadDeClase: _modalidadSeleccionada,
       estadoDeLaSolicitud: 'pendiente',
       fechaHoraSugerida: fechaHoraFinalSugerida,
@@ -134,11 +129,13 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
       if (operacionExitosa) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Solicitud publicada exitosamente.'),
-            backgroundColor: AppTheme.primarioVerde,
+            content: Text(
+              'La solicitud de tutoría ha sido publicada exitosamente en el foro mundial.',
+            ),
+            backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context); // Cerramos el formulario triunfalmente
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -152,22 +149,14 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
 
   @override
   Widget build(BuildContext context) {
+    // Validamos estrictamente las condiciones de acceso iniciales exigidas
     final proveedorAutenticacion = context.read<AutenticacionProvider>();
     final perfilValido = proveedorAutenticacion.perfilCompleto;
 
-    // Pantalla de bloqueo por perfil incompleto
+    // Si el usuario no ha suministrado los campos críticos de Facultad y Carrera, bloqueamos el formulario.
     if (!perfilValido) {
       return Scaffold(
-        backgroundColor: AppTheme.fondoClaro,
-        appBar: AppBar(
-          title: const Text(
-            'Acceso Restringido',
-            style: TextStyle(color: AppTheme.primarioAzul),
-          ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: AppTheme.primarioAzul),
-        ),
+        appBar: AppBar(title: const Text('Acceso Restringido')),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -180,34 +169,24 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
                   color: Colors.orangeAccent,
                 ),
                 const SizedBox(height: 24),
-                Text(
+                const Text(
                   'Perfil Incompleto',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(color: AppTheme.textoOscuro),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 const Text(
                   'Para garantizar la calidad educativa, por favor completa tu Facultad y Carrera en la pestaña Perfil antes de solicitar sesiones.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: AppTheme.grisTexto),
+                  style: TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton.icon(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Retornar al inicio'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primarioAzul,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
+                FilledButton.icon(
+                  onPressed: () {
+                    // Retorna al sistema anterior para que el usuario navegue voluntariamente.
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Retornar'),
                 ),
               ],
             ),
@@ -216,20 +195,11 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
       );
     }
 
+    // Como perfilValido asegura la existencia de modelo, leemos el usuario.
     final usuarioActualDelDispositivo = proveedorAutenticacion.usuarioActual!;
 
     return Scaffold(
-      backgroundColor: AppTheme.fondoClaro,
-      appBar: AppBar(
-        title: const Text(
-          'Solicitar Tutoría',
-          style: TextStyle(color: AppTheme.primarioAzul),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppTheme.primarioAzul),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Solicitar Tutoría')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Form(
@@ -237,242 +207,185 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Grupo 1: Información Académica
-              Text(
-                'Información Académica',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppTheme.primarioVerde,
-                  fontWeight: FontWeight.bold,
+              TextFormField(
+                controller: _materiaController,
+                decoration: const InputDecoration(
+                  labelText: 'Materia o Asignatura',
+                  hintText: 'Ej. Física Mecánica',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.book_outlined),
                 ),
+                validator: (valorTexto) {
+                  if (valorTexto == null || valorTexto.trim().isEmpty) {
+                    return 'Debes especificar la materia.';
+                  }
+                  return null;
+                },
               ),
-              const SizedBox(height: 12),
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.grey.shade300),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _temaController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Tema Específico / Dudas Puntuales',
+                  hintText: 'Detalla lo que necesitas repasar...',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        controller: _materiaController,
-                        decoration: _decoracionCampo(
-                          'Materia o Asignatura',
-                          'Ej. Física Mecánica',
-                          Icons.book_outlined,
-                        ),
-                        validator: (valor) =>
-                            valor == null || valor.trim().isEmpty
-                            ? 'Debes especificar la materia.'
-                            : null,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _temaController,
-                        maxLines: 4,
-                        decoration: _decoracionCampo(
-                          'Tema Específico',
-                          'Detalla lo que necesitas repasar...',
-                          null,
-                        ),
-                        validator: (valor) =>
-                            valor == null || valor.trim().isEmpty
-                            ? 'Debes detallar el tema.'
-                            : null,
-                      ),
-                    ],
+                validator: (valorTexto) {
+                  if (valorTexto == null || valorTexto.trim().isEmpty) {
+                    return 'Debes escribir sobre el tema específico a tratar.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              DropdownButtonFormField<String>(
+                initialValue: _modalidadSeleccionada,
+                decoration: const InputDecoration(
+                  labelText: 'Modalidad de Clase',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.location_on_outlined),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'Virtual', child: Text('Virtual')),
+                  DropdownMenuItem(
+                    value: 'Presencial',
+                    child: Text('Presencial'),
                   ),
-                ),
+                ],
+                onChanged: (nuevaEleccion) {
+                  if (nuevaEleccion != null) {
+                    setState(() {
+                      _modalidadSeleccionada = nuevaEleccion;
+                    });
+                  }
+                },
               ),
-              const SizedBox(height: 24),
-
-              // Grupo 2: Logística y Tiempo
-              Text(
-                'Logística de la Sesión',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppTheme.primarioVerde,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.grey.shade300),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      DropdownButtonFormField<String>(
-                        value: _modalidadSeleccionada,
-                        decoration: _decoracionCampo(
-                          'Modalidad de Clase',
-                          '',
-                          Icons.location_on_outlined,
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'Virtual',
-                            child: Text('Virtual'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Presencial',
-                            child: Text('Presencial'),
-                          ),
-                        ],
-                        onChanged: (nuevaEleccion) {
-                          if (nuevaEleccion != null)
-                            setState(
-                              () => _modalidadSeleccionada = nuevaEleccion,
-                            );
-                        },
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _cupoController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Cupo Máximo',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.groups_outlined),
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _cupoController,
-                              keyboardType: TextInputType.number,
-                              decoration: _decoracionCampo(
-                                'Cupo Máximo',
-                                '',
-                                Icons.groups_outlined,
-                              ),
-                              validator: (valor) {
-                                if (valor == null || valor.trim().isEmpty)
-                                  return 'Obligatorio';
-                                if ((int.tryParse(valor) ?? 0) < 1)
-                                  return 'Inválido';
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _duracionController,
-                              keyboardType: TextInputType.number,
-                              decoration: _decoracionCampo(
-                                'Minutos',
-                                '60',
-                                Icons.timer_outlined,
-                              ),
-                              validator: (valor) {
-                                if (valor == null || valor.trim().isEmpty)
-                                  return 'Obligatorio';
-                                if ((int.tryParse(valor) ?? 0) < 10)
-                                  return 'Min 10';
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16.0),
-                        child: Divider(),
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _seleccionarFecha,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppTheme.primarioAzul,
-                                side: const BorderSide(
-                                  color: AppTheme.primarioAzul,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14.0,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              icon: const Icon(Icons.calendar_month),
-                              label: Text(
-                                _fechaSeleccionada == null
-                                    ? 'Fijar Fecha'
-                                    : '${_fechaSeleccionada!.day.toString().padLeft(2, '0')}/${_fechaSeleccionada!.month.toString().padLeft(2, '0')}',
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _seleccionarHora,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppTheme.primarioAzul,
-                                side: const BorderSide(
-                                  color: AppTheme.primarioAzul,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14.0,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              icon: const Icon(Icons.access_time_rounded),
-                              label: Text(
-                                _horaSeleccionada == null
-                                    ? 'Fijar Hora'
-                                    : _horaSeleccionada!.format(context),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Botón de Envío
-              Consumer<TutoriasProvider>(
-                builder: (context, elProveedorDeTutorias, child) {
-                  return SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primarioAzul,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        disabledBackgroundColor: AppTheme.primarioAzul
-                            .withOpacity(0.6),
-                      ),
-                      onPressed:
-                          elProveedorDeTutorias.estaCargandoPeticionEnNube
-                          ? null
-                          : () => _confirmarYSubirTutoria(
-                              usuarioActualDelDispositivo,
-                            ),
-                      child: elProveedorDeTutorias.estaCargandoPeticionEnNube
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2.5,
-                              ),
-                            )
-                          : const Text(
-                              'Publicar Solicitud',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                      validator: (valorTexto) {
+                        if (valorTexto == null || valorTexto.trim().isEmpty) {
+                          return 'Obligatorio';
+                        }
+                        final intentoNumerico = int.tryParse(valorTexto);
+                        if (intentoNumerico == null || intentoNumerico < 1) {
+                          return 'Inválido';
+                        }
+                        return null;
+                      },
                     ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _duracionController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Duración (Mins)',
+                        hintText: '30, 60, 90',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.timer_outlined),
+                      ),
+                      validator: (valorTexto) {
+                        if (valorTexto == null || valorTexto.trim().isEmpty) {
+                          return 'Obligatorio';
+                        }
+                        final intentoNumerico = int.tryParse(valorTexto);
+                        if (intentoNumerico == null || intentoNumerico < 10) {
+                          return 'Min 10';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
+
+              // Seccion de Calendario y Reloj
+              const Text(
+                'Planificación Sugerida',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _seleccionarFecha,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14.0),
+                      ),
+                      icon: const Icon(Icons.calendar_month),
+                      label: Text(
+                        _fechaSeleccionada == null
+                            ? 'Fijar Fecha'
+                            : '${_fechaSeleccionada!.day.toString().padLeft(2, '0')}/${_fechaSeleccionada!.month.toString().padLeft(2, '0')}/${_fechaSeleccionada!.year}',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _seleccionarHora,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14.0),
+                      ),
+                      icon: const Icon(Icons.access_time_rounded),
+                      label: Text(
+                        _horaSeleccionada == null
+                            ? 'Fijar Hora'
+                            : _horaSeleccionada!.format(context),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 48),
+
+              // Boton de Envio Transaccional
+              Consumer<TutoriasProvider>(
+                builder: (context, elProveedorDeTutorias, elNinoNoUsado) {
+                  return FilledButton(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: elProveedorDeTutorias.estaCargandoPeticionEnNube
+                        ? null
+                        : () => _confirmarYSubirTutoria(
+                            usuarioActualDelDispositivo,
+                          ),
+                    child: elProveedorDeTutorias.estaCargandoPeticionEnNube
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : const Text(
+                            'Publicar Solicitud',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   );
                 },
               ),
@@ -480,34 +393,6 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
           ),
         ),
       ),
-    );
-  }
-
-  /// Método auxiliar para unificar la estética de los campos de texto
-  InputDecoration _decoracionCampo(
-    String etiqueta,
-    String hint,
-    IconData? icono,
-  ) {
-    return InputDecoration(
-      labelText: etiqueta,
-      hintText: hint,
-      prefixIcon: icono != null ? Icon(icono, color: AppTheme.grisTexto) : null,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade400),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppTheme.primarioAzul, width: 2),
-      ),
-      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      filled: true,
-      fillColor: Colors.white,
     );
   }
 }

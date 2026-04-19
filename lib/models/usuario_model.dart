@@ -32,6 +32,22 @@ class UsuarioModel {
   /// Sirve para vincular al estudiante con sus tutores seleccionados y mostrar rápidamente a quiénes sigue.
   final List<String> listaDeTutoresSuscritos;
 
+  /// Cantidad de faltas o inasistencias en las tutorías programadas.
+  final int strikes_inasistencia;
+
+  /// Indica si la cuenta del usuario está suspendida (baneada).
+  final bool esta_baneado;
+
+  /// Refleja la fase de postulación del usuario para convertirse en tutor. Posibles: 'ninguna', 'en_revision', 'aprobado'.
+  final String estado_solicitud_tutor;
+
+  /// Breve descripción que el tutor se asigna a sí mismo para aparecer en la comunidad
+  final String? descripcionPerfil;
+
+  final String? telefonoPersonal;
+  final String? contactoEmergenciaNombre;
+  final String? contactoEmergenciaTelefono;
+
   /// Función constructora que inicializa o "crea" la representación del usuario cuando ya tenemos su información.
   UsuarioModel({
     required this.identificadorUnico,
@@ -41,6 +57,13 @@ class UsuarioModel {
     this.facultad,
     this.carrera,
     required this.listaDeTutoresSuscritos,
+    this.strikes_inasistencia = 0,
+    this.esta_baneado = false,
+    this.estado_solicitud_tutor = 'ninguna',
+    this.descripcionPerfil,
+    this.telefonoPersonal,
+    this.contactoEmergenciaNombre,
+    this.contactoEmergenciaTelefono,
   });
 
   /// Convierte la información del objeto de usuario actual a un formato de lista de parejas (Mapa/Diccionario).
@@ -54,6 +77,13 @@ class UsuarioModel {
       'facultad': facultad,
       'carrera': carrera,
       'listaDeTutoresSuscritos': listaDeTutoresSuscritos,
+      'strikes_inasistencia': strikes_inasistencia,
+      'esta_baneado': esta_baneado,
+      'estado_solicitud_tutor': estado_solicitud_tutor,
+      'descripcionPerfil': descripcionPerfil,
+      'telefonoPersonal': telefonoPersonal,
+      'contactoEmergenciaNombre': contactoEmergenciaNombre,
+      'contactoEmergenciaTelefono': contactoEmergenciaTelefono,
     };
   }
 
@@ -68,6 +98,10 @@ class UsuarioModel {
         correoElectronico: '',
         rolEnElSistema: RolSistema.estudiante,
         listaDeTutoresSuscritos: [],
+        strikes_inasistencia: 0,
+        esta_baneado: false,
+        estado_solicitud_tutor: 'ninguna',
+        descripcionPerfil: null,
       );
     }
 
@@ -89,6 +123,13 @@ class UsuarioModel {
       listaDeTutoresSuscritos: mapaDeDatos['listaDeTutoresSuscritos'] != null
           ? List<String>.from(mapaDeDatos['listaDeTutoresSuscritos'])
           : [],
+      strikes_inasistencia: mapaDeDatos['strikes_inasistencia'] ?? 0,
+      esta_baneado: mapaDeDatos['esta_baneado'] ?? false,
+      estado_solicitud_tutor: mapaDeDatos['estado_solicitud_tutor'] ?? 'ninguna',
+      descripcionPerfil: mapaDeDatos['descripcionPerfil'],
+      telefonoPersonal: mapaDeDatos['telefonoPersonal'],
+      contactoEmergenciaNombre: mapaDeDatos['contactoEmergenciaNombre'],
+      contactoEmergenciaTelefono: mapaDeDatos['contactoEmergenciaTelefono'],
     );
   }
 
@@ -96,5 +137,40 @@ class UsuarioModel {
   /// Compara el rol asignado actualmente al perfil frente a un rol específico introducido como parámetro.
   bool tieneRol(RolSistema rolRequerido) {
     return rolEnElSistema == rolRequerido;
+  }
+
+  /// Crea una réplica del usuario actual variando las propiedades que se necesiten actualizar.
+  UsuarioModel copyWith({
+    String? identificadorUnico,
+    String? nombreCompleto,
+    String? correoElectronico,
+    RolSistema? rolEnElSistema,
+    String? facultad,
+    String? carrera,
+    List<String>? listaDeTutoresSuscritos,
+    int? strikes_inasistencia,
+    bool? esta_baneado,
+    String? estado_solicitud_tutor,
+    String? descripcionPerfil,
+    String? telefonoPersonal,
+    String? contactoEmergenciaNombre,
+    String? contactoEmergenciaTelefono,
+  }) {
+    return UsuarioModel(
+      identificadorUnico: identificadorUnico ?? this.identificadorUnico,
+      nombreCompleto: nombreCompleto ?? this.nombreCompleto,
+      correoElectronico: correoElectronico ?? this.correoElectronico,
+      rolEnElSistema: rolEnElSistema ?? this.rolEnElSistema,
+      facultad: facultad ?? this.facultad,
+      carrera: carrera ?? this.carrera,
+      listaDeTutoresSuscritos: listaDeTutoresSuscritos ?? this.listaDeTutoresSuscritos,
+      strikes_inasistencia: strikes_inasistencia ?? this.strikes_inasistencia,
+      esta_baneado: esta_baneado ?? this.esta_baneado,
+      estado_solicitud_tutor: estado_solicitud_tutor ?? this.estado_solicitud_tutor,
+      descripcionPerfil: descripcionPerfil ?? this.descripcionPerfil,
+      telefonoPersonal: telefonoPersonal ?? this.telefonoPersonal,
+      contactoEmergenciaNombre: contactoEmergenciaNombre ?? this.contactoEmergenciaNombre,
+      contactoEmergenciaTelefono: contactoEmergenciaTelefono ?? this.contactoEmergenciaTelefono,
+    );
   }
 }
