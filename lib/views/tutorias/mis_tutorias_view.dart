@@ -52,17 +52,44 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
           foregroundColor: AppTheme.textoOscuro,
           title: const Text('Comunidad de Aprendizaje', style: TextStyle(fontWeight: FontWeight.bold)),
           centerTitle: true,
-          bottom: const TabBar(
-            isScrollable: true,
-            tabAlignment: TabAlignment.center,
-            labelColor: AppTheme.primarioAzul,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: AppTheme.primarioAzul,
-            tabs: [
-              Tab(text: "Calendario", icon: Icon(Icons.calendar_month)),
-              Tab(text: "Próximas", icon: Icon(Icons.schedule)),
-              Tab(text: "Historial", icon: Icon(Icons.history_edu)),
-            ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(72.0),
+            child: Builder(
+              builder: (context) {
+                return Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left, color: AppTheme.primarioAzul),
+                      onPressed: () {
+                        final controller = DefaultTabController.of(context);
+                        if (controller.index > 0) controller.animateTo(controller.index - 1);
+                      },
+                    ),
+                    const Expanded(
+                      child: TabBar(
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.center,
+                        labelColor: AppTheme.primarioAzul,
+                        unselectedLabelColor: Colors.grey,
+                        indicatorColor: AppTheme.primarioAzul,
+                        tabs: [
+                          Tab(text: "Calendario", icon: Icon(Icons.calendar_month)),
+                          Tab(text: "Próximas", icon: Icon(Icons.schedule)),
+                          Tab(text: "Historial", icon: Icon(Icons.history_edu)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                        icon: const Icon(Icons.chevron_right, color: AppTheme.primarioAzul),
+                        onPressed: () {
+                          final controller = DefaultTabController.of(context);
+                          if (controller.index < controller.length - 1) controller.animateTo(controller.index + 1);
+                        },
+                    ),
+                  ],
+                );
+              }
+            ),
           ),
         ),
         body: StreamBuilder<QuerySnapshot>(

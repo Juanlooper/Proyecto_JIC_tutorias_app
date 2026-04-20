@@ -356,6 +356,7 @@ flutter run
 ### Autenticación
 - Verificación de email obligatoria antes de permitir login.
 - Cierre de sesión forzado tras registro (el usuario debe verificar correo primero).
+- Manejo seguro de errores en el inicio de sesión: se proporciona feedback claro ante credenciales incorrectas ocultando la existencia o no del correo (prevención de enumeración de cuentas).
 - Modo QA activo: La validación de dominio `@utp.ac.pa` está temporalmente desactivada para pruebas iniciales.
 
 ### Prevención de Memory Leaks

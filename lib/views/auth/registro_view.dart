@@ -32,6 +32,9 @@ class _RegistroViewState extends State<RegistroView> {
   // Estado de los Checkboxes
   bool _aceptoTerminos = false;
   bool _obscureText = true;
+  String? _facultadSeleccionada;
+  String? _anioSeleccionado;
+  String _tipoCelular = 'Nacional';
 
   @override
   void dispose() {
@@ -72,12 +75,8 @@ class _RegistroViewState extends State<RegistroView> {
       correoEscrito: correoLimpio,
       contrasenaEscrita: claveLimpa,
       nombreEscrito: nombreEnsamblado,
-      facultadElegidaEnMenu: _ctrlFacultad.text.trim().isNotEmpty
-          ? _ctrlFacultad.text.trim()
-          : null,
-      carreraElegidaEnMenu: _ctrlCarrera.text.trim().isNotEmpty
-          ? _ctrlCarrera.text.trim()
-          : null,
+      facultadElegidaEnMenu: _facultadSeleccionada,
+      carreraElegidaEnMenu: _anioSeleccionado,
     );
 
     if (exitoRegistrando && mounted) {
@@ -171,6 +170,7 @@ class _RegistroViewState extends State<RegistroView> {
                         _ctrlPrimerNombre,
                         Icons.person,
                         obligatorio: true,
+                        mensajeAyuda: 'Ingresa explícitamente tu primer nombre en letras (sin apellidos). Ej: Juan',
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -179,6 +179,7 @@ class _RegistroViewState extends State<RegistroView> {
                         'Segundo Nombre',
                         _ctrlSegundoNombre,
                         Icons.person_outline,
+                        mensajeAyuda: 'Opcional. Ingresa tu segundo nombre u otro término si corresponde. Ej: Alberto',
                       ),
                     ),
                   ],
@@ -194,6 +195,7 @@ class _RegistroViewState extends State<RegistroView> {
                         _ctrlPrimerApellido,
                         Icons.badge,
                         obligatorio: true,
+                        mensajeAyuda: 'Ingresa el apellido inicial de tu familia política o paterna. Ej: Rodríguez',
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -202,6 +204,7 @@ class _RegistroViewState extends State<RegistroView> {
                         'Segundo Apellido',
                         _ctrlSegundoApellido,
                         Icons.badge_outlined,
+                        mensajeAyuda: 'Opcional. Ingresa tu segundo apellido o materno. Ej: Pérez',
                       ),
                     ),
                   ],
@@ -210,20 +213,84 @@ class _RegistroViewState extends State<RegistroView> {
 
                 // Fila 3: Documentos
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: _construirCampoTexto(
-                        'Cedula',
-                        _ctrlCedula,
-                        Icons.credit_card,
+                      flex: 4,
+                      child: TextFormField(
+                        controller: _ctrlCedula,
+                        decoration: InputDecoration(
+                          labelText: 'Cédula',
+                          hintText: 'Ej: 8-888-888',
+                          hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+                          prefixIcon: const Icon(Icons.credit_card, color: AppTheme.grisTexto, size: 20),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.help_outline, color: AppTheme.primarioAzul, size: 20),
+                            onPressed: () => _mostrarAyudaFormato('Cédula de Identidad', 'El formato requiere la escritura obligatoria de **guiones medios** para separar los números o prefijos provinciales.\n\n✔️ Formatos válidos:\n• 8-888-8888\n• PE-12-34\n• 10-123-4567'),
+                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                          isDense: true,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Requerido';
+                          }
+                          if (!value.contains('-')) {
+                            return 'Debe incluir guiones';
+                          }
+                          return null;
+                        },
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: _construirCampoTexto(
-                        'Celular',
-                        _ctrlCelular,
-                        Icons.phone_android,
+                      flex: 3,
+                      child: DropdownButtonFormField<String>(
+                        value: _tipoCelular,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                          isDense: true,
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'Nacional', child: Text('Nacional', style: TextStyle(fontSize: 10))),
+                          DropdownMenuItem(value: 'Internacional', child: Text('Internac.', style: TextStyle(fontSize: 10))),
+                        ],
+                        onChanged: (v) => setState(() {
+                            _tipoCelular = v!;
+                            _ctrlCelular.clear();
+                        }),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 5,
+                      child: TextFormField(
+                        controller: _ctrlCelular,
+                        keyboardType: _tipoCelular == 'Nacional' ? TextInputType.number : TextInputType.phone,
+                        decoration: InputDecoration(
+                          labelText: 'Celular/Fijo',
+                          prefixText: _tipoCelular == 'Nacional' ? '+507 ' : '',
+                          prefixStyle: const TextStyle(color: Colors.black87, fontSize: 13),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.help_outline, color: AppTheme.primarioAzul, size: 20),
+                            onPressed: () => _mostrarAyudaFormato('Télefono o Celular', 'NACIONAL: Por favor elije [Nacional] en la pestaña izquierda. Digita sólo tu número de móvil o casa sin dejar espacios en blanco ni colocar guiones, tiene que tener 7 u 8 dígitos. Ejemplo: 61234567.\n\nINTERNACIONAL: Selecciona [Internac.] e ingresa tu código de país iniciando con Signo Más (+) y luego tu número. Ejemplo: +12345678.'),
+                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+                          isDense: true,
+                        ),
+                        validator: (value) {
+                           if (value == null || value.trim().isEmpty) return null;
+                           if (_tipoCelular == 'Nacional') {
+                              final numLimpio = value.replaceAll(RegExp(r'\D'), '');
+                              if (numLimpio.length < 7 || numLimpio.length > 8) return '7-8 dígitos';
+                           } else {
+                              if (!value.startsWith('+')) return 'Use +';
+                           }
+                           return null;
+                        },
                       ),
                     ),
                   ],
@@ -232,20 +299,60 @@ class _RegistroViewState extends State<RegistroView> {
 
                 // Fila 4: Académicos
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: _construirCampoTexto(
-                        'Facultad',
-                        _ctrlFacultad,
-                        Icons.account_balance,
+                      child: DropdownButtonFormField<String>(
+                        value: _facultadSeleccionada,
+                        decoration: InputDecoration(
+                          labelText: 'Facultad',
+                          prefixIcon: const Icon(Icons.account_balance, color: AppTheme.grisTexto, size: 20),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.help_outline, color: AppTheme.primarioAzul, size: 20),
+                            onPressed: () => _mostrarAyudaFormato('Facultad Principal', 'Pulsa en este campo y despliega la lista para escoger la Facultad estructural dentro de la UTP a la que pertenece tu carrera actual.'),
+                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                          isDense: true,
+                        ),
+                        isExpanded: true,
+                        items: const [
+                          DropdownMenuItem(value: 'Facultad de Ciencias y Tecnología', child: Text('Ciencias y Tecnología', overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13))),
+                          DropdownMenuItem(value: 'Facultad de Ingeniería Industrial', child: Text('Ing. Industrial', overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13))),
+                          DropdownMenuItem(value: 'Facultad de Ingeniería Mecánica', child: Text('Ing. Mecánica', overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13))),
+                          DropdownMenuItem(value: 'Facultad de Ingeniería de Sistemas Computacionales', child: Text('Sistemas Comp.', overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13))),
+                          DropdownMenuItem(value: 'Facultad de Ingeniería Eléctrica', child: Text('Ing. Eléctrica', overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13))),
+                          DropdownMenuItem(value: 'Facultad de Ingeniería Civil', child: Text('Ing. Civil', overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13))),
+                        ],
+                        validator: (v) => v == null ? 'Obligatorio' : null,
+                        onChanged: (v) => setState(() => _facultadSeleccionada = v),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _construirCampoTexto(
-                        'Carrera',
-                        _ctrlCarrera,
-                        Icons.school,
+                      child: DropdownButtonFormField<String>(
+                        value: _anioSeleccionado,
+                        decoration: InputDecoration(
+                          labelText: 'Año que cursa',
+                          prefixIcon: const Icon(Icons.school, color: AppTheme.grisTexto, size: 20),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.help_outline, color: AppTheme.primarioAzul, size: 20),
+                            onPressed: () => _mostrarAyudaFormato('Año Académico', 'Indica en qué año oficial de tu plan de estudios te consideras ingresado actualmente. Puedes ser desde de Primero a Quinto año.'),
+                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                          isDense: true,
+                        ),
+                        isExpanded: true,
+                        items: const [
+                          DropdownMenuItem(value: 'Primero', child: Text('Primero', style: TextStyle(fontSize: 13))),
+                          DropdownMenuItem(value: 'Segundo', child: Text('Segundo', style: TextStyle(fontSize: 13))),
+                          DropdownMenuItem(value: 'Tercero', child: Text('Tercero', style: TextStyle(fontSize: 13))),
+                          DropdownMenuItem(value: 'Cuarto', child: Text('Cuarto', style: TextStyle(fontSize: 13))),
+                          DropdownMenuItem(value: 'Quinto', child: Text('Quinto', style: TextStyle(fontSize: 13))),
+                        ],
+                        validator: (v) => v == null ? 'Obligatorio' : null,
+                        onChanged: (v) => setState(() => _anioSeleccionado = v),
                       ),
                     ),
                   ],
@@ -271,10 +378,14 @@ class _RegistroViewState extends State<RegistroView> {
                   enabled: !semaforoCarga,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    labelText: 'Correo electrónico (@gmail.com)',
+                    labelText: 'Correo Institucional (@utp.ac.pa)',
                     prefixIcon: const Icon(
                       Icons.email,
                       color: AppTheme.primarioAzul,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.help_outline, color: AppTheme.primarioAzul, size: 20),
+                      onPressed: () => _mostrarAyudaFormato('Correo Universitario', 'Para matricularte exitosamente en la plataforma, requieres de un correo proporcionado oficialmente por la institución. El dominio debe ser explícitamente "utp.ac.pa" para considerarse válido. Ejemplo:\njuan.rodriguez@utp.ac.pa'),
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -283,8 +394,9 @@ class _RegistroViewState extends State<RegistroView> {
                   validator: (valor) {
                     if (valor == null || valor.isEmpty) return 'Requerido';
 
-                    // DOWNGRADE DE SEGURIDAD (Pruebas Locales)
-                    // Ya no filtramos a que solo sea @utp.ac.pa
+                    if (!valor.toLowerCase().contains('utp.ac.pa')) {
+                      return 'Solo se permite correo UTP (ej. @utp.ac.pa)';
+                    }
                     if (!valor.contains('@')) {
                       return 'Debe ser un correo válido';
                     }
@@ -304,16 +416,25 @@ class _RegistroViewState extends State<RegistroView> {
                       Icons.lock,
                       color: AppTheme.primarioAzul,
                     ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureText ? Icons.visibility_off : Icons.visibility,
-                        color: AppTheme.primarioAzul,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscureText = !_obscureText;
-                        });
-                      },
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            _obscureText ? Icons.visibility_off : Icons.visibility,
+                            color: AppTheme.primarioAzul,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscureText = !_obscureText;
+                            });
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.help_outline, color: AppTheme.primarioAzul, size: 20),
+                          onPressed: () => _mostrarAyudaFormato('Robustez de Contraseña', 'Tu contraseña debe medir al menos 6 caracteres y se mantendrá de forma estricta y oculta en Firebase para cumplir con niveles de encriptación seguros. Tip adicional: Combina mayúsculas y números.'),
+                        ),
+                      ],
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -349,7 +470,7 @@ class _RegistroViewState extends State<RegistroView> {
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Text(
-                        'Autorizo que se almacenen y gestionen mis datos personales según la Ley 81 de Proteccion de Datos Personales.',
+                        'Autorizo que se almacenen y gestionen mis datos personales, de contacto según la Ley 81 de protección de Datos Personales. Comprendo que estos datos son de uso estrictamente confidencial para fines académicos y protocolos de emergencia.',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppTheme.grisTexto,
@@ -396,12 +517,17 @@ class _RegistroViewState extends State<RegistroView> {
     TextEditingController controlador,
     IconData icono, {
     bool obligatorio = false,
+    String? mensajeAyuda,
   }) {
     return TextFormField(
       controller: controlador,
       decoration: InputDecoration(
         labelText: etiqueta,
         prefixIcon: Icon(icono, color: AppTheme.grisTexto, size: 20),
+        suffixIcon: mensajeAyuda != null ? IconButton(
+          icon: const Icon(Icons.help_outline, color: AppTheme.primarioAzul, size: 20),
+          onPressed: () => _mostrarAyudaFormato(etiqueta, mensajeAyuda),
+        ) : null,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         contentPadding: const EdgeInsets.symmetric(
           vertical: 14,
@@ -412,6 +538,26 @@ class _RegistroViewState extends State<RegistroView> {
       validator: obligatorio
           ? (valor) => valor == null || valor.isEmpty ? 'Campo requerido' : null
           : null,
+    );
+  }
+
+  void _mostrarAyudaFormato(String titulo, String mensaje) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.info_outline, color: AppTheme.primarioAzul),
+            const SizedBox(width: 8),
+            Expanded(child: Text('Formato: $titulo', style: const TextStyle(color: AppTheme.primarioAzul, fontSize: 16, fontWeight: FontWeight.bold))),
+          ],
+        ),
+        content: Text(mensaje, style: const TextStyle(fontSize: 14, height: 1.4)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Entendido', style: TextStyle(color: AppTheme.primarioVerde))),
+        ],
+      ),
     );
   }
 }

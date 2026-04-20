@@ -148,14 +148,41 @@ class _MetricasViewState extends State<MetricasView> {
           title: const Text('Métricas y Análisis'),
           backgroundColor: AppTheme.primarioVerde,
           foregroundColor: Colors.white,
-          bottom: const TabBar(
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white60,
-            indicatorColor: Colors.white,
-            tabs: [
-              Tab(icon: Icon(Icons.bar_chart), text: 'Estadísticas'),
-              Tab(icon: Icon(Icons.security), text: 'Moderación'),
-            ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(72.0),
+            child: Builder(
+              builder: (context) {
+                return Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left, color: Colors.white),
+                      onPressed: () {
+                        final controller = DefaultTabController.of(context);
+                        if (controller.index > 0) controller.animateTo(controller.index - 1);
+                      },
+                    ),
+                    const Expanded(
+                      child: TabBar(
+                        labelColor: Colors.white,
+                        unselectedLabelColor: Colors.white60,
+                        indicatorColor: Colors.white,
+                        tabs: [
+                          Tab(icon: Icon(Icons.bar_chart), text: 'Estadísticas'),
+                          Tab(icon: Icon(Icons.security), text: 'Moderación'),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                        icon: const Icon(Icons.chevron_right, color: Colors.white),
+                        onPressed: () {
+                          final controller = DefaultTabController.of(context);
+                          if (controller.index < controller.length - 1) controller.animateTo(controller.index + 1);
+                        },
+                    ),
+                  ],
+                );
+              }
+            ),
           ),
         ),
         body: TabBarView(

@@ -250,17 +250,44 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false, // Quitar retroceso
-          bottom: const TabBar(
-            isScrollable: true,
-            tabAlignment: TabAlignment.center,
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            tabs: [
-              Tab(text: "Bolsa de Solicitudes", icon: Icon(Icons.work_outline)),
-              Tab(text: "Mis Pendientes", icon: Icon(Icons.schedule)),
-              Tab(text: "Finalizadas", icon: Icon(Icons.history)),
-            ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(72.0),
+            child: Builder(
+              builder: (context) {
+                return Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left, color: Colors.white),
+                      onPressed: () {
+                        final controller = DefaultTabController.of(context);
+                        if (controller.index > 0) controller.animateTo(controller.index - 1);
+                      },
+                    ),
+                    const Expanded(
+                      child: TabBar(
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.center,
+                        indicatorColor: Colors.white,
+                        labelColor: Colors.white,
+                        unselectedLabelColor: Colors.white70,
+                        tabs: [
+                          Tab(text: "Bolsa de Solicitudes", icon: Icon(Icons.work_outline)),
+                          Tab(text: "Mis Pendientes", icon: Icon(Icons.schedule)),
+                          Tab(text: "Finalizadas", icon: Icon(Icons.history)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                        icon: const Icon(Icons.chevron_right, color: Colors.white),
+                        onPressed: () {
+                          final controller = DefaultTabController.of(context);
+                          if (controller.index < controller.length - 1) controller.animateTo(controller.index + 1);
+                        },
+                    ),
+                  ],
+                );
+              }
+            ),
           ),
           title: const Text('Mi Panel de Desempeño', style: TextStyle(fontWeight: FontWeight.bold)),
           centerTitle: true,

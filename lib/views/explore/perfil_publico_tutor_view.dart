@@ -304,9 +304,18 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
                                     if (esAdmin)
                                       IconButton(
                                         icon: const Icon(Icons.delete, color: Colors.red, size: 18),
-                                        onPressed: () {
-                                          rese.reference.delete();
-                                          _calcularMetricas();
+                                        onPressed: () async {
+                                          try {
+                                            await rese.reference.delete();
+                                            await _calcularMetricas();
+                                            if (ctx.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Comentario eliminado con éxito'), backgroundColor: Colors.green));
+                                            }
+                                          } catch (e) {
+                                            if (ctx.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al eliminar comentario: permisos insuficientes'), backgroundColor: Colors.red));
+                                            }
+                                          }
                                         },
                                       )
                                  ],
