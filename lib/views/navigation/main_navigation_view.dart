@@ -61,6 +61,10 @@ class _MainNavigationViewState extends State<MainNavigationView> {
     }
   }
 
+  void onTapAnterior() {}
+
+  void onTapSiguiente() {}
+
   void _seleccionarVista(int indice) {
     setState(() {
       _indiceActual = indice;
@@ -117,32 +121,70 @@ class _MainNavigationViewState extends State<MainNavigationView> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Image.asset(
-            'assets/images/logo_vecta.png',
-            height: 40,
-            errorBuilder: (context, error, stackTrace) => const Center(child: Text("VECTA", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white))),
-          ),
-        ),
-        title: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(modulosUI.length, (index) {
-                final obj = modulosUI[index];
-                return _crearBotonSuperior(index, obj['titulo'] as String, obj['icono'] as IconData);
-              }),
+        automaticallyImplyLeading: false,
+        titleSpacing: 0,
+        backgroundColor: AppTheme.primarioVerde,
+        foregroundColor: Colors.white,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // [Logo Vecta]
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Image.asset(
+                'assets/images/logo_vecta.png',
+                height: 40,
+                errorBuilder: (context, error, stackTrace) => const Center(child: Text("VECTA", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white))),
+              ),
             ),
-          )
-        ),
-        centerTitle: true,
-        actions: [
-           Padding(
-             padding: const EdgeInsets.symmetric(horizontal: 4.0),
-             child: IconButton(
+            
+            // Bloque Central: Flecha - Título - Flecha
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // [Icono Flecha Izquierda]
+                  // El tamaño estándar de los botones de acción es generalmente 24.0.
+                  // Cálculo de tamaño relativo: 24.0 * 0.75 = 18.0.
+                  // Justificación de jerarquía visual: Un tamaño menor evita que estas flechas
+                  // de navegación secundaria compitan con la atención de los iconos principales
+                  // del menú, así como con el logo y el perfil.
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left, color: Colors.white, size: 18.0),
+                    onPressed: onTapAnterior,
+                  ),
+                  
+                  // [Título/Texto Central]
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0), // Padding simétrico
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(modulosUI.length, (index) {
+                            final obj = modulosUI[index];
+                            return _crearBotonSuperior(index, obj['titulo'] as String, obj['icono'] as IconData);
+                          }),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // [Icono Flecha Derecha]
+                  // Tamaño relativo al 75% (24.0 * 0.75 = 18.0) para mantener la jerarquía visual balanceada.
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right, color: Colors.white, size: 18.0),
+                    onPressed: onTapSiguiente,
+                  ),
+                ],
+              ),
+            ),
+
+            // [Icono de Perfil]
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: IconButton(
                 icon: const CircleAvatar(
                   backgroundColor: Colors.white24,
                   child: Icon(Icons.person, color: Colors.white),
@@ -150,11 +192,10 @@ class _MainNavigationViewState extends State<MainNavigationView> {
                 onPressed: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const PerfilView()));
                 },
-             )
-           )
-        ],
-        backgroundColor: AppTheme.primarioVerde,
-        foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
       ),
       body: IndexedStack(index: _indiceActual, children: vistasSistema),
       floatingActionButton: esAdmin || ['Mis Tutorias', 'Tablero Tutor', 'Perfil'].contains(modulosUI[_indiceActual]['titulo'])
