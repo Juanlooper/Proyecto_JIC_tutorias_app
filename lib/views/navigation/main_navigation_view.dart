@@ -30,6 +30,14 @@ class MainNavigationView extends StatefulWidget {
 class _MainNavigationViewState extends State<MainNavigationView> {
   int _indiceActual = 0;
 
+  final ScrollController _scrollControllerBarraSuperior = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollControllerBarraSuperior.dispose(); // Limpieza de memoria obligatoria
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -40,33 +48,50 @@ class _MainNavigationViewState extends State<MainNavigationView> {
 
   Future<void> _verificarYMostrarTutorial() async {
     final prefs = await SharedPreferences.getInstance();
-    final bool visto = prefs.getBool('tutorial_visto_main') ?? false; // Clave diferenciada preventiva
-    
+    final bool visto =
+        prefs.getBool('tutorial_visto_main') ??
+        false; // Clave diferenciada preventiva
+
     if (!visto && mounted) {
       await prefs.setBool('tutorial_visto_main', true);
-      
+
       final auth = context.read<AutenticacionProvider>();
       final usuario = auth.usuarioActual;
-      
+
       // Si tutorial_visto principal fue llamado pero este no...
       // En realidad para no fastidiar si ya vieron el tutorial_visto base:
       final bool vistoGlobal = prefs.getBool('tutorial_visto') ?? false;
-      
+
       if (!vistoGlobal && usuario != null && mounted) {
-         await prefs.setBool('tutorial_visto', true);
-         await showModalBottomSheet(
-           context: context,
-           isScrollControlled: true,
-           backgroundColor: Colors.transparent,
-           builder: (context) => TutorialVectaWidget(rol: usuario.rolEnElSistema),
-         );
+        await prefs.setBool('tutorial_visto', true);
+        await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) =>
+              TutorialVectaWidget(rol: usuario.rolEnElSistema),
+        );
       }
     }
   }
 
-  void onTapAnterior() {}
+  /// Desplaza el panel superior hacia la izquierda.
+  void _desplazarPanelIzquierda() {
+    _scrollControllerBarraSuperior.animateTo(
+      _scrollControllerBarraSuperior.offset - 150, // Se mueve 150 píxeles
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
 
-  void onTapSiguiente() {}
+  /// Desplaza el panel superior hacia la derecha.
+  void _desplazarPanelDerecha(int length) {
+    _scrollControllerBarraSuperior.animateTo(
+      _scrollControllerBarraSuperior.offset + 150, // Se mueve 150 píxeles
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
 
   void _seleccionarVista(int indice) {
     setState(() {
@@ -80,11 +105,11 @@ class _MainNavigationViewState extends State<MainNavigationView> {
       onPressed: () => _seleccionarVista(index),
       icon: Icon(icono, color: act ? Colors.white : Colors.white70, size: 20),
       label: Text(
-        texto, 
+        texto,
         style: TextStyle(
-          color: act ? Colors.white : Colors.white70, 
-          fontWeight: act ? FontWeight.bold : FontWeight.normal
-        )
+          color: act ? Colors.white : Colors.white70,
+          fontWeight: act ? FontWeight.bold : FontWeight.normal,
+        ),
       ),
     );
   }
@@ -101,18 +126,42 @@ class _MainNavigationViewState extends State<MainNavigationView> {
     final bool esAdmin = usuarioActual.tieneRol(RolSistema.admin);
 
     final List<Map<String, dynamic>> modulosUI = [
-      {'titulo': 'Cartelera', 'icono': Icons.dashboard_outlined, 'vista': const HomeView()},
-      {'titulo': 'Mis Tutorias', 'icono': Icons.book_outlined, 'vista': const MisTutoriasView()},
-      {'titulo': 'Sugerencias', 'icono': Icons.lightbulb_outline_rounded, 'vista': const MisSugerenciasView()},
-      {'titulo': 'Comunidad', 'icono': Icons.people_outline, 'vista': const ExplorarView()},
+      {
+        'titulo': 'Cartelera',
+        'icono': Icons.dashboard_outlined,
+        'vista': const HomeView(),
+      },
+      {
+        'titulo': 'Mis Tutorias',
+        'icono': Icons.book_outlined,
+        'vista': const MisTutoriasView(),
+      },
+      {
+        'titulo': 'Sugerencias',
+        'icono': Icons.lightbulb_outline_rounded,
+        'vista': const MisSugerenciasView(),
+      },
+      {
+        'titulo': 'Comunidad',
+        'icono': Icons.people_outline,
+        'vista': const ExplorarView(),
+      },
     ];
 
     if (usuarioActual.tieneRol(RolSistema.tutor)) {
-      modulosUI.insert(0, {'titulo': 'Tablero Tutor', 'icono': Icons.admin_panel_settings, 'vista': const DashboardTutorView()});
+      modulosUI.insert(0, {
+        'titulo': 'Tablero Tutor',
+        'icono': Icons.admin_panel_settings,
+        'vista': const DashboardTutorView(),
+      });
     }
 
     if (esAdmin) {
-      modulosUI.add({'titulo': 'Metricas', 'icono': Icons.analytics_outlined, 'vista': const AdminDashboardView()});
+      modulosUI.add({
+        'titulo': 'Metricas',
+        'icono': Icons.analytics_outlined,
+        'vista': const AdminDashboardView(),
+      });
     }
 
     // HCI Defensive: Si el estado se corrompe por un logout y _indiceActual es mayor
@@ -120,7 +169,9 @@ class _MainNavigationViewState extends State<MainNavigationView> {
       _indiceActual = 0;
     }
 
-    final List<Widget> vistasSistema = modulosUI.map((e) => e['vista'] as Widget).toList();
+    final List<Widget> vistasSistema = modulosUI
+        .map((e) => e['vista'] as Widget)
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -137,10 +188,19 @@ class _MainNavigationViewState extends State<MainNavigationView> {
               child: Image.asset(
                 'assets/images/logo_vecta.png',
                 height: 40,
-                errorBuilder: (context, error, stackTrace) => const Center(child: Text("VECTA", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white))),
+                errorBuilder: (context, error, stackTrace) => const Center(
+                  child: Text(
+                    "VECTA",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
             ),
-            
+
             // Bloque Central: Flecha - Título - Flecha
             Expanded(
               child: Row(
@@ -153,21 +213,31 @@ class _MainNavigationViewState extends State<MainNavigationView> {
                   // de navegación secundaria compitan con la atención de los iconos principales
                   // del menú, así como con el logo y el perfil.
                   IconButton(
-                    icon: const Icon(Icons.chevron_left, color: Colors.white, size: 18.0),
-                    onPressed: onTapAnterior,
+                    icon: const Icon(
+                      Icons.chevron_left,
+                      color: Colors.white,
+                      size: 18.0,
+                    ),
+                    onPressed:
+                        _desplazarPanelIzquierda, // Nueva función de scroll
                   ),
-                  
+
                   // [Título/Texto Central]
                   Flexible(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0), // Padding simétrico
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: SingleChildScrollView(
+                        controller: _scrollControllerBarraSuperior,
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(modulosUI.length, (index) {
                             final obj = modulosUI[index];
-                            return _crearBotonSuperior(index, obj['titulo'] as String, obj['icono'] as IconData);
+                            return _crearBotonSuperior(
+                              index,
+                              obj['titulo'] as String,
+                              obj['icono'] as IconData,
+                            );
                           }),
                         ),
                       ),
@@ -177,8 +247,18 @@ class _MainNavigationViewState extends State<MainNavigationView> {
                   // [Icono Flecha Derecha]
                   // Tamaño relativo al 75% (24.0 * 0.75 = 18.0) para mantener la jerarquía visual balanceada.
                   IconButton(
-                    icon: const Icon(Icons.chevron_right, color: Colors.white, size: 18.0),
-                    onPressed: onTapSiguiente,
+                    // Aplicamos opacidad si llegamos al final de la lista de módulos
+                    icon: Icon(
+                      Icons.chevron_right,
+                      color: _indiceActual < modulosUI.length - 1
+                          ? Colors.white
+                          : Colors.white38,
+                      size: 18.0,
+                    ),
+                    // Evaluamos dinámicamente contra el largo de modulosUI
+                    onPressed: _indiceActual < modulosUI.length - 1
+                        ? () => _desplazarPanelDerecha(modulosUI.length)
+                        : null,
                   ),
                 ],
               ),
@@ -204,7 +284,10 @@ class _MainNavigationViewState extends State<MainNavigationView> {
                   child: Icon(Icons.person, color: Colors.white),
                 ),
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PerfilView()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PerfilView()),
+                  );
                 },
               ),
             ),
@@ -212,21 +295,32 @@ class _MainNavigationViewState extends State<MainNavigationView> {
         ),
       ),
       body: IndexedStack(index: _indiceActual, children: vistasSistema),
-      floatingActionButton: esAdmin || ['Mis Tutorias', 'Tablero Tutor', 'Perfil'].contains(modulosUI[_indiceActual]['titulo'])
-          ? null 
+      floatingActionButton:
+          esAdmin ||
+              [
+                'Mis Tutorias',
+                'Tablero Tutor',
+                'Perfil',
+              ].contains(modulosUI[_indiceActual]['titulo'])
+          ? null
           : FloatingActionButton.extended(
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const SugerirTutoriaView()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SugerirTutoriaView()),
+                );
               },
               backgroundColor: const Color(0xFF6C63FF),
               elevation: 4,
               icon: const Icon(Icons.add, color: Colors.white),
               label: const Text(
-                "Sugerir Clase", 
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+                "Sugerir Clase",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
     );
   }
 }
-
