@@ -481,6 +481,59 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
     }
   }
 
+  Future<void> _cancelarTutoriaTutor(BuildContext context) async {
+    final TextEditingController motivoCtrl = TextEditingController();
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancelar Tutoría', style: TextStyle(color: Colors.red)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Esta acción cancelará la clase y notificará a los estudiantes inscritos. Por favor, indica el motivo:'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: motivoCtrl,
+              decoration: const InputDecoration(labelText: "Motivo de cancelación", border: OutlineInputBorder()),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Volver')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              if (motivoCtrl.text.trim().isEmpty) return;
+              Navigator.pop(ctx, true);
+            },
+            child: const Text('Confirmar Cancelación'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true && context.mounted) {
+      final proveedor = context.read<TutoriasProvider>();
+      final autProvider = context.read<AutenticacionProvider>();
+      final uidActual = autProvider.usuarioActual?.identificadorUnico;
+      if (uidActual == null) return;
+
+      bool exito = await proveedor.cancelarTutoriaComoTutor(datos.identificadorDeTutoria, motivoCtrl.text.trim());
+
+      if (exito && context.mounted) {
+        await proveedor.cargarTutoriasSuscritasDelUsuario(uidActual);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tutoría cancelada exitosamente.'), backgroundColor: Colors.orange),
+        );
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(proveedor.mensajeDeErrorDelSistema), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   Future<void> _abandonarTutoriaEstudiante(BuildContext context) async {
     final confirmar = await showDialog<bool>(
       context: context,
@@ -721,6 +774,17 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                       },
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Text('Dar por Culminada'),
+                    ),
+
+                  if (esDictando && datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' && datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')
+                    TextButton.icon(
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                      onPressed: () {
+                         Navigator.pop(sheetContext);
+                         _cancelarTutoriaTutor(contextoPadre);
+                      },
+                      icon: const Icon(Icons.cancel),
+                      label: const Text('Cancelar Tutoría'),
                     ),
 
                   if (!esDictando && datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' && datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')

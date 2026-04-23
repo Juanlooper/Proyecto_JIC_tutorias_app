@@ -274,7 +274,14 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
       ),
     );
 
-    if (confirmacion != true || !context.mounted) return;
+    if (confirmacion != true) {
+      if (archivoSubidoUrl != null) {
+        FirebaseStorageServicio().eliminarArchivoFisico(archivoSubidoUrl!);
+      }
+      return;
+    }
+    
+    if (!context.mounted) return;
 
       final url = enlaceCtrl.text.trim();
       final listadoLinks = url.isNotEmpty ? [url] : <String>[];

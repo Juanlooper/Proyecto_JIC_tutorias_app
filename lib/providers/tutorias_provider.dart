@@ -232,6 +232,69 @@ class TutoriasProvider extends ChangeNotifier {
   }
 
 
+  /// Permite al tutor cancelar la tutoría (ya sea por fuerza mayor u otro motivo).
+  /// Esto marca el estado de la solicitud como 'cancelada'.
+  Future<bool> cancelarTutoriaComoTutor(String tutoriaId, String motivoCancelacion) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final uidUsuarioActual = FirebaseAuth.instance.currentUser?.uid;
+      if (uidUsuarioActual == null) throw Exception("Debes iniciar sesión.");
+
+      // Obtenemos la tutoría para saber quiénes están inscritos
+      final docSnapshot = await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).get();
+      if (!docSnapshot.exists) throw Exception("Tutoría no encontrada.");
+      final data = docSnapshot.data()!;
+
+      await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).update({
+        'estadoDeLaSolicitud': 'cancelada',
+        'motivoDeCancelacion': motivoCancelacion,
+      });
+
+      // Reportarlo silenciosamente a quejas como cancelación de tutor para trackeo del admin
+      await FirebaseFirestore.instance.collection('quejas').add({
+        'tutorId': uidUsuarioActual,
+        'tutoriaId': tutoriaId,
+        'fechaRegistro': DateTime.now().toIso8601String(),
+        'justificacion': motivoCancelacion,
+      });
+
+      // Crear notificaciones para los estudiantes afectados
+      final Set<String> afectados = {};
+      final List<dynamic> inscritos = data['listaDeEstudiantesInscritos'] ?? [];
+      final List<dynamic> apoyando = data['estudiantesApoyando'] ?? [];
+      
+      for (var uid in inscritos) { afectados.add(uid.toString()); }
+      for (var uid in apoyando) { afectados.add(uid.toString()); }
+
+      final nombreMateria = data['materiaOAsignatura'] ?? 'Una clase';
+      final fechaDeCancelacion = DateTime.now().toIso8601String();
+
+      for (var uidAlumno in afectados) {
+        await FirebaseFirestore.instance.collection('notificaciones').add({
+          'usuarioId': uidAlumno,
+          'titulo': 'Tutoría Cancelada',
+          'mensaje': 'El tutor ha cancelado la clase de $nombreMateria. Motivo: $motivoCancelacion',
+          'fecha': fechaDeCancelacion,
+          'leida': false,
+          'tipo': 'alerta_roja',
+        });
+      }
+
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "Hubo un error al intentar cancelar la tutoría.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Implementación transaccional para inscribirse en tutorías, añadiendo los motivos, links y nombres de archivos.
   Future<bool> inscribirseEnTutoria(String tutoriaId, String uid, String textoMotivo, List<String> listaLinks, List<String> listaNombres) async {
     _iluminarSenalIndicadoraDeEspera();

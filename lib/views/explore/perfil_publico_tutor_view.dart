@@ -302,7 +302,7 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
                                  children: [
                                     Text('${datos['estrellas'] ?? 0} Estrellas', style: const TextStyle(fontWeight: FontWeight.bold)),
                                     const Spacer(),
-                                    if (esAdmin)
+                                    if (esAdmin || (miIdentidad != null && miIdentidad.identificadorUnico == widget.mentor.identificadorUnico))
                                       IconButton(
                                         icon: const Icon(Icons.delete, color: Colors.red, size: 18),
                                         onPressed: () async {

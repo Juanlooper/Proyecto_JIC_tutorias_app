@@ -71,6 +71,55 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
     }
   }
 
+  Future<void> _cancelarTutoria() async {
+    final TextEditingController motivoCtrl = TextEditingController();
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancelar Tutoría', style: TextStyle(color: Colors.red)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Esta acción cancelará la clase y notificará a los estudiantes inscritos. Por favor, indica el motivo:'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: motivoCtrl,
+              decoration: const InputDecoration(labelText: "Motivo de cancelación", border: OutlineInputBorder()),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Volver')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              if (motivoCtrl.text.trim().isEmpty) return;
+              Navigator.pop(ctx, true);
+            },
+            child: const Text('Confirmar Cancelación'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true && mounted) {
+      final proveedor = context.read<TutoriasProvider>();
+      bool exito = await proveedor.cancelarTutoriaComoTutor(widget.tutoria.identificadorDeTutoria, motivoCtrl.text.trim());
+
+      if (exito && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tutoría cancelada exitosamente.'), backgroundColor: Colors.orange),
+        );
+        Navigator.pop(context); // Volvemos al Dashboard
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(proveedor.mensajeDeErrorDelSistema), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tutoria = widget.tutoria;
@@ -186,19 +235,32 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
                   ],
                 ),
                 if (tutoria.estadoDeLaSolicitud != 'finalizada' && tutoria.estadoDeLaSolicitud != 'cancelada')
-                  if (tutoria.listaDeEstudiantesInscritos.isNotEmpty && !_modoPaseDeLista)
-                    FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
+                  if (!_modoPaseDeLista)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (tutoria.listaDeEstudiantesInscritos.isNotEmpty)
+                          FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.blueAccent,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _modoPaseDeLista = true;
+                              });
+                            },
+                            icon: const Icon(Icons.fact_check),
+                            label: const Text('Iniciar Pase de Lista'),
+                          ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                          onPressed: _cancelarTutoria,
+                          icon: const Icon(Icons.cancel),
+                          label: const Text('Cancelar Tutoría'),
+                        ),
+                      ],
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _modoPaseDeLista = true;
-                      });
-                    },
-                    icon: const Icon(Icons.fact_check),
-                    label: const Text('Iniciar Pase de Lista'),
-                  ),
               ],
             ),
             const Divider(),
