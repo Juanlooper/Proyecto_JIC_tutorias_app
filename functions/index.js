@@ -38,11 +38,18 @@ exports.notificarCambioEstadoTutoria = functions.firestore
         // Lógica para Tutoría Aceptada (Desde la bolsa de sugerencias)
         else if (estadoDespues === 'aceptada') {
             titulo = '¡Tutoría Aceptada! 🎉';
-            mensaje = `Un tutor acaba de aceptar impartir tu sugerencia de ${tutoria.materiaOAsignatura || 'clase'}.`;
+            mensaje = `Un tutor acaba de aceptar impartir tu sugerencia de ${tutoria.materiaOAsignatura || 'clase'}. ¡Inscríbete oficialmente desde la Cartelera para reservar tu cupo!`;
             
             // Notificamos a los estudiantes que estaban en la lista de espera/sugerencia
-            uidsAnotificar = [...(tutoria.listaDeEstudiantesInscritos || [])];
-        } 
+            uidsAnotificar = [...(tutoria.listaDeEstudiantesInscritos || []), ...(tutoria.estudiantesApoyando || [])];
+        }
+        // Lógica para Sugerencia tomada por un tutor (pasa de 'solicitada' a 'pendiente')
+        else if (estadoAntes === 'solicitada' && estadoDespues === 'pendiente') {
+            titulo = '¡Tu sugerencia fue aceptada! 🎉';
+            mensaje = `Un tutor ha aceptado impartir la clase de ${tutoria.materiaOAsignatura || 'una materia'}. Inscríbete oficialmente desde la Cartelera para reservar tu cupo.`;
+            
+            uidsAnotificar = [...(tutoria.estudiantesApoyando || [])];
+        }
         // Si es otro estado (ej. en_curso, finalizada), no mandamos push notification de momento
         else {
             return null;

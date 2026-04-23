@@ -133,6 +133,17 @@ class TutoriasProvider extends ChangeNotifier {
       // 2. Transmitir el documento a la colección en Firebase
       await collectionRef.doc(docId).set(datosNube);
 
+      // Notificar a TODOS los tutores registrados que hay una nueva sugerencia en la bolsa
+      final tutoresSnapshot = await FirebaseFirestore.instance.collection('usuarios')
+          .where('rolEnElSistema', isEqualTo: 'tutor').get();
+      final uidsTutores = tutoresSnapshot.docs.map((d) => d.id).toList();
+      await _notificarMultiples(
+        uids: uidsTutores,
+        titulo: 'Nueva Sugerencia en la Bolsa 📋',
+        mensaje: 'Un estudiante ha sugerido una clase de ${sugerencia.materiaOAsignatura}. ¡Revisa la bolsa de solicitudes!',
+        tipo: 'info',
+      );
+
       await cargarListadoDeTutoriasPendientes();
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
@@ -217,6 +228,18 @@ class TutoriasProvider extends ChangeNotifier {
         await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).update({
           'listaDeEstudiantesInscritos': FieldValue.arrayRemove([uidUsuarioActual])
         });
+      }
+
+      // Notificar al tutor que un estudiante abandonó
+      final tutorId = data['identificadorDelTutor'] ?? '';
+      final materia = data['materiaOAsignatura'] ?? 'una clase';
+      if (tutorId.isNotEmpty) {
+        await _crearNotificacion(
+          usuarioId: tutorId,
+          titulo: 'Estudiante se retiró 🚪',
+          mensaje: 'Un estudiante ha abandonado tu clase de $materia.',
+          tipo: 'alerta_amarilla',
+        );
       }
 
       await cargarListadoDeTutoriasPendientes();
@@ -341,6 +364,34 @@ class TutoriasProvider extends ChangeNotifier {
           'nombres_adjuntos': nombresAdjuntos,
         });
       });
+
+      // Notificar al tutor que un estudiante se inscribió
+      final tutoriaDoc = await docRef.get();
+      if (tutoriaDoc.exists) {
+        final tutoriaData = tutoriaDoc.data()!;
+        final tutorId = tutoriaData['identificadorDelTutor'] ?? '';
+        final materia = tutoriaData['materiaOAsignatura'] ?? 'una clase';
+        final inscritosActuales = (tutoriaData['listaDeEstudiantesInscritos'] as List?)?.length ?? 0;
+        final cupoMax = tutoriaData['cupoMaximo'] ?? 1;
+        if (tutorId.isNotEmpty) {
+          await _crearNotificacion(
+            usuarioId: tutorId,
+            titulo: 'Nuevo Estudiante Inscrito 📝',
+            mensaje: 'Un estudiante se ha inscrito en tu clase de $materia ($inscritosActuales/$cupoMax cupos).',
+            tipo: 'info',
+          );
+        }
+        // Si el cupo está lleno, notificar a los que estaban apoyando
+        if (inscritosActuales >= cupoMax) {
+          final apoyando = List<String>.from(tutoriaData['estudiantesApoyando'] ?? []);
+          await _notificarMultiples(
+            uids: apoyando,
+            titulo: 'Cupo Lleno ⚠️',
+            mensaje: 'La clase de $materia ha alcanzado su cupo máximo.',
+            tipo: 'alerta_amarilla',
+          );
+        }
+      }
 
       await cargarListadoDeTutoriasPendientes();
       return true;
@@ -495,6 +546,37 @@ class TutoriasProvider extends ChangeNotifier {
     _mensajeDeErrorDelSistema = '';
   }
 
+  /// Helper interno para crear notificaciones in-app (campanita).
+  Future<void> _crearNotificacion({
+    required String usuarioId,
+    required String titulo,
+    required String mensaje,
+    String tipo = 'info',
+  }) async {
+    try {
+      await FirebaseFirestore.instance.collection('notificaciones').add({
+        'usuarioId': usuarioId,
+        'titulo': titulo,
+        'mensaje': mensaje,
+        'fecha': DateTime.now().toIso8601String(),
+        'leida': false,
+        'tipo': tipo,
+      });
+    } catch (_) {}
+  }
+
+  /// Envía notificación a múltiples usuarios a la vez.
+  Future<void> _notificarMultiples({
+    required List<String> uids,
+    required String titulo,
+    required String mensaje,
+    String tipo = 'info',
+  }) async {
+    for (var uid in uids) {
+      await _crearNotificacion(usuarioId: uid, titulo: titulo, mensaje: mensaje, tipo: tipo);
+    }
+  }
+
   /// Método de asistencia de alumnos (Fase 2.1).
   /// Modifica registro de asistencia y penaliza (strike) a infractores de ausentismo.
   Future<bool> registrarAsistenciaClase(String tutoriaId, Map<String, bool> asistenciaAlumnos) async {
@@ -636,6 +718,19 @@ class TutoriasProvider extends ChangeNotifier {
         });
       }
 
+      // Notificar a los estudiantes inscritos que la clase fue cancelada
+      if (docActual.exists) {
+        final tutoriaData = docActual.data()!;
+        final inscritosNotif = List<String>.from(tutoriaData['listaDeEstudiantesInscritos'] ?? []);
+        final materiaNotif = tutoriaData['materiaOAsignatura'] ?? 'una clase';
+        await _notificarMultiples(
+          uids: inscritosNotif,
+          titulo: 'Tutoría Cancelada ❌',
+          mensaje: 'El tutor canceló la clase de $materiaNotif. Motivo: $justificacion',
+          tipo: 'alerta_roja',
+        );
+      }
+
       await cargarListadoDeTutoriasPendientes();
       if (FirebaseAuth.instance.currentUser != null) {
         await cargarTutoriasSuscritasDelUsuario(FirebaseAuth.instance.currentUser!.uid);
@@ -699,6 +794,20 @@ class TutoriasProvider extends ChangeNotifier {
         transaction.update(docRef, modeloAEnviar.toMap());
       });
 
+      // Notificar a los estudiantes que apoyaron la sugerencia: ¡un tutor la aceptó!
+      final docActualizado = await docRef.get();
+      if (docActualizado.exists) {
+        final dataActualizada = docActualizado.data()!;
+        final apoyando = List<String>.from(dataActualizada['estudiantesApoyando'] ?? []);
+        final materia = dataActualizada['materiaOAsignatura'] ?? 'una clase';
+        await _notificarMultiples(
+          uids: apoyando,
+          titulo: '¡Tu sugerencia fue aceptada! 🎉',
+          mensaje: 'Un tutor ha aceptado impartir la clase de $materia. Inscríbete oficialmente desde la Cartelera para reservar tu cupo.',
+          tipo: 'alerta_verde',
+        );
+      }
+
       await cargarListadoDeTutoriasPendientes();
       await cargarTutoriasSuscritasDelUsuario(uidTutor);
       _apagarSenalIndicadoraDeEspera();
@@ -742,6 +851,14 @@ class TutoriasProvider extends ChangeNotifier {
           'tutoria_id': tutoriaId,
         });
       });
+
+      // Notificar al tutor que recibió una nueva evaluación
+      await _crearNotificacion(
+        usuarioId: tutorId,
+        titulo: 'Nueva Evaluación Recibida ⭐',
+        mensaje: 'Un estudiante te ha evaluado con ${estrellas.toStringAsFixed(0)} estrellas. ${comentario.isNotEmpty ? '"$comentario"' : ''}',
+        tipo: 'info',
+      );
 
       _apagarSenalIndicadoraDeEspera();
       // Delegamos la reactividad 100% al StreamBuilder. No invocamos notifyListeners() extra ni recargamos listas locales manualmente.
