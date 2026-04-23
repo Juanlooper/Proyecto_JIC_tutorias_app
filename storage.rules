@@ -9,8 +9,8 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    // Reglas para la carpeta de adjuntos de tutorías
-    match /tutorias/{tutoriaId}/{fileName} {
+    // Reglas para la carpeta de adjuntos de tutorías (Donde Flutter envía los archivos)
+    match /tutorias_archivos/{fileName} {
       
       // Lectura: Cualquier usuario autenticado puede leer los archivos (necesario para tutores y alumnos de la misma clase)
       // Idealmente podríamos restringirlo a miembros de la clase, pero requiere Firebase Functions custom claims o base de datos.
