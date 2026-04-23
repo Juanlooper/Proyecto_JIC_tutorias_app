@@ -1,0 +1,30 @@
+rules_version = '2';
+
+// Reglas de Firebase Storage para la plataforma JIC Tutorías
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Función auxiliar para saber si el usuario inició sesión
+    function estaAutenticado() {
+      return request.auth != null;
+    }
+
+    // Reglas para la carpeta de adjuntos de tutorías
+    match /tutorias/{tutoriaId}/{fileName} {
+      
+      // Lectura: Cualquier usuario autenticado puede leer los archivos (necesario para tutores y alumnos de la misma clase)
+      // Idealmente podríamos restringirlo a miembros de la clase, pero requiere Firebase Functions custom claims o base de datos.
+      allow read: if estaAutenticado();
+      
+      // Escritura: Solo usuarios autenticados pueden subir archivos
+      // Restricción: El tamaño máximo de archivo no debe exceder los 5 MB
+      // Restricción: Solo se permiten imágenes y PDFs
+      allow write: if estaAutenticado() 
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('application/pdf|image/.*');
+                   
+      // Eliminación: Permitida por autenticados (la limpieza automática de Storage la hace el tutorias_provider y la cloud function)
+      allow delete: if estaAutenticado();
+    }
+  }
+}

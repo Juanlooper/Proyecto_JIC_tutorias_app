@@ -6,6 +6,7 @@ import '../../providers/autenticacion_provider.dart';
 import '../../providers/tutorias_provider.dart';
 import '../../models/usuario_model.dart';
 import '../../models/tutoria_model.dart';
+import '../../services/firebase_storage_servicio.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -148,71 +149,140 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
     // Modulo específico de inscripción de Alumnos (Modal Interactivo)
     final TextEditingController motivoCtrl = TextEditingController();
     final TextEditingController enlaceCtrl = TextEditingController();
-      final formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
 
-      final confirmacion = await showDialog<bool>(
-        context: context,
-        builder: (contextDialogo) => AlertDialog(
-          title: Text('Confirmar Reserva: ${datosTutoria.materiaOAsignatura}'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: motivoCtrl,
-                    decoration: const InputDecoration(
-                      labelText: '¿Qué tema específico necesitas reforzar?',
-                      border: OutlineInputBorder(),
+    // Estado del archivo subido
+    bool estaSubiendoArchivo = false;
+    String? archivoSubidoUrl;
+    String? archivoSubidoNombre;
+
+    final confirmacion = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // Prevenir cierre accidental al subir
+      builder: (contextDialogo) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: Text('Confirmar Reserva: ${datosTutoria.materiaOAsignatura}'),
+            content: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: motivoCtrl,
+                      decoration: const InputDecoration(
+                        labelText: '¿Qué tema específico necesitas reforzar?',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 2,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Por favor ingresa un motivo detallado.';
+                        }
+                        return null;
+                      },
                     ),
-                    maxLines: 2,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Por favor ingresa un motivo detallado.';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: enlaceCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Enlace a material (Drive, PDF, etc.)',
-                      border: OutlineInputBorder(),
+                    const SizedBox(height: 16),
+                    
+                    // Zona de subida interactiva
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text(
+                            'Material de Referencia (Opcional)',
+                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                          ),
+                          const SizedBox(height: 8),
+                          if (estaSubiendoArchivo)
+                            const Center(child: CircularProgressIndicator())
+                          else if (archivoSubidoUrl != null)
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.green),
+                                SizedBox(width: 8),
+                                Flexible(child: Text('Archivo adjuntado con éxito.', style: TextStyle(color: Colors.green, fontSize: 12))),
+                              ],
+                            )
+                          else
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                setStateDialog(() {
+                                  estaSubiendoArchivo = true;
+                                });
+
+                                // Llamado al servicio inteligente de Firebase Storage
+                                final mapArchivo = await FirebaseStorageServicio().seleccionarYSubirArchivo(
+                                  carpetaDestino: 'tutorias_archivos',
+                                );
+
+                                setStateDialog(() {
+                                  estaSubiendoArchivo = false;
+                                  if (mapArchivo != null) {
+                                    archivoSubidoUrl = mapArchivo['url'];
+                                    archivoSubidoNombre = mapArchivo['nombre'];
+                                    enlaceCtrl.text = mapArchivo['url']!; // Lo guardamos invisible
+                                  }
+                                });
+                                
+                                if (mapArchivo == null && context.mounted) {
+                                   ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Operación cancelada o fallida al adjuntar archivo.')),
+                                   );
+                                }
+                              },
+                              icon: const Icon(Icons.upload_file),
+                              label: const Text('Adjuntar PDF o Imagen'),
+                            ),
+                          const SizedBox(height: 8),
+                          const Text('Puedes subir un examen, taller o temario.', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                          const Text('Formatos: PDF, JPG, PNG, DOCX, PPTX (Máx. 5MB)', style: TextStyle(fontSize: 10, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(contextDialogo, false),
-              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  Navigator.pop(contextDialogo, true);
-                }
-              },
-              child: const Text('Confirmar Inscripción'),
-            ),
-          ],
-        ),
-      );
+            actions: [
+              TextButton(
+                onPressed: estaSubiendoArchivo ? null : () => Navigator.pop(contextDialogo, false),
+                child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+              ),
+              FilledButton(
+                onPressed: estaSubiendoArchivo ? null : () {
+                  if (formKey.currentState!.validate()) {
+                    Navigator.pop(contextDialogo, true);
+                  }
+                },
+                child: const Text('Confirmar Inscripción'),
+              ),
+            ],
+          );
+        }
+      ),
+    );
 
-      if (confirmacion != true || !context.mounted) return;
+    if (confirmacion != true || !context.mounted) return;
 
       final url = enlaceCtrl.text.trim();
       final listadoLinks = url.isNotEmpty ? [url] : <String>[];
+      final listadoNombres = archivoSubidoNombre != null ? [archivoSubidoNombre!] : <String>[];
 
       operacionConcretaExitosa = await proveedor.inscribirseEnTutoria(
         datosTutoria.identificadorDeTutoria,
         usuario.identificadorUnico,
         motivoCtrl.text.trim(),
         listadoLinks,
+        listadoNombres,
       );
 
     if (!context.mounted) return;
@@ -238,8 +308,6 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
     final elUsuario = proveedorIdentidad.usuarioActual;
 
     if (elUsuario == null) return const SizedBox.shrink();
-
-    final esTutor = elUsuario.tieneRol(RolSistema.tutor);
 
     return Card(
       elevation: 2,

@@ -1,8 +1,10 @@
+// ignore_for_file: empty_catches
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/tutoria_model.dart';
 import '../services/base_de_datos_servicio.dart';
+import '../services/firebase_storage_servicio.dart';
 
 /// Proveedor de Estado Operativo para las Tutorías.
 /// Actúa como una enorme "Pizarra Organizativa". Descarga el listado de las clases 
@@ -24,7 +26,7 @@ class TutoriasProvider extends ChangeNotifier {
   bool _estaCargandoPeticionEnNube = false;
 
   /// Lista privada de solicitudes desechadas o ignoradas por este tutor en su panel.
-  List<String> _idsOcultosPorTutor = [];
+  final List<String> _idsOcultosPorTutor = [];
 
   /// Contenedor estandarizado en donde depositaremos las razones descriptivas por el cual algo natural del flujo falló.
   String _mensajeDeErrorDelSistema = '';
@@ -135,7 +137,7 @@ class TutoriasProvider extends ChangeNotifier {
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return true;
-    } catch (e) {
+    } catch (e) { debugPrint(e.toString());
       _mensajeDeErrorDelSistema = e.toString().contains("Exception: ") ? e.toString().split("Exception: ").last : "Error al procesar la solicitud huérfana en la nube.";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
@@ -159,7 +161,7 @@ class TutoriasProvider extends ChangeNotifier {
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return true;
-    } catch (e) {
+    } catch (e) { debugPrint(e.toString());
       _mensajeDeErrorDelSistema = "No logramos eliminar la sugerencia de la bolsa.";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
@@ -185,7 +187,7 @@ class TutoriasProvider extends ChangeNotifier {
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return true;
-    } catch (e) {
+    } catch (e) { debugPrint(e.toString());
       _mensajeDeErrorDelSistema = "Tuvimos un problema al intentar sumarte a esta tutoría comunitaria.";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
@@ -221,7 +223,7 @@ class TutoriasProvider extends ChangeNotifier {
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return true;
-    } catch (e) {
+    } catch (e) { debugPrint(e.toString());
       _mensajeDeErrorDelSistema = "Hubo un error al intentar retirarte de la tutoría.";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
@@ -230,8 +232,8 @@ class TutoriasProvider extends ChangeNotifier {
   }
 
 
-  /// Implementación transaccional para inscribirse en tutorías, añadiendo los motivos y links.
-  Future<bool> inscribirseEnTutoria(String tutoriaId, String uid, String textoMotivo, List<String> listaLinks) async {
+  /// Implementación transaccional para inscribirse en tutorías, añadiendo los motivos, links y nombres de archivos.
+  Future<bool> inscribirseEnTutoria(String tutoriaId, String uid, String textoMotivo, List<String> listaLinks, List<String> listaNombres) async {
     _iluminarSenalIndicadoraDeEspera();
     _purgarCasillasDeAdvertencias();
 
@@ -266,16 +268,20 @@ class TutoriasProvider extends ChangeNotifier {
         Map<String, dynamic> enlaces = data['enlaces_adjuntos'] ?? {};
         enlaces[uid] = listaLinks;
 
+        Map<String, dynamic> nombresAdjuntos = data['nombres_adjuntos'] ?? {};
+        nombresAdjuntos[uid] = listaNombres;
+
         transaction.update(docRef, {
           'listaDeEstudiantesInscritos': inscritos,
           'motivos_alumnos': motivos,
           'enlaces_adjuntos': enlaces,
+          'nombres_adjuntos': nombresAdjuntos,
         });
       });
 
       await cargarListadoDeTutoriasPendientes();
       return true;
-    } catch (e) {
+    } catch (e) { debugPrint(e.toString());
       _mensajeDeErrorDelSistema = e.toString().contains("Exception: ") ? e.toString().split("Exception: ").last : e.toString();
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
@@ -334,7 +340,7 @@ class TutoriasProvider extends ChangeNotifier {
       } else {
         _mensajeDeErrorDelSistema = resolucionDeLaPeticion;
       }
-    } catch (e) {
+    } catch (e) { debugPrint(e.toString());
       _mensajeDeErrorDelSistema = "No se pudo identificar remotamente la tutoría seleccionada.";
     }
 
@@ -403,7 +409,7 @@ class TutoriasProvider extends ChangeNotifier {
       _tutoriasSuscritasDelUsuario = mapaUnico.values.toList();
       // Refrescamos memoria visual de los contadores
       notifyListeners();
-    } catch (e) {
+    } catch (e) { debugPrint(e.toString());
       _mensajeDeErrorDelSistema = 'No se pudieron descargar tus tutorías.';
     }
     
@@ -433,6 +439,21 @@ class TutoriasProvider extends ChangeNotifier {
     _purgarCasillasDeAdvertencias();
 
     try {
+      // 1. Borrar archivos físicos de Storage para optimizar espacio
+      final docActual = await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).get();
+      if (docActual.exists) {
+        final data = docActual.data()!;
+        final enlacesMap = data['enlaces_adjuntos'] as Map<String, dynamic>?;
+        if (enlacesMap != null) {
+          final storageSvc = FirebaseStorageServicio();
+          for (var enlacesDeAlumno in enlacesMap.values) {
+            for (var urlArchivo in enlacesDeAlumno) {
+              await storageSvc.eliminarArchivoFisico(urlArchivo.toString());
+            }
+          }
+        }
+      }
+
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final tutoriaRef = FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId);
         
@@ -459,7 +480,7 @@ class TutoriasProvider extends ChangeNotifier {
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return true;
-    } catch (e) {
+    } catch (e) { debugPrint(e.toString());
       _mensajeDeErrorDelSistema = 'Error de conexión al procesar la asistencia.';
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
@@ -503,7 +524,7 @@ class TutoriasProvider extends ChangeNotifier {
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return true;
-    } catch (e) {
+    } catch (e) { debugPrint(e.toString());
       _mensajeDeErrorDelSistema = 'No se pudo retirar tu cupo de la clase.';
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
@@ -521,6 +542,21 @@ class TutoriasProvider extends ChangeNotifier {
       final horasRestantes = horaClase.difference(DateTime.now()).inHours;
       final tutoriaRef = FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId);
       
+      // 1. Borrar archivos físicos de Storage
+      final docActual = await tutoriaRef.get();
+      if (docActual.exists) {
+        final data = docActual.data()!;
+        final enlacesMap = data['enlaces_adjuntos'] as Map<String, dynamic>?;
+        if (enlacesMap != null) {
+          final storageSvc = FirebaseStorageServicio();
+          for (var enlacesDeAlumno in enlacesMap.values) {
+            for (var urlArchivo in enlacesDeAlumno) {
+              await storageSvc.eliminarArchivoFisico(urlArchivo.toString());
+            }
+          }
+        }
+      }
+
       await tutoriaRef.update({
         'estadoDeLaSolicitud': 'cancelada',
         'justificacion_cancelacion': justificacion,
@@ -544,7 +580,7 @@ class TutoriasProvider extends ChangeNotifier {
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return true;
-    } catch (e) {
+    } catch (e) { debugPrint(e.toString());
       _mensajeDeErrorDelSistema = 'Hubo un error deteniendo la sesión formalmente.';
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
@@ -606,7 +642,7 @@ class TutoriasProvider extends ChangeNotifier {
       notifyListeners();
       return true;
 
-    } catch (e) {
+    } catch (e) { debugPrint(e.toString());
       _mensajeDeErrorDelSistema = e.toString().contains("Exception: ") ? e.toString().split("Exception: ").last : "Interrupción durante la asignación.";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
@@ -647,7 +683,7 @@ class TutoriasProvider extends ChangeNotifier {
       _apagarSenalIndicadoraDeEspera();
       // Delegamos la reactividad 100% al StreamBuilder. No invocamos notifyListeners() extra ni recargamos listas locales manualmente.
       return true;
-    } catch (e) {
+    } catch (e) { debugPrint(e.toString());
       _mensajeDeErrorDelSistema = "Fallo en la matriz de red intentando asentar la calificación.";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners(); // Se necesita para mostrar el error localmente
@@ -676,7 +712,7 @@ class TutoriasProvider extends ChangeNotifier {
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return true;
-    } catch (e) {
+    } catch (e) { debugPrint(e.toString());
       _mensajeDeErrorDelSistema = "Error al crear la clase fija.";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();

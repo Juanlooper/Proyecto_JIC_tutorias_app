@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/tutoria_model.dart';
 import '../../core/theme/app_theme.dart';
@@ -327,22 +328,51 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
                             const SizedBox(height: 16),
                             const Text('Material Adjuntado:', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primarioAzul, fontSize: 13)),
                             const SizedBox(height: 6),
-                            ...enlaces.map((link) => Padding(
-                              padding: const EdgeInsets.only(bottom: 4.0),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(Icons.link, size: 18, color: Colors.blueAccent),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: SelectableText(
-                                      link,
-                                      style: const TextStyle(color: Colors.blueAccent, decoration: TextDecoration.underline, height: 1.3),
+                            ...enlaces.map((link) {
+                              bool esUrlLarga = link.contains('firebasestorage');
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: InkWell(
+                                  onTap: () async {
+                                    final uri = Uri.parse(link);
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                    } else {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('No se puede abrir este enlace.')),
+                                        );
+                                      }
+                                    }
+                                  },
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueAccent.withValues(alpha: 0.05),
+                                      border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.2)),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Icon(Icons.attach_file, size: 18, color: Colors.blueAccent),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            esUrlLarga ? 'Ver archivo adjunto (PDF/Imagen)' : link,
+                                            style: const TextStyle(color: Colors.blueAccent, decoration: TextDecoration.underline, height: 1.3),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const Icon(Icons.open_in_new, size: 14, color: Colors.blueAccent),
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ),
-                            )),
+                                ),
+                              );
+                            }),
                           ]
                         ],
                       ),

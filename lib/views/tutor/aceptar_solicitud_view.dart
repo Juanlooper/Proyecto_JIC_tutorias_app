@@ -9,7 +9,7 @@ import '../../core/theme/app_theme.dart';
 class AceptarSolicitudView extends StatefulWidget {
   final TutoriaModel tutoria;
 
-  const AceptarSolicitudView({Key? key, required this.tutoria}) : super(key: key);
+  const AceptarSolicitudView({super.key, required this.tutoria});
 
   @override
   State<AceptarSolicitudView> createState() => _AceptarSolicitudViewState();
@@ -55,32 +55,6 @@ class _AceptarSolicitudViewState extends State<AceptarSolicitudView> {
     _lugarController.dispose();
     _contactoController.dispose();
     super.dispose();
-  }
-
-  Future<void> _seleccionarFecha() async {
-    final DateTime? fechaElegida = await showDatePicker(
-      context: context,
-      initialDate: _fechaSeleccionada ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 1)),
-      lastDate: DateTime.now().add(const Duration(days: 30)),
-    );
-    if (fechaElegida != null) {
-      setState(() {
-        _fechaSeleccionada = fechaElegida;
-      });
-    }
-  }
-
-  Future<void> _seleccionarHora() async {
-    final TimeOfDay? horaElegida = await showTimePicker(
-      context: context,
-      initialTime: _horaSeleccionada ?? TimeOfDay.now(),
-    );
-    if (horaElegida != null) {
-      setState(() {
-        _horaSeleccionada = horaElegida;
-      });
-    }
   }
 
   Future<void> _aceptarClase() async {

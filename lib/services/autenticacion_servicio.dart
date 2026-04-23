@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/usuario_model.dart'; // Importamos el molde de usuario que creamos antes
+import 'notificaciones_servicio.dart'; // Importamos el gestor de push notifications
 
 /// Servicio principal de Autenticación de la Plataforma.
 /// Funciona como el "recepcionista" y "guardia de seguridad" de la app.
@@ -56,6 +57,9 @@ class AutenticacionServicio {
             .doc(identificadorRecienNacido)
             .set(nuevoUsuario.toMap());
 
+        // Pedimos los permisos de notificación e inyectamos su token FCM
+        await NotificacionesServicio().inicializarYObtenerToken();
+
         return "Registro Exitoso"; // Mensaje que la interfaz comprenderá como éxito
       } else {
         return "El sistema falló en procesar la identidad. Inténtalo de nuevo.";
@@ -102,6 +106,9 @@ class AutenticacionServicio {
         password: contrasenaSecreta,
       );
       
+      // Pedimos los permisos de notificación e inyectamos su token FCM
+      await NotificacionesServicio().inicializarYObtenerToken();
+
       // Retornamos null para simbolizar el éxito del proceso
       return null;
 

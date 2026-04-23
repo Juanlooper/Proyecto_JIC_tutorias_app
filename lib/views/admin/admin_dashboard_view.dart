@@ -7,7 +7,6 @@ import '../auth/login_view.dart';
 import 'tribunal_baneos_view.dart';
 import 'buzon_postulaciones_view.dart';
 import 'metricas_view.dart';
-import 'quejas_view.dart';
 import 'lista_estudiantes_view.dart';
 import 'historial_tutorias_view.dart';
 

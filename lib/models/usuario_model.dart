@@ -33,13 +33,13 @@ class UsuarioModel {
   final List<String> listaDeTutoresSuscritos;
 
   /// Cantidad de faltas o inasistencias en las tutorías programadas.
-  final int strikes_inasistencia;
+  final int strikesInasistencia;
 
   /// Indica si la cuenta del usuario está suspendida (baneada).
-  final bool esta_baneado;
+  final bool estaBaneado;
 
   /// Refleja la fase de postulación del usuario para convertirse en tutor. Posibles: 'ninguna', 'en_revision', 'aprobado'.
-  final String estado_solicitud_tutor;
+  final String estadoSolicitudTutor;
 
   /// Breve descripción que el tutor se asigna a sí mismo para aparecer en la comunidad
   final String? descripcionPerfil;
@@ -57,9 +57,9 @@ class UsuarioModel {
     this.facultad,
     this.carrera,
     required this.listaDeTutoresSuscritos,
-    this.strikes_inasistencia = 0,
-    this.esta_baneado = false,
-    this.estado_solicitud_tutor = 'ninguna',
+    this.strikesInasistencia = 0,
+    this.estaBaneado = false,
+    this.estadoSolicitudTutor = 'ninguna',
     this.descripcionPerfil,
     this.telefonoPersonal,
     this.contactoEmergenciaNombre,
@@ -77,9 +77,9 @@ class UsuarioModel {
       'facultad': facultad,
       'carrera': carrera,
       'listaDeTutoresSuscritos': listaDeTutoresSuscritos,
-      'strikes_inasistencia': strikes_inasistencia,
-      'esta_baneado': esta_baneado,
-      'estado_solicitud_tutor': estado_solicitud_tutor,
+      'strikes_inasistencia': strikesInasistencia,
+      'esta_baneado': estaBaneado,
+      'estado_solicitud_tutor': estadoSolicitudTutor,
       'descripcionPerfil': descripcionPerfil,
       'telefonoPersonal': telefonoPersonal,
       'contactoEmergenciaNombre': contactoEmergenciaNombre,
@@ -98,9 +98,9 @@ class UsuarioModel {
         correoElectronico: '',
         rolEnElSistema: RolSistema.estudiante,
         listaDeTutoresSuscritos: [],
-        strikes_inasistencia: 0,
-        esta_baneado: false,
-        estado_solicitud_tutor: 'ninguna',
+        strikesInasistencia: 0,
+        estaBaneado: false,
+        estadoSolicitudTutor: 'ninguna',
         descripcionPerfil: null,
       );
     }
@@ -123,9 +123,9 @@ class UsuarioModel {
       listaDeTutoresSuscritos: mapaDeDatos['listaDeTutoresSuscritos'] != null
           ? List<String>.from(mapaDeDatos['listaDeTutoresSuscritos'])
           : [],
-      strikes_inasistencia: mapaDeDatos['strikes_inasistencia'] ?? 0,
-      esta_baneado: mapaDeDatos['esta_baneado'] ?? false,
-      estado_solicitud_tutor: mapaDeDatos['estado_solicitud_tutor'] ?? 'ninguna',
+      strikesInasistencia: mapaDeDatos['strikes_inasistencia'] ?? 0,
+      estaBaneado: mapaDeDatos['esta_baneado'] ?? false,
+      estadoSolicitudTutor: mapaDeDatos['estado_solicitud_tutor'] ?? 'ninguna',
       descripcionPerfil: mapaDeDatos['descripcionPerfil'],
       telefonoPersonal: mapaDeDatos['telefonoPersonal'],
       contactoEmergenciaNombre: mapaDeDatos['contactoEmergenciaNombre'],
@@ -148,9 +148,9 @@ class UsuarioModel {
     String? facultad,
     String? carrera,
     List<String>? listaDeTutoresSuscritos,
-    int? strikes_inasistencia,
-    bool? esta_baneado,
-    String? estado_solicitud_tutor,
+    int? strikesInasistencia,
+    bool? estaBaneado,
+    String? estadoSolicitudTutor,
     String? descripcionPerfil,
     String? telefonoPersonal,
     String? contactoEmergenciaNombre,
@@ -164,9 +164,9 @@ class UsuarioModel {
       facultad: facultad ?? this.facultad,
       carrera: carrera ?? this.carrera,
       listaDeTutoresSuscritos: listaDeTutoresSuscritos ?? this.listaDeTutoresSuscritos,
-      strikes_inasistencia: strikes_inasistencia ?? this.strikes_inasistencia,
-      esta_baneado: esta_baneado ?? this.esta_baneado,
-      estado_solicitud_tutor: estado_solicitud_tutor ?? this.estado_solicitud_tutor,
+      strikesInasistencia: strikesInasistencia ?? this.strikesInasistencia,
+      estaBaneado: estaBaneado ?? this.estaBaneado,
+      estadoSolicitudTutor: estadoSolicitudTutor ?? this.estadoSolicitudTutor,
       descripcionPerfil: descripcionPerfil ?? this.descripcionPerfil,
       telefonoPersonal: telefonoPersonal ?? this.telefonoPersonal,
       contactoEmergenciaNombre: contactoEmergenciaNombre ?? this.contactoEmergenciaNombre,

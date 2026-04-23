@@ -1,3 +1,4 @@
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -516,7 +517,7 @@ class _PerfilViewState extends State<PerfilView> {
   }
 
   Widget _construirSeccionPostulacion(UsuarioModel usuario) {
-    if (usuario.estado_solicitud_tutor == 'en_revision') {
+    if (usuario.estadoSolicitudTutor == 'en_revision') {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.shade200)),
@@ -530,7 +531,7 @@ class _PerfilViewState extends State<PerfilView> {
       );
     } 
 
-    if (usuario.estado_solicitud_tutor == 'aprobado') {
+    if (usuario.estadoSolicitudTutor == 'aprobado') {
       return const SizedBox.shrink(); 
     }
 

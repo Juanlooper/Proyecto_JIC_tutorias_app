@@ -1,3 +1,4 @@
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -152,7 +153,7 @@ class _LoginViewState extends State<LoginView> {
                   backgroundImage: const AssetImage(
                     'assets/images/logo_vecta.png',
                   ),
-                  onBackgroundImageError: (_, __) {},
+                  onBackgroundImageError: (_, _) {},
                 ),
               ),
               const SizedBox(height: 24),
@@ -202,8 +203,9 @@ class _LoginViewState extends State<LoginView> {
                         ),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty)
+                        if (value == null || value.isEmpty) {
                           return 'Ingresa tu correo';
+                        }
                         if (!value.contains('@')) return 'Correo no válido';
                         return null;
                       },
@@ -252,8 +254,9 @@ class _LoginViewState extends State<LoginView> {
                         ),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty)
+                        if (value == null || value.isEmpty) {
                           return 'Ingresa tu contraseña';
+                        }
                         return null;
                       },
                     ),

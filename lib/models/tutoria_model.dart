@@ -1,3 +1,4 @@
+// ignore_for_file: non_constant_identifier_names
 /// Clase que representa una sesión de clase o tutoría dentro de la plataforma de la JIC.
 /// Ha sido diseñada con la flexibilidad necesaria para manejar tanto clases en grupo como
 /// clases individuales, además de adaptarse a diversas etapas de validación de las mismas.
@@ -65,6 +66,9 @@ class TutoriaModel {
   /// Enlaces adjuntos a la tutoría. La llave es el UID y el valor es la lista de URLs.
   final Map<String, List<String>>? enlaces_adjuntos;
 
+  /// Nombres de los archivos adjuntos. La llave es el UID y el valor es la lista de nombres.
+  final Map<String, List<String>>? nombres_adjuntos;
+
   /// Registro de asistencia. La llave es el UID, el valor es true (asistió) o false (faltó).
   final Map<String, bool>? registro_asistencia;
 
@@ -111,6 +115,7 @@ class TutoriaModel {
     this.esGrupal = false,
     this.motivos_alumnos,
     this.enlaces_adjuntos,
+    this.nombres_adjuntos,
     this.registro_asistencia,
     this.justificacion_cancelacion,
     this.lugar,
@@ -143,6 +148,7 @@ class TutoriaModel {
       'esGrupal': esGrupal,
       'motivos_alumnos': motivos_alumnos,
       'enlaces_adjuntos': enlaces_adjuntos,
+      'nombres_adjuntos': nombres_adjuntos,
       'registro_asistencia': registro_asistencia,
       'justificacion_cancelacion': justificacion_cancelacion,
       'lugar': lugar,
@@ -230,6 +236,11 @@ class TutoriaModel {
               (k, v) => MapEntry(k, List<String>.from(v)),
             ) 
           : null,
+      nombres_adjuntos: mapaDeDatos['nombres_adjuntos'] != null 
+          ? (mapaDeDatos['nombres_adjuntos'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<String>.from(v)),
+            ) 
+          : null,
       registro_asistencia: mapaDeDatos['registro_asistencia'] != null 
           ? Map<String, bool>.from(mapaDeDatos['registro_asistencia']) 
           : null,
@@ -266,6 +277,7 @@ class TutoriaModel {
     bool? esGrupal,
     Map<String, String>? motivos_alumnos,
     Map<String, List<String>>? enlaces_adjuntos,
+    Map<String, List<String>>? nombres_adjuntos,
     Map<String, bool>? registro_asistencia,
     String? justificacion_cancelacion,
     String? lugar,
@@ -293,6 +305,7 @@ class TutoriaModel {
       esGrupal: esGrupal ?? this.esGrupal,
       motivos_alumnos: motivos_alumnos ?? this.motivos_alumnos,
       enlaces_adjuntos: enlaces_adjuntos ?? this.enlaces_adjuntos,
+      nombres_adjuntos: nombres_adjuntos ?? this.nombres_adjuntos,
       registro_asistencia: registro_asistencia ?? this.registro_asistencia,
       justificacion_cancelacion: justificacion_cancelacion ?? this.justificacion_cancelacion,
       lugar: lugar ?? this.lugar,

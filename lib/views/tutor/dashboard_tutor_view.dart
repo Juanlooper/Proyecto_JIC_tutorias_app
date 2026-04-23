@@ -1,3 +1,4 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Implemented Realtime Listener
@@ -219,8 +220,9 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
   Widget _construirLista(List<TutoriaModel> lista, int tipo) {
     if (lista.isEmpty) {
       String msj;
-      if (tipo == 0) msj = "No hay solicitudes pendientes en bolsa";
-      else if (tipo == 1) msj = "No tienes clases agendadas en curso";
+      if (tipo == 0) {
+        msj = "No hay solicitudes pendientes en bolsa";
+      } else if (tipo == 1) msj = "No tienes clases agendadas en curso";
       else msj = "No tienes clases archivadas en el historial";
       
       return Center(

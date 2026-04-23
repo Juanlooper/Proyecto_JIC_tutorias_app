@@ -6,7 +6,7 @@ import '../../providers/autenticacion_provider.dart';
 import '../../providers/tutorias_provider.dart';
 
 class ComunidadSugerenciasView extends StatelessWidget {
-  const ComunidadSugerenciasView({Key? key}) : super(key: key);
+  const ComunidadSugerenciasView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -141,11 +141,10 @@ class _TarjetaVotacionComunitaria extends StatelessWidget {
   final VoidCallback onUnirseClick;
 
   const _TarjetaVotacionComunitaria({
-    Key? key,
     required this.sugerencia,
     required this.yaEstaUnido,
     required this.onUnirseClick,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -287,7 +286,7 @@ class _BotonActivoVerde extends StatelessWidget {
   final String texto;
   final VoidCallback alPresionar;
 
-  const _BotonActivoVerde({required this.texto, required this.alPresionar, Key? key}) : super(key: key);
+  const _BotonActivoVerde({required this.texto, required this.alPresionar});
 
   @override
   Widget build(BuildContext context) {
@@ -311,7 +310,7 @@ class _BotonActivoVerde extends StatelessWidget {
 class _BotonDespachadoGris extends StatelessWidget {
   final String texto;
 
-  const _BotonDespachadoGris({required this.texto, Key? key}) : super(key: key);
+  const _BotonDespachadoGris({required this.texto});
 
   @override
   Widget build(BuildContext context) {

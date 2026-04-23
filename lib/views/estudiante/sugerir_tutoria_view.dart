@@ -1,10 +1,13 @@
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../providers/tutorias_provider.dart';
 import '../../models/tutoria_model.dart';
+import '../../services/firebase_storage_servicio.dart';
 
 class SugerirTutoriaView extends StatefulWidget {
-  const SugerirTutoriaView({Key? key}) : super(key: key);
+  const SugerirTutoriaView({super.key});
 
   @override
   State<SugerirTutoriaView> createState() => _SugerirTutoriaViewState();
@@ -22,6 +25,9 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
   String _modalidadSeleccionada = 'Virtual';
 
   bool _estaCargando = false;
+  bool _estaSubiendoArchivo = false;
+  String? _archivoSubidoUrl;
+  String? _archivoSubidoNombre;
 
   @override
   void dispose() {
@@ -106,6 +112,14 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
       _horaSeleccionada!.minute,
     );
 
+    final uidLocal = FirebaseAuth.instance.currentUser?.uid ?? 'anonimo';
+    final enlacesOpcionales = _archivoSubidoUrl != null 
+        ? { uidLocal: [_archivoSubidoUrl!] } 
+        : null;
+    final nombresOpcionales = _archivoSubidoNombre != null 
+        ? { uidLocal: [_archivoSubidoNombre!] } 
+        : null;
+
     // Creamos el cascarón de la sugerencia (la id la inyectará el Provider o Firebase)
     TutoriaModel sugerenciaCruda = TutoriaModel(
       identificadorDeTutoria: '', 
@@ -120,6 +134,8 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
       cupoMaximo: 1, // El tutor determinará el cupo al aceptarla
       duracionMinutos: 60,
       esGrupal: false,
+      enlaces_adjuntos: enlacesOpcionales,
+      nombres_adjuntos: nombresOpcionales,
     );
 
     final provider = Provider.of<TutoriasProvider>(context, listen: false);
@@ -324,7 +340,79 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                   validator: (value) =>
                       value == null || value.trim().length < 5 ? "Debes detallar un poco más lo que necesitas." : null,
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 24),
+                
+                // Zona de subida de archivo para sugerencia
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6C63FF).withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF6C63FF).withValues(alpha: 0.3)),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Material de Apoyo (Opcional)',
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      ),
+                      const SizedBox(height: 12),
+                      if (_estaSubiendoArchivo)
+                        const Center(child: CircularProgressIndicator())
+                      else if (_archivoSubidoUrl != null)
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.green),
+                            SizedBox(width: 8),
+                            Flexible(child: Text('Archivo adjuntado correctamente.', style: TextStyle(color: Colors.green, fontSize: 14))),
+                          ],
+                        )
+                      else
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            setState(() {
+                              _estaSubiendoArchivo = true;
+                            });
+
+                            final mapArchivo = await FirebaseStorageServicio().seleccionarYSubirArchivo(
+                              carpetaDestino: 'tutorias_archivos',
+                            );
+
+                            setState(() {
+                              _estaSubiendoArchivo = false;
+                              if (mapArchivo != null) {
+                                _archivoSubidoUrl = mapArchivo['url'];
+                                _archivoSubidoNombre = mapArchivo['nombre'];
+                              }
+                            });
+                            
+                            if (mapArchivo == null && mounted) {
+                               ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Cancelaste o falló la carga del archivo.')),
+                               );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF6C63FF),
+                            elevation: 0,
+                            side: const BorderSide(color: Color(0xFF6C63FF)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.attach_file),
+                          label: const Text('Subir parcial o foto a la bolsa'),
+                        ),
+                      const SizedBox(height: 8),
+                      const Text('Sube una imagen o PDF para que los profesores vean el nivel.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const SizedBox(height: 4),
+                      const Text('Formatos: PDF, JPG, PNG, DOCX, PPTX (Máx. 5MB)', style: TextStyle(fontSize: 11, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 32),
 
                 // Botón Gigante (Call to Action)
                 ElevatedButton(

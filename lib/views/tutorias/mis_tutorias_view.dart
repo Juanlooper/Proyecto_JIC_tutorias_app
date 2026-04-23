@@ -1,3 +1,4 @@
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -209,14 +210,14 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
   }
 
   Future<void> _mostrarDialogoCrearClaseFija(BuildContext context, String uidTutor) async {
-    final _formKey = GlobalKey<FormState>();
-    final _materiaController = TextEditingController();
-    final _temaController = TextEditingController();
-    final _cupoController = TextEditingController(text: "10");
-    DateTime? _fecha;
-    TimeOfDay? _hora;
-    String _modalidad = "Virtual";
-    int _semanasRepeticion = 1;
+    final formKey = GlobalKey<FormState>();
+    final materiaController = TextEditingController();
+    final temaController = TextEditingController();
+    final cupoController = TextEditingController(text: "10");
+    DateTime? fecha;
+    TimeOfDay? hora;
+    String modalidad = "Virtual";
+    int semanasRepeticion = 1;
 
     final exito = await showDialog<bool>(
       context: context,
@@ -225,34 +226,34 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
           title: const Text("Crear Clase Fija", style: TextStyle(color: AppTheme.primarioAzul)),
           content: SingleChildScrollView(
             child: Form(
-              key: _formKey,
+              key: formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                    TextFormField(
-                     controller: _materiaController,
+                     controller: materiaController,
                      decoration: const InputDecoration(labelText: "Materia", filled: true),
                      validator: (v) => v!.isEmpty ? "Requerido" : null,
                    ),
                    const SizedBox(height: 12),
                    TextFormField(
-                     controller: _temaController,
+                     controller: temaController,
                      decoration: const InputDecoration(labelText: "Tema", filled: true),
                      validator: (v) => v!.isEmpty ? "Requerido" : null,
                    ),
                    const SizedBox(height: 12),
                    DropdownButtonFormField<String>(
-                     value: _modalidad,
+                     initialValue: modalidad,
                      decoration: const InputDecoration(labelText: "Modalidad", filled: true),
                      items: const [
                        DropdownMenuItem(value: "Virtual", child: Text("Virtual")),
                        DropdownMenuItem(value: "Presencial", child: Text("Presencial"))
                      ],
-                     onChanged: (v) => setStateDialog(() => _modalidad = v!),
+                     onChanged: (v) => setStateDialog(() => modalidad = v!),
                    ),
                    const SizedBox(height: 12),
                    TextFormField(
-                     controller: _cupoController,
+                     controller: cupoController,
                      keyboardType: TextInputType.number,
                      decoration: const InputDecoration(labelText: "Cupo (Min 10)", filled: true),
                      validator: (v) => (int.tryParse(v ?? '') ?? 0) < 1 ? "Error" : null,
@@ -264,9 +265,9 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
                          child: OutlinedButton(
                            onPressed: () async {
                               final d = await showDatePicker(context: ctx, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 30)));
-                              if (d != null) setStateDialog(() => _fecha = d);
+                              if (d != null) setStateDialog(() => fecha = d);
                            },
-                           child: Text(_fecha == null ? "Fecha" : "${_fecha!.day}/${_fecha!.month}")
+                           child: Text(fecha == null ? "Fecha" : "${fecha!.day}/${fecha!.month}")
                          ),
                        ),
                        const SizedBox(width: 8),
@@ -274,16 +275,16 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
                          child: OutlinedButton(
                            onPressed: () async {
                               final t = await showTimePicker(context: ctx, initialTime: TimeOfDay.now());
-                              if (t != null) setStateDialog(() => _hora = t);
+                              if (t != null) setStateDialog(() => hora = t);
                            },
-                           child: Text(_hora == null ? "Hora" : _hora!.format(ctx))
+                           child: Text(hora == null ? "Hora" : hora!.format(ctx))
                          ),
                        ),
                      ],
                    ),
                    const SizedBox(height: 12),
                    DropdownButtonFormField<int>(
-                     value: _semanasRepeticion,
+                     initialValue: semanasRepeticion,
                      decoration: const InputDecoration(labelText: "Repetición Semanal", filled: true),
                      items: const [
                        DropdownMenuItem(value: 1, child: Text("Solo 1 clase (Sin repetir)")),
@@ -291,7 +292,7 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
                        DropdownMenuItem(value: 8, child: Text("Bimestral (8 semanas)")),
                        DropdownMenuItem(value: 16, child: Text("Todo el Semestre (16 semanas)")),
                      ],
-                     onChanged: (v) => setStateDialog(() => _semanasRepeticion = v!),
+                     onChanged: (v) => setStateDialog(() => semanasRepeticion = v!),
                    ),
                 ],
               ),
@@ -305,26 +306,26 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: AppTheme.primarioAzul),
               onPressed: () async {
-                if (_formKey.currentState!.validate() && _fecha != null && _hora != null) {
-                   final fechaFinal = DateTime(_fecha!.year, _fecha!.month, _fecha!.day, _hora!.hour, _hora!.minute);
+                if (formKey.currentState!.validate() && fecha != null && hora != null) {
+                   final fechaFinal = DateTime(fecha!.year, fecha!.month, fecha!.day, hora!.hour, hora!.minute);
                    
                    int creadas = 0;
                    final prove = context.read<TutoriasProvider>();
 
-                   for (int i = 0; i < _semanasRepeticion; i++) {
+                   for (int i = 0; i < semanasRepeticion; i++) {
                      final fechaIteracion = fechaFinal.add(Duration(days: 7 * i));
                      final clasePlano = TutoriaModel(
                        identificadorDeTutoria: '',
-                       materiaOAsignatura: _materiaController.text,
-                       temaEspecifico: _temaController.text,
+                       materiaOAsignatura: materiaController.text,
+                       temaEspecifico: temaController.text,
                        carrera: 'General',
                        identificadorDelTutor: uidTutor,
                        listaDeEstudiantesInscritos: [],
-                       modalidadDeClase: _modalidad,
+                       modalidadDeClase: modalidad,
                        estadoDeLaSolicitud: 'pendiente',
                        fechaHoraSugerida: fechaIteracion,
                        duracionMinutos: 60,
-                       cupoMaximo: int.tryParse(_cupoController.text) ?? 10,
+                       cupoMaximo: int.tryParse(cupoController.text) ?? 10,
                        esGrupal: true,
                      );
                      

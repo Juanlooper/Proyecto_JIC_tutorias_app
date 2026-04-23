@@ -52,14 +52,34 @@ service cloud.firestore {
                     && request.auth.uid in resource.data.listaDeEstudiantesInscritos
                     && resource.data.estadoDeLaSolicitud == 'pendiente';
       
-      // Actualización: El campo 'identificadorDelTutor' solo puede ser modificado por un usuario cuyo rol sea 'tutor' o 'admin'.
-      // Por qué: Garantiza estructuralmente que un estudiante regular no pueda autoasignarse como catedrático de una tutoría, vulnerando la calidad de estudio.
-      allow update: if estaAutenticado()
-                    && (
-                      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['identificadorDelTutor'])) 
-                      || 
-                      (obtenerRolDelUsuario() == 'tutor' || obtenerRolDelUsuario() == 'admin')
-                    );
+      // Actualización: Protegida. Solo el creador, el tutor asignado, el admin, o un alumno que se inscribe.
+      // Por qué: Previene que usuarios ajenos modifiquen o saboteen tutorías de otros.
+      allow update: if estaAutenticado() && (
+        // 1. Es un administrador
+        obtenerRolDelUsuario() == 'admin' 
+        
+        // 2. Es el tutor asignado a la clase (puede cancelar, pasar lista, cambiar lugar)
+        || resource.data.identificadorDelTutor == request.auth.uid 
+        
+        // 3. Es un estudiante inscribiéndose en una bolsa pública o clase fija
+        // (Solo puede tocar los campos de inscripción y adjuntos)
+        || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['listaDeEstudiantesInscritos', 'motivos_alumnos', 'enlaces_adjuntos', 'nombres_adjuntos']) 
+          && resource.data.estadoDeLaSolicitud in ['pendiente', 'aceptada']
+        )
+        
+        // 4. Es un tutor aceptando una tutoría de la bolsa (solo cambia id, estado, fecha)
+        || (
+          obtenerRolDelUsuario() == 'tutor'
+          && resource.data.estadoDeLaSolicitud == 'pendiente'
+        )
+        
+        // 5. Es el creador original (está en la lista) modificando algo antes de ser aceptada
+        || (
+          request.auth.uid in resource.data.listaDeEstudiantesInscritos
+          && resource.data.estadoDeLaSolicitud == 'pendiente'
+        )
+      );
     }
   }
 }

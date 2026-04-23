@@ -6,7 +6,7 @@ import '../../core/theme/app_theme.dart';
 /// Vista de Registro (Fase 2 UI)
 /// Implementa la interfaz del PDF sin alterar el backend actual.
 class RegistroView extends StatefulWidget {
-  const RegistroView({Key? key}) : super(key: key);
+  const RegistroView({super.key});
 
   @override
   State<RegistroView> createState() => _RegistroViewState();
@@ -220,13 +220,13 @@ class _RegistroViewState extends State<RegistroView> {
                       child: TextFormField(
                         controller: _ctrlCedula,
                         decoration: InputDecoration(
-                          labelText: 'Cédula',
-                          hintText: 'Ej: 8-888-888',
+                          labelText: 'Cédula *',
+                          hintText: 'Ejemplo: 08-0752-001254',
                           hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
                           prefixIcon: const Icon(Icons.credit_card, color: AppTheme.grisTexto, size: 20),
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.help_outline, color: AppTheme.primarioAzul, size: 20),
-                            onPressed: () => _mostrarAyudaFormato('Cédula de Identidad', 'El formato requiere la escritura obligatoria de **guiones medios** para separar los números o prefijos provinciales.\n\n✔️ Formatos válidos:\n• 8-888-8888\n• PE-12-34\n• 10-123-4567'),
+                            onPressed: () => _mostrarAyudaFormato('Cédula de Identidad', 'El formato requiere la escritura obligatoria de **guiones medios** para separar los números.\n\nFORMATO: 00-0000-000000\nDos dígitos - cuatro dígitos - seis dígitos\n\nEjemplo: 08-0752-001254'),
                           ),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
@@ -236,8 +236,10 @@ class _RegistroViewState extends State<RegistroView> {
                           if (value == null || value.trim().isEmpty) {
                             return 'Requerido';
                           }
-                          if (!value.contains('-')) {
-                            return 'Debe incluir guiones';
+                          // Validar el formato exacto: 2 dígitos - 4 dígitos - 6 dígitos
+                          final regex = RegExp(r'^\d{2}-\d{4}-\d{6}$');
+                          if (!regex.hasMatch(value)) {
+                            return 'Formato: 00-0000-000000';
                           }
                           return null;
                         },
@@ -247,7 +249,7 @@ class _RegistroViewState extends State<RegistroView> {
                     Expanded(
                       flex: 3,
                       child: DropdownButtonFormField<String>(
-                        value: _tipoCelular,
+                        initialValue: _tipoCelular,
                         decoration: InputDecoration(
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
@@ -303,7 +305,7 @@ class _RegistroViewState extends State<RegistroView> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _facultadSeleccionada,
+                        initialValue: _facultadSeleccionada,
                         decoration: InputDecoration(
                           labelText: 'Facultad',
                           prefixIcon: const Icon(Icons.account_balance, color: AppTheme.grisTexto, size: 20),
@@ -331,7 +333,7 @@ class _RegistroViewState extends State<RegistroView> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _anioSeleccionado,
+                        initialValue: _anioSeleccionado,
                         decoration: InputDecoration(
                           labelText: 'Año que cursa',
                           prefixIcon: const Icon(Icons.school, color: AppTheme.grisTexto, size: 20),
@@ -441,8 +443,9 @@ class _RegistroViewState extends State<RegistroView> {
                     ),
                   ),
                   validator: (valor) {
-                    if (valor == null || valor.length < 6)
+                    if (valor == null || valor.length < 6) {
                       return 'Mínimo 6 caracteres';
+                    }
                     return null;
                   },
                 ),
