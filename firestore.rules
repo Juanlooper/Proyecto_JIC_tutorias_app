@@ -52,33 +52,23 @@ service cloud.firestore {
                     && request.auth.uid in resource.data.listaDeEstudiantesInscritos
                     && resource.data.estadoDeLaSolicitud == 'pendiente';
       
-      // Actualización: Protegida. Solo el creador, el tutor asignado, el admin, o un alumno que se inscribe.
-      // Por qué: Previene que usuarios ajenos modifiquen o saboteen tutorías de otros.
+      // Actualización: Protegida. 
       allow update: if estaAutenticado() && (
-        // 1. Es un administrador
+        // 1. Es un administrador (acceso total)
         obtenerRolDelUsuario() == 'admin' 
         
-        // 2. Es el tutor asignado a la clase (puede cancelar, pasar lista, cambiar lugar)
+        // 2. Es el tutor asignado a la clase (acceso total a la clase)
         || resource.data.identificadorDelTutor == request.auth.uid 
         
-        // 3. Es un estudiante inscribiéndose en una bolsa pública o clase fija
-        // (Solo puede tocar los campos de inscripción y adjuntos)
-        || (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['listaDeEstudiantesInscritos', 'motivos_alumnos', 'enlaces_adjuntos', 'nombres_adjuntos']) 
-          && resource.data.estadoDeLaSolicitud in ['pendiente', 'aceptada']
-        )
+        // 3. Es el creador original de la tutoría (para que pueda cancelarla)
+        || resource.data.creador == request.auth.uid
         
-        // 4. Es un tutor aceptando una tutoría de la bolsa (solo cambia id, estado, fecha)
-        || (
-          obtenerRolDelUsuario() == 'tutor'
-          && resource.data.estadoDeLaSolicitud == 'pendiente'
-        )
+        // 4. Es un estudiante normal que SOLO entra, sale o apoya la tutoría
+        // (Al limitarlo a keys específicas, prevenimos que altere fecha, lugar, tutor, etc.)
+        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['listaDeEstudiantesInscritos', 'motivos_alumnos', 'enlaces_adjuntos', 'nombres_adjuntos', 'estudiantesApoyando']) 
         
-        // 5. Es el creador original (está en la lista) modificando algo antes de ser aceptada
-        || (
-          request.auth.uid in resource.data.listaDeEstudiantesInscritos
-          && resource.data.estadoDeLaSolicitud == 'pendiente'
-        )
+        // 5. Es un tutor general aceptando la solicitud (Asignándose a la tutoría)
+        || obtenerRolDelUsuario() == 'tutor'
       );
     }
   }

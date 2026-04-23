@@ -22,39 +22,52 @@ class FirebaseStorageServicio {
       );
 
       // Si el usuario da "Atrás" sin seleccionar nada
-      if (resultado == null || resultado.files.single.path == null) {
+      if (resultado == null) {
+        return null;
+      }
+
+      final file = resultado.files.single;
+
+      // En web, 'path' es null, por lo que debemos verificar 'bytes'
+      if (kIsWeb && file.bytes == null) {
+        return null;
+      } else if (!kIsWeb && file.path == null) {
         return null;
       }
 
       // Validación Estricta de Tamaño (Límite: 5MB)
-      final sizeEnBytes = resultado.files.single.size;
+      final sizeEnBytes = file.size;
       final maximoPermitido = 5 * 1024 * 1024; // 5 MB
       if (sizeEnBytes > maximoPermitido) {
-        // En una app más estructurada, esto lanzaría una excepción que la UI atraparía
         debugPrint("Error de Seguridad: Archivo excede el límite de 5MB.");
         throw Exception("El archivo es demasiado pesado (Máximo 5MB).");
       }
 
-      // Preparación del Archivo Local
-      File archivoFisico = File(resultado.files.single.path!);
-      String extensionBase = resultado.files.single.extension ?? 'bin';
-      String nombreOriginal = resultado.files.single.name;
+      String extensionBase = file.extension ?? 'bin';
+      String nombreOriginal = file.name;
       
       // Obtener el identificador del usuario para saber quién es dueño del almacenamiento (trazabilidad)
       final uidActual = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_anonimo';
       
-      // 2. Nomenclatura del archivo en el Storage (Anti-Colisiones)
+      // Nomenclatura del archivo en el Storage (Anti-Colisiones)
       String marcaDeTiempo = DateTime.now().millisecondsSinceEpoch.toString();
       String nombreSeguroDelArchivo = 'adjunto_${uidActual}_$marcaDeTiempo.$extensionBase';
       
       // Ruta dentro del bucket de Firebase (por ejemplo: tutorias_archivos/adjunto_uid_123.pdf)
       String rutaEnBucket = '$carpetaDestino/$nombreSeguroDelArchivo';
 
-      // 3. Proceso de Subida
+      // Proceso de Subida Multi-plataforma (Web vs Mobile/Desktop)
       final ref = _storage.ref().child(rutaEnBucket);
-      final uploadTask = ref.putFile(archivoFisico);
+      UploadTask uploadTask;
+      
+      if (kIsWeb) {
+        uploadTask = ref.putData(file.bytes!);
+      } else {
+        File archivoFisico = File(file.path!);
+        uploadTask = ref.putFile(archivoFisico);
+      }
 
-      // (Opcional) Podemos escuchar el progreso, sin embargo, la subida será pequeña (< 5MB) en la mayoría de casos
+      // Esperar a que la subida termine
       final snapshot = await uploadTask;
       
       // 4. Extracción de Llink Público Seguro

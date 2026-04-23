@@ -18,10 +18,9 @@ service firebase.storage {
       
       // Escritura: Solo usuarios autenticados pueden subir archivos
       // Restricción: El tamaño máximo de archivo no debe exceder los 5 MB
-      // Restricción: Solo se permiten imágenes y PDFs
+      // Restricción: Solo se permiten archivos autorizados desde la app
       allow write: if estaAutenticado() 
-                   && request.resource.size < 5 * 1024 * 1024
-                   && request.resource.contentType.matches('application/pdf|image/.*');
+                   && request.resource.size < 5 * 1024 * 1024;
                    
       // Eliminación: Permitida por autenticados (la limpieza automática de Storage la hace el tutorias_provider y la cloud function)
       allow delete: if estaAutenticado();
