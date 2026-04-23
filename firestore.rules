@@ -59,6 +59,27 @@ service cloud.firestore {
       allow delete: if estaAutenticado() && obtenerRolDelUsuario() == 'admin';
     }
 
+    match /notificaciones/{notificacionId} {
+      // Lectura: Cualquier usuario autenticado puede leer notificaciones.
+      // La app ya filtra por usuarioId en la consulta.
+      allow read: if estaAutenticado();
+      
+      // Creación: Cualquier usuario autenticado puede crear notificaciones.
+      allow create: if estaAutenticado();
+      
+      // Actualización: Cualquier usuario autenticado puede marcar como leída.
+      allow update: if estaAutenticado();
+      
+      // Eliminación: Solo admin.
+      allow delete: if false;
+    }
+
+    match /quejas/{quejaId} {
+      // Lectura y escritura: Cualquier autenticado puede crear quejas; solo admin puede leerlas.
+      allow create: if estaAutenticado();
+      allow read: if estaAutenticado() && obtenerRolDelUsuario() == 'admin';
+    }
+
     // Regla Global: El administrador tiene acceso de lectura, escritura y borrado en TODO el sistema (incluyendo quejas)
     match /{document=**} {
       allow read, write, delete: if estaAutenticado() && obtenerRolDelUsuario() == 'admin';
