@@ -69,6 +69,12 @@ class QuejasView extends StatelessWidget {
                               style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              FirebaseFirestore.instance.collection('quejas').doc(actas[index].id).delete();
+                            },
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),

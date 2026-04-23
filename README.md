@@ -373,8 +373,8 @@ El sistema superó una auditoría de seguridad implementando reglas drásticas a
 
 | Autor | Rol en el Proyecto | Responsabilidades Asignadas |
 |---|---|---|
-| **Juan Rodriguez** | Liderazgo Técnico (Fullstack) | Diseño de arquitectura, programación en Dart, configuración completa del clúster de Firebase, Cloud Functions, Seguridad IAM y transacciones lógicas. |
-| **Alejandra Falcon** | Jefatura de Interfaz (UI/UX) | Sistema de diseño visual, maquetación del frontend de pantallas, estandarización tipográfica, wireframing y accesibilidad del color. |
+| **Juan Rodriguez** | Liderazgo Técnico  | Diseño de arquitectura, programación en Dart, configuración completa del clúster de Firebase, Cloud Functions, Seguridad IAM y transacciones lógicas. |
+| **Alejandra Falcon** | Interfaz (UI/UX) | Sistema de diseño visual, maquetación del frontend de pantallas, estandarización tipográfica, wireframing y accesibilidad del color. |
 | **Miguel Oliver** | Control de Calidad (QA / Tester) | Auditorías de flujo, revisión de seguridad, reporte y prevención de *Memory Leaks*, pruebas en dispositivos de gama baja y control estadístico. |
 
 ---

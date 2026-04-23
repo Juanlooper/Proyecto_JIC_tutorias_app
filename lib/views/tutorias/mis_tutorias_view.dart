@@ -663,14 +663,14 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
     ctrlComentario.dispose();
   }
 
-  void _abrirDetallesTutoria(BuildContext context, bool esDictando) {
+  void _abrirDetallesTutoria(BuildContext contextoPadre, bool esDictando) {
     showModalBottomSheet(
-      context: context,
+      context: contextoPadre,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
+      builder: (sheetContext) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -691,8 +691,8 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                   if (!esDictando && datos.enlaceOReunion != null && datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' && datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')
                     FilledButton.icon(
                       onPressed: () {
-                         Navigator.pop(context);
-                         _abrirEnlaceGenuino(context);
+                         Navigator.pop(sheetContext);
+                         _abrirEnlaceGenuino(contextoPadre);
                       },
                       icon: const Icon(Icons.link),
                       label: const Text('Entrar a la clase virtual / Ver enlace'),
@@ -705,8 +705,8 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                      ? const Center(child: Text('Ya evaluaste esta sesión.', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)))
                      : FilledButton.icon(
                          onPressed: () {
-                            Navigator.pop(context);
-                            _mostrarDialogoDeEvaluacion(context);
+                            Navigator.pop(sheetContext);
+                            _mostrarDialogoDeEvaluacion(contextoPadre);
                          },
                          icon: const Icon(Icons.rate_review),
                          label: const Text('Evaluar Sesión'),
@@ -716,8 +716,8 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                     FilledButton.icon(
                       style: FilledButton.styleFrom(backgroundColor: Colors.deepOrange),
                       onPressed: () {
-                         Navigator.pop(context);
-                         _culminarTutoriaDada(context);
+                         Navigator.pop(sheetContext);
+                         _culminarTutoriaDada(contextoPadre);
                       },
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Text('Dar por Culminada'),
@@ -727,8 +727,8 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                     TextButton(
                       style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
                       onPressed: () {
-                         Navigator.pop(context);
-                         _abandonarTutoriaEstudiante(context);
+                         Navigator.pop(sheetContext);
+                         _abandonarTutoriaEstudiante(contextoPadre);
                       },
                       child: const Text('Abandonar Clase'),
                     ),

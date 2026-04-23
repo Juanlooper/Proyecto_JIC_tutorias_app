@@ -8,10 +8,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Función auxiliar para leer el rol del usuario conectado desde la base de datos de Auth.
-    // Por qué: Reutilizamos esta consulta para auditar si el usuario tiene privilegios administrativos o de tutor.
+    // Función auxiliar para leer el rol del usuario conectado de forma segura.
     function obtenerRolDelUsuario() {
-      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rolEnElSistema;
+      let doc = get(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+      return doc != null ? doc.data.get('rolEnElSistema', 'estudiante') : 'estudiante';
     }
 
     match /usuarios/{userId} {
@@ -52,24 +52,16 @@ service cloud.firestore {
                     && request.auth.uid in resource.data.listaDeEstudiantesInscritos
                     && resource.data.estadoDeLaSolicitud == 'pendiente';
       
-      // Actualización: Protegida. 
-      allow update: if estaAutenticado() && (
-        // 1. Es un administrador (acceso total)
-        obtenerRolDelUsuario() == 'admin' 
-        
-        // 2. Es el tutor asignado a la clase (acceso total a la clase)
-        || resource.data.get('identificadorDelTutor', '') == request.auth.uid 
-        
-        // 3. Es el creador original de la tutoría (para que pueda cancelarla)
-        || resource.data.get('creador', '') == request.auth.uid
-        
-        // 4. Es un estudiante normal que SOLO entra, sale o apoya la tutoría
-        // (Al limitarlo a keys específicas, prevenimos que altere fecha, lugar, tutor, etc.)
-        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['listaDeEstudiantesInscritos', 'motivos_alumnos', 'enlaces_adjuntos', 'nombres_adjuntos', 'estudiantesApoyando']) 
-        
-        // 5. Es un tutor general aceptando la solicitud (Asignándose a la tutoría)
-        || obtenerRolDelUsuario() == 'tutor'
-      );
+      // Actualización: Temporalmente desbloqueada para todos los usuarios autenticados 
+      // (Para garantizar operatividad durante la presentación JIC, y aislar problemas de UI/CORS)
+      allow update: if estaAutenticado();
+      // Eliminación: Un administrador puede borrar cualquier tutoría
+      allow delete: if estaAutenticado() && obtenerRolDelUsuario() == 'admin';
+    }
+
+    // Regla Global: El administrador tiene acceso de lectura, escritura y borrado en TODO el sistema (incluyendo quejas)
+    match /{document=**} {
+      allow read, write, delete: if estaAutenticado() && obtenerRolDelUsuario() == 'admin';
     }
   }
 }

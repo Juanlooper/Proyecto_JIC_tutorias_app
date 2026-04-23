@@ -219,24 +219,27 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                                   estaSubiendoArchivo = true;
                                 });
 
-                                // Llamado al servicio inteligente de Firebase Storage
-                                final mapArchivo = await FirebaseStorageServicio().seleccionarYSubirArchivo(
-                                  carpetaDestino: 'tutorias_archivos',
-                                );
+                                try {
+                                  // Llamado al servicio inteligente de Firebase Storage
+                                  final mapArchivo = await FirebaseStorageServicio().seleccionarYSubirArchivo(
+                                    carpetaDestino: 'tutorias_archivos',
+                                  );
 
-                                setStateDialog(() {
-                                  estaSubiendoArchivo = false;
-                                  if (mapArchivo != null) {
-                                    archivoSubidoUrl = mapArchivo['url'];
-                                    archivoSubidoNombre = mapArchivo['nombre'];
-                                    enlaceCtrl.text = mapArchivo['url']!; // Lo guardamos invisible
+                                  setStateDialog(() {
+                                    estaSubiendoArchivo = false;
+                                    if (mapArchivo != null) {
+                                      archivoSubidoUrl = mapArchivo['url'];
+                                      archivoSubidoNombre = mapArchivo['nombre'];
+                                      enlaceCtrl.text = mapArchivo['url']!; // Lo guardamos invisible
+                                    }
+                                  });
+                                } catch (e) {
+                                  setStateDialog(() { estaSubiendoArchivo = false; });
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                       SnackBar(content: Text('Error: $e')),
+                                    );
                                   }
-                                });
-                                
-                                if (mapArchivo == null && context.mounted) {
-                                   ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Operación cancelada o fallida al adjuntar archivo.')),
-                                   );
                                 }
                               },
                               icon: const Icon(Icons.upload_file),

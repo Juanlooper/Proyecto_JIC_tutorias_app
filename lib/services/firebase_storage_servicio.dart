@@ -19,6 +19,7 @@ class FirebaseStorageServicio {
       FilePickerResult? resultado = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'ppt', 'pptx'],
+        withData: true, // ¡Obligatorio para que Flutter Web pueda leer los bytes!
       );
 
       // Si el usuario da "Atrás" sin seleccionar nada
@@ -80,9 +81,8 @@ class FirebaseStorageServicio {
 
     } catch (e) {
       debugPrint("Fallo crítico durante el intento de subida al Storage: $e");
-      // Si lanzamos un error sobre el peso, queremos que llegue a la UI
-      if (e.toString().contains('5MB')) rethrow;
-      return null;
+      // Lanzamos la excepción para que la UI sepa exactamente qué falló (ej. error de CORS cacheado)
+      throw Exception(e.toString());
     }
   }
 

@@ -376,22 +376,25 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                               _estaSubiendoArchivo = true;
                             });
 
-                            final mapArchivo = await FirebaseStorageServicio().seleccionarYSubirArchivo(
-                              carpetaDestino: 'tutorias_archivos',
-                            );
+                            try {
+                              final mapArchivo = await FirebaseStorageServicio().seleccionarYSubirArchivo(
+                                carpetaDestino: 'tutorias_archivos',
+                              );
 
-                            setState(() {
-                              _estaSubiendoArchivo = false;
-                              if (mapArchivo != null) {
-                                _archivoSubidoUrl = mapArchivo['url'];
-                                _archivoSubidoNombre = mapArchivo['nombre'];
+                              setState(() {
+                                _estaSubiendoArchivo = false;
+                                if (mapArchivo != null) {
+                                  _archivoSubidoUrl = mapArchivo['url'];
+                                  _archivoSubidoNombre = mapArchivo['nombre'];
+                                }
+                              });
+                            } catch (e) {
+                              setState(() { _estaSubiendoArchivo = false; });
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                   SnackBar(content: Text('Error al subir: $e')),
+                                );
                               }
-                            });
-                            
-                            if (mapArchivo == null && mounted) {
-                               ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Cancelaste o falló la carga del archivo.')),
-                               );
                             }
                           },
                           style: ElevatedButton.styleFrom(
