@@ -48,6 +48,30 @@ Es una aplicación móvil y web escalable que conecta estudiantes que necesitan 
 | **Tutor** | Acceso a la Bolsa de solicitudes huérfanas, visualización y descarga nativa de adjuntos de los alumnos, creación y programación de "Clases Fijas" recurrentes, aceptación de peticiones, listado de agenda pendiente, pase de lista (registro de asistencia), visualización de su propio perfil, y recepción de notificaciones In-App (nuevas sugerencias, abandonos, inscripciones, evaluaciones). |
 | **Admin** | Todo lo del estudiante + Panel de Administración unificado. Tienen el poder de ver métricas globales, ejercer moderación activa de reseñas y quejas, ejecutar baneos de usuarios problemáticos, aprobar postulaciones para ascender estudiantes a tutores, y auditar cancelaciones de clases a última hora. |
 
+### Pantallas Visibles por Rol
+
+A continuación, se detalla a qué vistas (pantallas) tiene acceso cada rol en la aplicación:
+
+**1. Estudiante**
+- **Cartelera (`HomeView`)**: Feed principal de clases ofertadas por tutores.
+- **Mis Tutorías (`MisTutoriasView`)**: Listado de clases a las que el estudiante se ha inscrito.
+- **Sugerencias (`MisSugerenciasView`)**: Historial y estado de las tutorías solicitadas en la Bolsa.
+- **Comunidad (`ExplorarView`)**: Buscador general de la comunidad de tutores y sus reseñas.
+- **Perfil (`PerfilView`)**: Gestión de datos académicos y biografía.
+- **Notificaciones (`NotificacionesView`)**: Centro In-App de alertas.
+- **Sugerir Clase (`SugerirTutoriaView`)**: Formulario para crear nuevas solicitudes con adjuntos.
+
+**2. Tutor**
+- *Tiene acceso a todas las pantallas base del estudiante, y además:*
+- **Tablero Tutor (`DashboardTutorView`)**: Panel central para administrar clases pendientes, finalizadas y el pase de lista.
+- **Aceptar Solicitud (`AceptarSolicitudView`)**: Interfaz donde el tutor define parámetros (fecha, lugar, cupo) al reclamar una tutoría.
+- **Detalle de Clase (`DetalleClaseView`)**: Vista enfocada para auditar asistencia y abrir de forma nativa los archivos subidos por los alumnos.
+
+**3. Administrador**
+- *Tiene acceso a las pantallas base del estudiante, y además:*
+- **Métricas (`AdminDashboardView` / `MetricasView`)**: Centro de mando con gráficas y estadísticas globales del uso del sistema.
+- **Tribunal de Baneos (`TribunalBaneosView`)**: Panel para resolver quejas, auditar cancelaciones y banear usuarios.
+
 ---
 
 ## Arquitectura del Proyecto
