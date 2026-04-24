@@ -224,7 +224,7 @@ Toda la aplicación reactiva es controlada aquí mediante `ChangeNotifier`:
 
 | Categoría | Vistas Principales | Descripción |
 |---|---|---|
-| **Autenticación** | `login_view`, `registro_view` | Formularios limpios, botones OAuth y validadores de campos con regex de correo institucional. |
+| **Autenticación** | `login_view`, `registro_view` | Flujo unificado con buscador dinámico de carreras, validación estricta (cédula, teléfonos) y Términos & Condiciones desplegables. |
 | **Navegación** | `enrutador_roles_view`, `main_navigation_view` | Deciden de manera instantánea a qué tab enviar al usuario tras iniciar sesión basándose en su `rolEnElSistema`. Posee Campanita de Alertas centralizada. |
 | **Principal (Home)**| `home_view`, `crear_tutoria_view` | La "Cartelera". Aquí el alumno ve el feed estilo red social con las clases ofertadas, y puede llenar su solicitud subiendo sus archivos adjuntos desde su celular/PC. |
 | **Tutor** | `dashboard_tutor_view`, `aceptar_solicitud_view`, `detalle_clase_view` | Paneles con pestañas (Pendientes / Finalizadas). En `detalle_clase_view` el tutor da clic a los archivos subidos por el alumno y los abre directamente con el visor nativo. |
@@ -265,6 +265,12 @@ Toda la aplicación reactiva es controlada aquí mediante `ChangeNotifier`:
    - Borra la clase del feed.
 4. **Garbage Collection:** El Provider manda a destruir toda la carpeta de archivos en Cloud Storage vinculada a esa tutoría para evitar guardar basura inútil en el servidor.
 5. **Avisos Masivos:** La función Cloud Functions dispara alertas a todos los estudiantes que se habían inscrito en esa clase explicándoles la cancelación.
+
+### 5. Flujo de Registro Unificado
+1. El estudiante ingresa sus datos con formateo automático en tiempo real (Cédula `00-0000-000000`, Celulares `+507 0000-0000`).
+2. Selecciona su Facultad y utiliza el **Buscador Dinámico** (`DropdownMenu`) para filtrar y elegir su carrera exacta de la UTP.
+3. Despliega y lee los **Términos, Condiciones y Políticas de Vecta** integrados fluidamente en el formulario antes de aceptar.
+4. El sistema crea la cuenta en Firebase Auth, inyecta el perfil académico en Firestore y emite un correo de verificación institucional.
 
 ---
 
@@ -397,6 +403,6 @@ El código original, el branding actual, y la base de datos de los primeros prot
 
 ---
 
-> **Versión del Proyecto:** 1.1.0 Release Candidate (Files & Notifications Upgrade)  
+> **Versión del Proyecto:** 1.2.0 Release Candidate (Registration & UI Unified Upgrade)  
 > **Auditoría de Seguridad:** Completada y superada con éxito (Google Cloud Rules Enforced).  
 > **Última actualización:** Abril 2026
