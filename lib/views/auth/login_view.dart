@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/autenticacion_provider.dart';
 import '../navigation/enrutador_roles_view.dart';
 import 'registro_view.dart';
+import 'package:tutorias_jic_v2/views/view/landing_screen.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -129,16 +130,6 @@ class _LoginViewState extends State<LoginView> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Flecha Superior Izquierda (mock)
-              const Align(
-                alignment: Alignment.topLeft,
-                child: Icon(
-                  Icons.arrow_back,
-                  color: AppTheme.primarioVerde,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(height: 24),
 
               // Logo Circular
               Container(
@@ -441,6 +432,20 @@ class _LoginViewState extends State<LoginView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppTheme.primarioVerde),
+          onPressed: () {
+            // Se usa pushReplacement para evitar que la pantalla de login permanezca en la pila de navegación.
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const LandingScreen()),
+            );
+          },
+        ),
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           // Si la pantalla es ancha (Web/Escritorio)

@@ -144,7 +144,7 @@ class LandingScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 60),
-        Expanded(child: _buildIlustracionPlaceholder()),
+        Expanded(child: _buildIlustracion(context)),
       ],
     );
   }
@@ -157,7 +157,7 @@ class LandingScreen extends StatelessWidget {
         const SizedBox(height: 40),
         _buildBotonesPrincipales(context, true),
         const SizedBox(height: 40),
-        _buildIlustracionPlaceholder(),
+        _buildIlustracion(context),
       ],
     );
   }
@@ -238,10 +238,9 @@ class LandingScreen extends StatelessWidget {
     );
   }
 
-  // Marcador de posición para la ilustración principal
-  Widget _buildIlustracionPlaceholder() {
+  // Ilustración principal
+  Widget _buildIlustracion(BuildContext context) {
     return Container(
-      height: 350,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(30),
@@ -254,10 +253,21 @@ class LandingScreen extends StatelessWidget {
         ],
         border: Border.all(color: AppTheme.grisTexto.withOpacity(0.1)),
       ),
-      child: const Center(
-        child: Text(
-          'Ilustración Principal',
-          style: TextStyle(color: AppTheme.grisTexto),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        // Restricción de altura (MediaQuery al 35%) para evitar desbordamientos en dispositivos pequeños.
+        child: Image.asset(
+          'assets/images/Ilustracion_principal.png',
+          fit: BoxFit.contain,
+          width: double.infinity,
+          height: MediaQuery.of(context).size.height * 0.35,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(
+              Icons.image_not_supported,
+              size: 100,
+              color: Colors.grey,
+            );
+          },
         ),
       ),
     );
