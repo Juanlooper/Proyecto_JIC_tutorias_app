@@ -127,6 +127,10 @@ class AutenticacionProvider extends ChangeNotifier {
     required String nombreEscrito,
     String? facultadElegidaEnMenu,
     String? carreraElegidaEnMenu,
+    String? celular,
+    String? contactoEmergenciaNombre,
+    String? contactoEmergenciaTelefono,
+    String? anoCursando,
   }) async {
     _activarIndicadorDeCargaEnPantalla();
     _limpiarCualquierTextoDefectuosoAnterior();
@@ -138,6 +142,10 @@ class AutenticacionProvider extends ChangeNotifier {
           nombreCompleto: nombreEscrito,
           facultad: facultadElegidaEnMenu,
           carrera: carreraElegidaEnMenu,
+          telefonoPersonal: celular,
+          contactoEmergenciaNombre: contactoEmergenciaNombre,
+          contactoEmergenciaTelefono: contactoEmergenciaTelefono,
+          anoCursando: anoCursando,
         );
 
     if (respuestaDeLaInscripcion == "Registro Exitoso") {

@@ -212,6 +212,10 @@ class _RegistroViewState extends State<RegistroView> {
       nombreEscrito: nombreEnsamblado,
       facultadElegidaEnMenu: _facultadSeleccionada,
       carreraElegidaEnMenu: _carreraSeleccionada,
+      celular: _ctrlCelularPersonal.text.trim().isNotEmpty ? _ctrlCelularPersonal.text.trim() : null,
+      contactoEmergenciaNombre: _ctrlContactoEmergencia.text.trim().isNotEmpty ? _ctrlContactoEmergencia.text.trim() : null,
+      contactoEmergenciaTelefono: _ctrlTelefonoEmergencia.text.trim().isNotEmpty ? _ctrlTelefonoEmergencia.text.trim() : null,
+      anoCursando: _anoSeleccionado,
     );
 
     if (exitoRegistrando && mounted) {
@@ -611,7 +615,7 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
               border: InputBorder.none, 
               contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
             ),
-            value: selectedValue,
+            initialValue: selectedValue,
             icon: const Icon(Icons.arrow_drop_down, color: VectaColors.secondaryBlue),
             isExpanded: true,
             items: items.map((String val) => DropdownMenuItem(value: val, child: Text(val, style: const TextStyle(color: VectaColors.darkBlue)))).toList(),

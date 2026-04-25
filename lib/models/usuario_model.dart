@@ -47,6 +47,7 @@ class UsuarioModel {
   final String? telefonoPersonal;
   final String? contactoEmergenciaNombre;
   final String? contactoEmergenciaTelefono;
+  final String? anoCursando;
 
   /// Función constructora que inicializa o "crea" la representación del usuario cuando ya tenemos su información.
   UsuarioModel({
@@ -64,6 +65,7 @@ class UsuarioModel {
     this.telefonoPersonal,
     this.contactoEmergenciaNombre,
     this.contactoEmergenciaTelefono,
+    this.anoCursando,
   });
 
   /// Convierte la información del objeto de usuario actual a un formato de lista de parejas (Mapa/Diccionario).
@@ -84,6 +86,7 @@ class UsuarioModel {
       'telefonoPersonal': telefonoPersonal,
       'contactoEmergenciaNombre': contactoEmergenciaNombre,
       'contactoEmergenciaTelefono': contactoEmergenciaTelefono,
+      'anoCursando': anoCursando,
     };
   }
 
@@ -130,6 +133,7 @@ class UsuarioModel {
       telefonoPersonal: mapaDeDatos['telefonoPersonal'],
       contactoEmergenciaNombre: mapaDeDatos['contactoEmergenciaNombre'],
       contactoEmergenciaTelefono: mapaDeDatos['contactoEmergenciaTelefono'],
+      anoCursando: mapaDeDatos['anoCursando'],
     );
   }
 
@@ -155,6 +159,7 @@ class UsuarioModel {
     String? telefonoPersonal,
     String? contactoEmergenciaNombre,
     String? contactoEmergenciaTelefono,
+    String? anoCursando,
   }) {
     return UsuarioModel(
       identificadorUnico: identificadorUnico ?? this.identificadorUnico,
@@ -171,6 +176,7 @@ class UsuarioModel {
       telefonoPersonal: telefonoPersonal ?? this.telefonoPersonal,
       contactoEmergenciaNombre: contactoEmergenciaNombre ?? this.contactoEmergenciaNombre,
       contactoEmergenciaTelefono: contactoEmergenciaTelefono ?? this.contactoEmergenciaTelefono,
+      anoCursando: anoCursando ?? this.anoCursando,
     );
   }
 }

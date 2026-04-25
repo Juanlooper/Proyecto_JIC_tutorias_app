@@ -25,6 +25,10 @@ class AutenticacionServicio {
     required String nombreCompleto,
     String? facultad,
     String? carrera,
+    String? telefonoPersonal,
+    String? contactoEmergenciaNombre,
+    String? contactoEmergenciaTelefono,
+    String? anoCursando,
   }) async {
     try {
 
@@ -49,6 +53,10 @@ class AutenticacionServicio {
           facultad: facultad,
           carrera: carrera,
           listaDeTutoresSuscritos: [], // Al ser nuevo, no tiene a nadie en su lista
+          telefonoPersonal: telefonoPersonal,
+          contactoEmergenciaNombre: contactoEmergenciaNombre,
+          contactoEmergenciaTelefono: contactoEmergenciaTelefono,
+          anoCursando: anoCursando,
         );
 
         // Paso 3: Depositamos la ficha oficial de este usuario dentro de la colección 'usuarios'

@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../providers/tutorias_provider.dart';
 import '../../models/tutoria_model.dart';
-import '../../services/firebase_storage_servicio.dart';
 
 class SugerirTutoriaView extends StatefulWidget {
   const SugerirTutoriaView({super.key});
@@ -23,9 +22,23 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
   DateTime? _fechaSeleccionada;
   TimeOfDay? _horaSeleccionada;
   String _modalidadSeleccionada = 'Virtual';
+  
+  final List<String> _materiasPredeterminadas = [
+    'CÁLCULO I',
+    'CÁLCULO II',
+    'CÁLCULO III',
+    'QUÍMICA I',
+    'DIBUJO I',
+    'DESARROLLO LÓGICO Y ALGORÍTMOS',
+    'FÍSICA I (MECÁNICA)',
+    'FÍSICA II (ELECTRICIDAD Y MAGNETISMO)',
+    'ESTÁTICA',
+    'DINÁMICA',
+    'Otros'
+  ];
+  String _materiaSeleccionada = 'CÁLCULO I';
 
   bool _estaCargando = false;
-  bool _estaSubiendoArchivo = false;
   String? _archivoSubidoUrl;
   String? _archivoSubidoNombre;
 
@@ -120,10 +133,14 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
         ? { uidLocal: [_archivoSubidoNombre!] } 
         : null;
 
+    final materiaFinal = _materiaSeleccionada == 'Otros' 
+        ? _materiaController.text.trim() 
+        : _materiaSeleccionada;
+
     // Creamos el cascarón de la sugerencia (la id la inyectará el Provider o Firebase)
     TutoriaModel sugerenciaCruda = TutoriaModel(
       identificadorDeTutoria: '', 
-      materiaOAsignatura: _materiaController.text.trim(),
+      materiaOAsignatura: materiaFinal,
       temaEspecifico: _motivosController.text.trim(),
       carrera: 'General / No Especificada', // Ajustable según necesidad futuura
       identificadorDelTutor: '', // CRÍTICO: Regla fundamental de la bolsa
@@ -224,17 +241,46 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                 const SizedBox(height: 32),
 
                 // Campo: Materia
-                _construirLabel("¿Qué materia quieres aprender?"),
-                TextFormField(
-                  controller: _materiaController,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: _estiloCajaFluida(
-                    hint: "Ej. Cálculo II, Física Mecánica...",
-                    icono: Icons.book_rounded,
-                  ),
-                  validator: (value) =>
-                      value == null || value.trim().isEmpty ? "Debes ingresar una materia." : null,
+                _construirLabel("Asignatura para la cual solicita tutoría"),
+                DropdownButtonFormField<String>(
+                  value: _materiaSeleccionada,
+                  isExpanded: true,
+                  decoration: _estiloCajaFluida(hint: "", icono: Icons.book_rounded),
+                  items: _materiasPredeterminadas.map((String materia) {
+                    return DropdownMenuItem<String>(
+                      value: materia,
+                      child: Text(
+                        materia,
+                        style: const TextStyle(fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _materiaSeleccionada = val;
+                        if (val != 'Otros') {
+                          _materiaController.clear();
+                        }
+                      });
+                    }
+                  },
                 ),
+                if (_materiaSeleccionada == 'Otros') ...[
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _materiaController,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: _estiloCajaFluida(
+                      hint: "Escribe el nombre de la materia...",
+                      icono: Icons.edit_rounded,
+                    ),
+                    validator: (value) =>
+                        _materiaSeleccionada == 'Otros' && (value == null || value.trim().isEmpty) 
+                            ? "Debes escribir la materia." : null,
+                  ),
+                ],
                 const SizedBox(height: 24),
                 
                 // Campo: Modalidad

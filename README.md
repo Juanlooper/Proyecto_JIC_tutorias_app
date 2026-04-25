@@ -362,22 +362,36 @@ firebase deploy --only hosting
 
 ---
 
-## Seguridad y Reglas de Negocio
+## Seguridad y Políticas de Protección de Datos
 
-El sistema superó una auditoría de seguridad implementando reglas drásticas a nivel servidor:
+El sistema ha superado múltiples auditorías de seguridad (incluyendo escaneos de vulnerabilidades críticas) y opera bajo un estricto modelo de Confianza Cero (Zero Trust) a nivel de servidor.
 
-### Reglas Firestore Strict-Mode
-- **Imposibilidad de alteración masiva:** La regla de actualización en `firestore.rules` prohíbe que cualquier estudiante malicioso modifique clases en las que no está.
-- **Escudo de Privilegios:** Ningún cliente puede modificar su campo `rolEnElSistema`. Aunque un hacker altere la App compilada, Firebase rechazará la mutación bloqueando el escalamiento de privilegios.
-- **Lecturas Blindadas:** Cada colección (tutorias, notificaciones, usuarios) exige que el request esté `auth != null`, y operaciones como reportes anónimos o lectura de quejas solo las permite si `rolEnElSistema == 'admin'`.
+### 1. Reglas Firestore Strict-Mode (Defensa contra exploits)
+- **Escudo de Privilegios (Escalamiento Bloqueado):** Ningún cliente puede modificar su propio campo `rolEnElSistema`, `estaBaneado` o `strikes_inasistencia`. Aunque un usuario malintencionado haga ingeniería inversa a la App y reescriba la petición HTTP hacia Firebase, el servidor rechazará la mutación. Solo procesos backend o un `admin` pueden alterar estas propiedades.
+- **Protección de Tutorías (Anti-Hack JIC):** Se mitigó una vulnerabilidad crítica que permitía la alteración masiva de clases. Ahora, la regla `allow update` evalúa criptográficamente que la modificación solo provenga de: el creador de la tutoría, el tutor asignado, o un estudiante legítimamente inscrito. Ningún alumno externo puede borrar a los participantes ni alterar los horarios de clases de otros.
+- **Blindaje contra Espionaje de Notificaciones:** Inicialmente la lectura de notificaciones era global. Se implementó una verificación estricta (`resource.data.usuarioId == request.auth.uid`) para que cada dispositivo y usuario solo pueda desencriptar y leer las notificaciones y mensajes dirigidos exclusivamente a su UID.
+- **Eliminación Lógica vs Física:** Se prohíbe rotundamente el borrado de documentos de perfil (`allow delete: if false`). En su lugar, el sistema emplea "soft deletes" y banderas booleanas para mantener la integridad de la base de datos histórica.
 
-### Reglas Firebase Storage
-- **Firewall de Archivos:** Las `storage.rules` exigen que todo archivo subido cumpla un regex de tipo de documento (`application/pdf`, `image/.*`).
-- **Límite Físico:** Límite infranqueable de `5 MB` por petición de subida. Evita saturación y ataques de sobrecosto (Denial of Wallet).
+### 2. Firewall de Firebase Storage
+- **Validación de Tipos MIME (Regex):** La puerta de entrada de archivos rechaza sistemáticamente cualquier subida que no sea explícitamente `application/pdf` o formato de imagen (`image/.*`), bloqueando la inyección de malware o scripts maliciosos.
+- **Límite Físico (Denial of Wallet):** Existe un límite infranqueable de `5 MB` por cada petición de subida para prevenir que un atacante sature el servidor con peticiones masivas.
+- **Protección contra Borrado Masivo:** Se clausuró el acceso público a las eliminaciones en bloque; la purga de carpetas de almacenamiento quedó delegada de manera exclusiva al recolector de basura nativo del administrador o del proceso de limpieza del backend.
 
-### Reglas de Dominio y Negocio
-- La app verifica que un estudiante no se pueda inscribir en una clase impartida por sí mismo.
-- No hay borrado físico de usuarios (`allow delete: if false` en Auth/Firestore). Se mantienen los registros como legado contable, pero se les niega el *login* vía UI si están baneados.
+### 3. Reglas de Negocio y Privacidad del Usuario
+- **Cumplimiento de Ley 81 (Protección de Datos - Panamá):** Se recogen los datos estrictamente necesarios bajo el consentimiento explícito del estudiante (implementado con un formulario obligatorio de Términos y Condiciones).
+- **Cifrado de Credenciales:** Todas las transacciones de inicio de sesión utilizan algoritmos nativos AES manejados por Google Identity.
+- **Filtro Anti-Review Bombing:** Lógica a nivel de vista y backend para impedir que estudiantes evalúen a tutores de clases a las que nunca asistieron (verificando el `registro_asistencia`).
+
+### 4. Términos, Condiciones y Política de Privacidad de Vecta
+Durante el registro, el usuario debe aceptar un contrato legal detallado. A continuación, se desglosa el propósito de cada cláusula estipulada en la aplicación:
+
+1. **Marco Legal y Derechos del Usuario (Derechos ARCO):** Garantiza que Vecta opera bajo la Ley No. 81 de Panamá. Asegura al estudiante que tiene el derecho de **Acceder, Rectificar, Cancelar u Oponerse** al uso de sus datos en cualquier momento.
+2. **¿Qué datos recopilamos y para qué?:** Principio de transparencia. Explica que solo se recopilan datos de contacto institucionales y académicos (Facultad/Carrera) para alimentar el algoritmo de matchmaking de tutorías, asegurando que no se venderá la información a terceros.
+3. **Ciberseguridad y Almacenamiento:** Da tranquilidad al usuario final explicando que su contraseña no se guarda en texto plano, sino mediante encriptación asimétrica de Firebase, y que la plataforma cuenta con autenticación segura.
+4. **Reglas de Uso y Conducta:** Establece las bases para los baneos. Prohíbe explícitamente la suplantación de identidad, el bullying en los espacios de clase, el spam y los intentos de hacking (modificación del código).
+5. **Propiedad Intelectual:** Protege el diseño, los logotipos y el código fuente (especialmente la integración gráfica del símbolo de sumatoria y la espiral de Fibonacci de Vecta) contra el plagio.
+6. **Limitaciones de Responsabilidad:** Una cláusula crítica para proteger a los desarrolladores y tutores. Aclara que usar Vecta no garantiza aprobar una asignatura (el éxito depende del estudiante) y exime a la plataforma por problemas de conectividad o acuerdos externos que los usuarios hagan por fuera de la app.
+7. **Cambios en estas Políticas:** Cláusula de contingencia que reserva el derecho a la administración de modificar el documento notificando a los usuarios en futuras actualizaciones.
 
 ---
 

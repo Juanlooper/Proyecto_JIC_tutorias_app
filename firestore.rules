@@ -29,7 +29,10 @@ service cloud.firestore {
       // Por qué: Protege el escalamiento de privilegios. Solo un administrador o proceso backend de confianza puede y debe alterar el rol de alguien.
       allow update: if estaAutenticado() 
                     && request.auth.uid == userId
-                    && request.resource.data.rolEnElSistema == resource.data.rolEnElSistema;
+                    && request.resource.data.rolEnElSistema == resource.data.rolEnElSistema
+                    && request.resource.data.esta_baneado == resource.data.esta_baneado
+                    && request.resource.data.strikes_inasistencia == resource.data.strikes_inasistencia
+                    && request.resource.data.estado_solicitud_tutor == resource.data.estado_solicitud_tutor;
                     
       // Eliminación: Deshabilitada.
       // Por qué: Mantener la integridad del historial de registros en el sistema académico.
@@ -52,23 +55,28 @@ service cloud.firestore {
                     && request.auth.uid in resource.data.listaDeEstudiantesInscritos
                     && resource.data.estadoDeLaSolicitud == 'pendiente';
       
-      // Actualización: Temporalmente desbloqueada para todos los usuarios autenticados 
-      // (Para garantizar operatividad durante la presentación JIC, y aislar problemas de UI/CORS)
-      allow update: if estaAutenticado();
+      // Actualización: Restringida para evitar manipulación masiva.
+      // Permite actualizar si el usuario es el tutor asignado, si la tutoría no tiene tutor aún (para reclamarla),
+      // o si el estudiante está en la lista de inscritos actual o se está inscribiendo en esta petición.
+      allow update: if estaAutenticado() 
+                    && (request.auth.uid == resource.data.identificadorDelTutor 
+                        || resource.data.identificadorDelTutor == '' 
+                        || request.auth.uid in resource.data.listaDeEstudiantesInscritos 
+                        || request.auth.uid in request.resource.data.listaDeEstudiantesInscritos);
+                        
       // Eliminación: Un administrador puede borrar cualquier tutoría
       allow delete: if estaAutenticado() && obtenerRolDelUsuario() == 'admin';
     }
 
     match /notificaciones/{notificacionId} {
-      // Lectura: Cualquier usuario autenticado puede leer notificaciones.
-      // La app ya filtra por usuarioId en la consulta.
-      allow read: if estaAutenticado();
+      // Lectura: Solo el usuario destinatario puede leer sus propias notificaciones.
+      allow read: if estaAutenticado() && resource.data.usuarioId == request.auth.uid;
       
-      // Creación: Cualquier usuario autenticado puede crear notificaciones.
+      // Creación: Cualquier usuario autenticado puede crear notificaciones (ej. al apartar tutoría).
       allow create: if estaAutenticado();
       
-      // Actualización: Cualquier usuario autenticado puede marcar como leída.
-      allow update: if estaAutenticado();
+      // Actualización: Solo el dueño de la notificación puede marcarla como leída.
+      allow update: if estaAutenticado() && resource.data.usuarioId == request.auth.uid;
       
       // Eliminación: Solo admin.
       allow delete: if false;
