@@ -15,6 +15,7 @@ import 'providers/admin_provider.dart';
 // Vistas principales (Con la ruta corregida a la carpeta auth)
 import 'views/auth/login_view.dart';
 import 'views/navigation/enrutador_roles_view.dart';
+import 'views/view/landing_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,21 +55,7 @@ class TutoriasApp extends StatelessWidget {
         // ¡Aquí inyectamos el Tema Global de Vecta!
         theme: AppTheme.lightTheme,
 
-        home: Consumer<AutenticacionProvider>(
-          builder: (context, auth, _) {
-            // Pantalla de carga MIENTRAS verifica la sesión al abrir la app.
-            if (auth.estaInicializando) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            }
-
-            // Si hay usuario, vamos al Dashboard. Si no, al Login.
-            return auth.usuarioActual != null
-                ? const EnrutadorRolesView()
-                : const LoginView();
-          },
-        ),
+        home: const LandingScreen(),
       ),
     );
   }
