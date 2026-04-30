@@ -13,8 +13,6 @@ import 'providers/tutorias_provider.dart';
 import 'providers/admin_provider.dart';
 
 // Vistas principales (Con la ruta corregida a la carpeta auth)
-import 'views/auth/login_view.dart';
-import 'views/navigation/enrutador_roles_view.dart';
 import 'views/view/landing_screen.dart';
 
 void main() async {

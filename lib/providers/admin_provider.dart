@@ -15,6 +15,11 @@ class AdminProvider extends ChangeNotifier {
   int tutoriasFinalizadas = 0;
   int inscripcionesTotales = 0;
 
+  // Variables de métricas avanzadas (Gráficas)
+  Map<String, double> horasPorTutor = {};
+  Map<String, double> horasPorMateria = {};
+  Map<String, double> horasPorEstudiante = {};
+
   /// Carga todas las estadísticas necesarias para el Dashboard.
   /// Implementa filtros específicos en el servidor para ahorrar datos.
   Future<void> cargarEstadisticasDashboard() async {
@@ -46,14 +51,36 @@ class AdminProvider extends ChangeNotifier {
           .get();
       tutoriasFinalizadas = queryFinalizadas.count ?? 0;
 
-      // 4. Inscripciones totales: Sumatoria de todos los alumnos en todas las tutorías.
-      // Nota técnica para Maiky: Firebase count() no suma longitudes de arreglos, 
-      // por lo que traemos los documentos para procesar la suma en local.
+      // 4. Inscripciones y Métricas Complejas.
+      // Traemos las tutorías para procesar las sumas en local.
       final snapshotTutorias = await _baseDeDatosOperativa.collection('tutorias').get();
       int acumuladorInscripciones = 0;
+      
+      horasPorTutor.clear();
+      horasPorMateria.clear();
+      horasPorEstudiante.clear();
+
       for (var documento in snapshotTutorias.docs) {
-        final listaAlumnos = documento.data()['listaDeEstudiantesInscritos'] as List?;
+        final data = documento.data();
+        final listaAlumnos = data['listaDeEstudiantesInscritos'] as List?;
         acumuladorInscripciones += listaAlumnos?.length ?? 0;
+
+        // Cálculos de horas (solo clases finalizadas)
+        if (data['estadoDeLaSolicitud'] == 'finalizada') {
+          double horas = (data['duracionMinutos'] ?? 60) / 60.0;
+          
+          final tutorNombre = data['nombre_tutor'] ?? 'Tutor Desconocido';
+          horasPorTutor[tutorNombre] = (horasPorTutor[tutorNombre] ?? 0) + horas;
+
+          final materia = data['materiaOAsignatura'] ?? 'Materia Desconocida';
+          horasPorMateria[materia] = (horasPorMateria[materia] ?? 0) + horas;
+
+          if (listaAlumnos != null) {
+            for (var uidAlumno in listaAlumnos) {
+              horasPorEstudiante[uidAlumno.toString()] = (horasPorEstudiante[uidAlumno.toString()] ?? 0) + horas;
+            }
+          }
+        }
       }
       inscripcionesTotales = acumuladorInscripciones;
 

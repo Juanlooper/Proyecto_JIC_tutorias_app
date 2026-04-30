@@ -535,11 +535,40 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
   }
 
   Future<void> _abandonarTutoriaEstudiante(BuildContext context) async {
+    final horasRestantes = datos.fechaHoraSugerida.difference(DateTime.now()).inHours;
+    final esTarde = horasRestantes < 12;
+    final excusaCtrl = TextEditingController();
+
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('¿Seguro que deseas salir?', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('Perderás tu cupo en esta tutoría y la comunidad tendrá uno libre disponible.'),
+        title: Text(
+          esTarde ? 'Cancelación Tardía (< 12h)' : '¿Seguro que deseas salir?', 
+          style: TextStyle(fontWeight: FontWeight.bold, color: esTarde ? Colors.red : Colors.black87)
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              esTarde 
+                ? 'Estás cancelando con menos de 12 horas de anticipación. Esto es una falta al reglamento. Debes proveer una justificación válida para el Tribunal de Disciplina o recibirás un Strike.'
+                : 'Perderás tu cupo en esta tutoría y la comunidad tendrá uno libre disponible.',
+            ),
+            if (esTarde) ...[
+              const SizedBox(height: 16),
+              TextField(
+                controller: excusaCtrl,
+                decoration: const InputDecoration(
+                  labelText: "Motivo de fuerza mayor", 
+                  border: OutlineInputBorder(),
+                  hintText: "Ej. Emergencia médica...",
+                ),
+                maxLines: 3,
+              ),
+            ]
+          ],
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
@@ -547,7 +576,10 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
             child: const Text('Conservar cupo', style: TextStyle(color: Colors.blueGrey)),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
+            onPressed: () {
+              if (esTarde && excusaCtrl.text.trim().isEmpty) return; // Requiere texto
+              Navigator.pop(ctx, true);
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -560,14 +592,16 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
 
     if (confirmar == true && context.mounted) {
       final proveedor = context.read<TutoriasProvider>();
-      bool exito = await proveedor.abandonarTutoria(datos.identificadorDeTutoria);
+      final excusa = esTarde ? excusaCtrl.text.trim() : null;
+      
+      bool exito = await proveedor.abandonarTutoria(datos.identificadorDeTutoria, excusa: excusa);
 
       if (exito && context.mounted) {
         await proveedor.cargarTutoriasSuscritasDelUsuario(uidActual);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Te has dado de baja exitosamente.'),
-            backgroundColor: Colors.black87,
+          SnackBar(
+            content: Text(esTarde ? 'Has sido dado de baja. Tu excusa fue enviada al Tribunal.' : 'Te has dado de baja exitosamente.'),
+            backgroundColor: esTarde ? Colors.orange.shade800 : Colors.black87,
             behavior: SnackBarBehavior.floating,
           ),
         );

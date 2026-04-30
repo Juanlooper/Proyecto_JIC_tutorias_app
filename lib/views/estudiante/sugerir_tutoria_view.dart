@@ -243,7 +243,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                 // Campo: Materia
                 _construirLabel("Asignatura para la cual solicita tutoría"),
                 DropdownButtonFormField<String>(
-                  value: _materiaSeleccionada,
+                  initialValue: _materiaSeleccionada,
                   isExpanded: true,
                   decoration: _estiloCajaFluida(hint: "", icono: Icons.book_rounded),
                   items: _materiasPredeterminadas.map((String materia) {

@@ -127,7 +127,7 @@ class UsuarioModel {
           ? List<String>.from(mapaDeDatos['listaDeTutoresSuscritos'])
           : [],
       strikesInasistencia: mapaDeDatos['strikes_inasistencia'] ?? 0,
-      estaBaneado: mapaDeDatos['esta_baneado'] ?? false,
+      estaBaneado: (mapaDeDatos['esta_baneado'] == true) || ((mapaDeDatos['strikes_inasistencia'] ?? 0) >= 3),
       estadoSolicitudTutor: mapaDeDatos['estado_solicitud_tutor'] ?? 'ninguna',
       descripcionPerfil: mapaDeDatos['descripcionPerfil'],
       telefonoPersonal: mapaDeDatos['telefonoPersonal'],

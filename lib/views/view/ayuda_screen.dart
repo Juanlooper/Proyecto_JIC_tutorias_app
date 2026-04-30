@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tutorias_jic_v2/core/theme/app_theme.dart';
+import 'package:tutorias_jic_v2/views/view/soporte_screen.dart';
 
 class AyudaScreen extends StatelessWidget {
   const AyudaScreen({super.key});
@@ -93,7 +94,7 @@ class AyudaScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 15),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        side: BorderSide(color: AppTheme.grisTexto.withOpacity(0.1)),
+        side: BorderSide(color: AppTheme.grisTexto.withValues(alpha: 0.1)),
       ),
       child: ExpansionTile(
         title: Text(
@@ -117,17 +118,53 @@ class AyudaScreen extends StatelessWidget {
   }
 
   Widget _buildIlustracionPlaceholder(String titulo) {
-    return Container(
-      height: 300,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: AppTheme.grisTexto.withOpacity(0.1)),
-      ),
-      child: Center(
-        child: Text(
-          'Ilustración de $titulo',
-          style: const TextStyle(color: AppTheme.grisTexto),
+    return Builder(
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(30),
+        decoration: BoxDecoration(
+          color: AppTheme.primarioAzul.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: AppTheme.primarioAzul.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.help_center_rounded, size: 80, color: AppTheme.primarioAzul),
+            const SizedBox(height: 20),
+            const Text(
+              '¿Aún tienes dudas?',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textoOscuro,
+              ),
+            ),
+            const SizedBox(height: 15),
+            const Text(
+              'Si las preguntas frecuentes no resolvieron tu problema, puedes contactar a soporte técnico directamente.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: AppTheme.grisTexto, height: 1.5),
+            ),
+            const SizedBox(height: 25),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SoporteScreen()),
+                );
+              },
+              icon: const Icon(Icons.support_agent_rounded),
+              label: const Text('Ir a Soporte'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primarioAzul,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+            )
+          ],
         ),
       ),
     );

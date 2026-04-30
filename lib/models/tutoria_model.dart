@@ -89,6 +89,9 @@ class TutoriaModel {
   /// Sirve para evitar dobles evaluaciones y deshabilitar el botón de calificar.
   final List<String> alumnosQueYaEvaluaron;
 
+  /// Lista de los identificadores únicos de los estudiantes que el tutor ya evaluó en esta sesión.
+  final List<String> alumnosEvaluadosPorTutor;
+
   /// Lista de UID de estudiantes que apoyan la sugerencia comunitaria
   final List<String> estudiantesApoyando;
 
@@ -122,6 +125,7 @@ class TutoriaModel {
     this.contacto_tutor,
     this.nombre_tutor,
     this.alumnosQueYaEvaluaron = const [],
+    this.alumnosEvaluadosPorTutor = const [],
     this.estudiantesApoyando = const [],
     this.creador,
   });
@@ -155,6 +159,7 @@ class TutoriaModel {
       'contacto_tutor': contacto_tutor,
       'nombre_tutor': nombre_tutor,
       'alumnosQueYaEvaluaron': alumnosQueYaEvaluaron,
+      'alumnosEvaluadosPorTutor': alumnosEvaluadosPorTutor,
       'estudiantesApoyando': estudiantesApoyando,
       'creador': creador,
     };
@@ -178,6 +183,7 @@ class TutoriaModel {
         cupoMaximo: 1,
         duracionMinutos: 60,
         alumnosQueYaEvaluaron: [],
+        alumnosEvaluadosPorTutor: [],
         estudiantesApoyando: [],
         creador: null,
       );
@@ -251,6 +257,9 @@ class TutoriaModel {
       alumnosQueYaEvaluaron: mapaDeDatos['alumnosQueYaEvaluaron'] != null
           ? List<String>.from(mapaDeDatos['alumnosQueYaEvaluaron'])
           : [],
+      alumnosEvaluadosPorTutor: mapaDeDatos['alumnosEvaluadosPorTutor'] != null
+          ? List<String>.from(mapaDeDatos['alumnosEvaluadosPorTutor'])
+          : [],
       estudiantesApoyando: mapaDeDatos['estudiantesApoyando'] != null
           ? List<String>.from(mapaDeDatos['estudiantesApoyando'])
           : [],
@@ -284,6 +293,7 @@ class TutoriaModel {
     String? contacto_tutor,
     String? nombre_tutor,
     List<String>? alumnosQueYaEvaluaron,
+    List<String>? alumnosEvaluadosPorTutor,
     List<String>? estudiantesApoyando,
     String? creador,
   }) {
@@ -312,6 +322,7 @@ class TutoriaModel {
       contacto_tutor: contacto_tutor ?? this.contacto_tutor,
       nombre_tutor: nombre_tutor ?? this.nombre_tutor,
       alumnosQueYaEvaluaron: alumnosQueYaEvaluaron ?? this.alumnosQueYaEvaluaron,
+      alumnosEvaluadosPorTutor: alumnosEvaluadosPorTutor ?? this.alumnosEvaluadosPorTutor,
       estudiantesApoyando: estudiantesApoyando ?? this.estudiantesApoyando,
       creador: creador ?? this.creador,
     );

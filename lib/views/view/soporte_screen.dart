@@ -25,35 +25,35 @@ class SoporteScreen extends StatelessWidget {
               horizontal: esMovil ? 24.0 : 60.0,
               vertical: 20,
             ),
-            child: esMovil ? _buildMobileLayout() : _buildDesktopLayout(),
+            child: esMovil ? _buildMobileLayout(context) : _buildDesktopLayout(context),
           );
         },
       ),
     );
   }
 
-  Widget _buildDesktopLayout() {
+  Widget _buildDesktopLayout(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(child: _buildFormularioSoporte()),
+        Expanded(child: _buildFormularioSoporte(context)),
         const SizedBox(width: 60),
         Expanded(child: _buildIlustracionPlaceholder('Soporte')),
       ],
     );
   }
 
-  Widget _buildMobileLayout() {
+  Widget _buildMobileLayout(BuildContext context) {
     return Column(
       children: [
-        _buildFormularioSoporte(),
+        _buildFormularioSoporte(context),
         const SizedBox(height: 40),
         _buildIlustracionPlaceholder('Soporte'),
       ],
     );
   }
 
-  Widget _buildFormularioSoporte() {
+  Widget _buildFormularioSoporte(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -86,7 +86,15 @@ class SoporteScreen extends StatelessWidget {
               ),
             ),
             onPressed: () {
-              // Lógica futura de envío
+              // Simular envío de reporte
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('✅ Tu reporte ha sido enviado con éxito. Te contactaremos pronto.'),
+                  backgroundColor: AppTheme.primarioVerde,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+              Navigator.pop(context);
             },
             child: const Text(
               'Enviar reporte',
@@ -123,17 +131,58 @@ class SoporteScreen extends StatelessWidget {
 
   Widget _buildIlustracionPlaceholder(String titulo) {
     return Container(
-      height: 350,
+      padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.primarioVerde.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: AppTheme.grisTexto.withOpacity(0.1)),
+        border: Border.all(color: AppTheme.primarioVerde.withValues(alpha: 0.2)),
       ),
-      child: Center(
-        child: Text(
-          'Ilustración de $titulo',
-          style: const TextStyle(color: AppTheme.grisTexto),
-        ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.support_agent_rounded, size: 80, color: AppTheme.primarioVerde),
+          const SizedBox(height: 20),
+          const Text(
+            'Estamos para ayudarte',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textoOscuro,
+            ),
+          ),
+          const SizedBox(height: 15),
+          const Text(
+            'Nuestro equipo técnico revisará tu reporte y te contactará al correo registrado en la plataforma lo antes posible.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: AppTheme.grisTexto, height: 1.5),
+          ),
+          const SizedBox(height: 35),
+          ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.primarioVerde.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.email_rounded, color: AppTheme.primarioVerde),
+            ),
+            title: const Text('Soporte Directo', style: TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: const Text('soporte@vecta.edu.pa'),
+          ),
+          const SizedBox(height: 15),
+          ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.primarioVerde.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.access_time_rounded, color: AppTheme.primarioVerde),
+            ),
+            title: const Text('Horario de Atención', style: TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: const Text('Lunes a Viernes, 8:00 AM - 5:00 PM'),
+          ),
+        ],
       ),
     );
   }

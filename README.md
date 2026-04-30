@@ -417,6 +417,14 @@ El código original, el branding actual, y la base de datos de los primeros prot
 
 ---
 
-> **Versión del Proyecto:** 1.2.0 Release Candidate (Registration & UI Unified Upgrade)  
+> **Versión del Proyecto:** 1.3.0 (Branding Vecta & UI Stabilization)  
+
+### Registro de Actualizaciones (Changelog v1.3.0)
+- **Migración de Dominio:** Transición exitosa del ambiente de pruebas (tutorias-jic.web.app) al subdominio oficial `tutorias-vecta.web.app`.
+- **Identidad Vecta:** Reemplazo de iconos genéricos de Flutter por el logotipo oficial de Vecta en la `LandingScreen`.
+- **Refactorización UI/UX:** Implementación de `LayoutBuilder` en las pantallas de Ayuda y Soporte para asegurar una renderización impecable tanto en navegadores web de escritorio como en dispositivos móviles (Responsive Design).
+- **Formularios Dinámicos:** Integración de un menú desplegable interactivo (`DropdownButtonFormField`) en la vista de Sugerir Tutoría para estandarizar las materias (Cálculo I, Física I, etc.), con una opción "Otros" que despliega dinámicamente un campo de texto adicional.
+- **Auditoría de Código:** Resolución completa de advertencias del compilador (Linter a 0 errores), incluyendo la sustitución de código obsoleto (`.withOpacity` a `.withValues`) y dependencias huérfanas.
+
 > **Auditoría de Seguridad:** Completada y superada con éxito (Google Cloud Rules Enforced).  
 > **Última actualización:** Abril 2026
