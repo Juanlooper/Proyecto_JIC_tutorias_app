@@ -5,17 +5,22 @@ import '../../core/theme/app_theme.dart';
 class TribunalBaneosView extends StatelessWidget {
   const TribunalBaneosView({super.key});
 
-  Future<void> _perdonarBaneo(BuildContext context, String docId, String nombre) async {
+  Future<void> _perdonarBaneo(
+    BuildContext context,
+    String docId,
+    String nombre,
+  ) async {
     try {
-      await FirebaseFirestore.instance.collection('usuarios').doc(docId).update({
-        'esta_baneado': false,
-        'strikes_inasistencia': 0,
-      });
+      await FirebaseFirestore.instance.collection('usuarios').doc(docId).update(
+        {'esta_baneado': false, 'strikes_inasistencia': 0},
+      );
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('La cuenta de $nombre ha sido perdonada y restaurada.'),
+            content: Text(
+              'La cuenta de $nombre ha sido perdonada y restaurada.',
+            ),
             backgroundColor: AppTheme.primarioVerde,
           ),
         );
@@ -35,7 +40,6 @@ class TribunalBaneosView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.fondoClaro,
       appBar: AppBar(
         title: const Text('Tribunal de Baneos'),
         backgroundColor: Colors.red.shade800,
@@ -48,11 +52,15 @@ class TribunalBaneosView extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Colors.red));
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.red),
+            );
           }
 
           if (snapshot.hasError) {
-            return const Center(child: Text('Hubo un error de conexión al cargar la lista.'));
+            return const Center(
+              child: Text('Hubo un error de conexión al cargar la lista.'),
+            );
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -64,10 +72,17 @@ class TribunalBaneosView extends StatelessWidget {
                   const SizedBox(height: 16),
                   const Text(
                     'No hay estudiantes baneados',
-                    style: TextStyle(fontSize: 18, color: Colors.grey, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  const Text('La disciplina universitaria está en orden.', style: TextStyle(color: Colors.grey)),
+                  const Text(
+                    'La disciplina universitaria está en orden.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ],
               ),
             );
@@ -101,7 +116,11 @@ class TribunalBaneosView extends StatelessWidget {
                           CircleAvatar(
                             radius: 28,
                             backgroundColor: Colors.red.shade50,
-                            child: const Icon(Icons.block, color: Colors.red, size: 32),
+                            child: const Icon(
+                              Icons.block,
+                              color: Colors.red,
+                              size: 32,
+                            ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -110,20 +129,36 @@ class TribunalBaneosView extends StatelessWidget {
                               children: [
                                 Text(
                                   nombre,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(correo, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                                Text(
+                                  correo,
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 14,
+                                  ),
+                                ),
                                 const SizedBox(height: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.red.shade100,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     'Strikes acumulados: $strikes',
-                                    style: TextStyle(color: Colors.red.shade900, fontWeight: FontWeight.bold, fontSize: 12),
+                                    style: TextStyle(
+                                      color: Colors.red.shade900,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -145,11 +180,18 @@ class TribunalBaneosView extends StatelessWidget {
                               context: context,
                               builder: (ctx) => AlertDialog(
                                 title: const Text('Restaurar Cuenta'),
-                                content: Text('¿Deseas retirar el baneo y perdonar los $strikes strikes de $nombre?'),
+                                content: Text(
+                                  '¿Deseas retirar el baneo y perdonar los $strikes strikes de $nombre?',
+                                ),
                                 actions: [
-                                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text('Cancelar'),
+                                  ),
                                   FilledButton(
-                                    style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                    ),
                                     onPressed: () {
                                       Navigator.pop(ctx);
                                       _perdonarBaneo(context, doc.id, nombre);
@@ -161,9 +203,12 @@ class TribunalBaneosView extends StatelessWidget {
                             );
                           },
                           icon: const Icon(Icons.health_and_safety_outlined),
-                          label: const Text('Perdonar / Restaurar Cuenta', style: TextStyle(fontWeight: FontWeight.bold)),
+                          label: const Text(
+                            'Perdonar / Restaurar Cuenta',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),

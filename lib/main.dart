@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
+import 'providers/tema_provider.dart';
 
 // Importación del ADN visual
 import 'core/theme/app_theme.dart';
@@ -37,25 +38,26 @@ class TutoriasApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // 1. Manejo de Identidad (Iniciamos la sesión automáticamente si ya existía)
         ChangeNotifierProvider(
           create: (_) => AutenticacionProvider()..inicializarSesionAlAbrirApp(),
         ),
-
-        // 2. Manejo de Tutorías
         ChangeNotifierProvider(create: (_) => TutoriasProvider()),
-
-        // 3. Panel Administrativo para métricas
         ChangeNotifierProvider(create: (_) => AdminProvider()),
+        // 4. Inyección del manejador de Tema
+        ChangeNotifierProvider(create: (_) => TemaProvider()),
       ],
-      child: MaterialApp(
-        title: 'Vecta Tutorías',
-        debugShowCheckedModeBanner: false,
-
-        // ¡Aquí inyectamos el Tema Global de Vecta!
-        theme: AppTheme.lightTheme,
-
-        home: const LandingScreen(),
+      child: Consumer<TemaProvider>(
+        builder: (context, proveedorDeTema, hijo) {
+          return MaterialApp(
+            title: 'Vecta Tutorías',
+            debugShowCheckedModeBanner: false,
+            // Aquí evaluamos el estado lógico para decidir qué tema inyectar
+            theme: proveedorDeTema.esModoOscuro
+                ? AppTheme.darkTheme
+                : AppTheme.lightTheme,
+            home: const LandingScreen(),
+          );
+        },
       ),
     );
   }

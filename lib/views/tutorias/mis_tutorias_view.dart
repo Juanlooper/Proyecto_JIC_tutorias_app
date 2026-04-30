@@ -23,12 +23,18 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
   DateTime _diaFocal = DateTime.now();
   CalendarFormat _formatoCalendario = CalendarFormat.month;
 
-  List<TutoriaModel> _obtenerEventosParaElDia(DateTime dia, List<TutoriaModel> todas) {
-    return todas.where((t) => 
-      t.fechaHoraSugerida.year == dia.year &&
-      t.fechaHoraSugerida.month == dia.month &&
-      t.fechaHoraSugerida.day == dia.day
-    ).toList();
+  List<TutoriaModel> _obtenerEventosParaElDia(
+    DateTime dia,
+    List<TutoriaModel> todas,
+  ) {
+    return todas
+        .where(
+          (t) =>
+              t.fechaHoraSugerida.year == dia.year &&
+              t.fechaHoraSugerida.month == dia.month &&
+              t.fechaHoraSugerida.day == dia.day,
+        )
+        .toList();
   }
 
   @override
@@ -45,13 +51,18 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: AppTheme.fondoClaro,
         appBar: AppBar(
           automaticallyImplyLeading: false,
           elevation: 0,
-          backgroundColor: Colors.white,
-          foregroundColor: AppTheme.textoOscuro,
-          title: const Text('Comunidad de Aprendizaje', style: TextStyle(fontWeight: FontWeight.bold)),
+
+          foregroundColor: AppTheme.grisTexto,
+          title: Text(
+            'Comunidad de Aprendizaje',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
           centerTitle: true,
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(72.0),
@@ -60,10 +71,14 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
                 return Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.chevron_left, color: AppTheme.primarioAzul),
+                      icon: const Icon(
+                        Icons.chevron_left,
+                        color: AppTheme.primarioAzul,
+                      ),
                       onPressed: () {
                         final controller = DefaultTabController.of(context);
-                        if (controller.index > 0) controller.animateTo(controller.index - 1);
+                        if (controller.index > 0)
+                          controller.animateTo(controller.index - 1);
                       },
                     ),
                     const Expanded(
@@ -74,22 +89,29 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
                         unselectedLabelColor: Colors.grey,
                         indicatorColor: AppTheme.primarioAzul,
                         tabs: [
-                          Tab(text: "Calendario", icon: Icon(Icons.calendar_month)),
+                          Tab(
+                            text: "Calendario",
+                            icon: Icon(Icons.calendar_month),
+                          ),
                           Tab(text: "Próximas", icon: Icon(Icons.schedule)),
                           Tab(text: "Historial", icon: Icon(Icons.history_edu)),
                         ],
                       ),
                     ),
                     IconButton(
-                        icon: const Icon(Icons.chevron_right, color: AppTheme.primarioAzul),
-                        onPressed: () {
-                          final controller = DefaultTabController.of(context);
-                          if (controller.index < controller.length - 1) controller.animateTo(controller.index + 1);
-                        },
+                      icon: const Icon(
+                        Icons.chevron_right,
+                        color: AppTheme.primarioAzul,
+                      ),
+                      onPressed: () {
+                        final controller = DefaultTabController.of(context);
+                        if (controller.index < controller.length - 1)
+                          controller.animateTo(controller.index + 1);
+                      },
                     ),
                   ],
                 );
-              }
+              },
             ),
           ),
         ),
@@ -97,28 +119,52 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
           stream: FirebaseFirestore.instance.collection('tutorias').snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator());
             }
 
             if (snapshot.hasError) {
-              return const Center(child: Text('Error cargando historial de compromisos'));
+              return const Center(
+                child: Text('Error cargando historial de compromisos'),
+              );
             }
 
             final universeDocs = snapshot.data?.docs ?? [];
-            final universoTutorias = universeDocs.map((doc) => 
-                TutoriaModel.fromMap(doc.data() as Map<String, dynamic>)
-            ).toList();
+            final universoTutorias = universeDocs
+                .map(
+                  (doc) =>
+                      TutoriaModel.fromMap(doc.data() as Map<String, dynamic>),
+                )
+                .toList();
 
             // Filtrar tutorías del usuario donde ESTÁ INSCRITO COMO ALUMNO (o es su misma clase pero aquí importa el asistente base)
             // Ya que el panel del tutor administra las "Dictando", aquí daremos prioridad visual del asistente.
-            final misTutoriasGlobales = universoTutorias.where((tuto) => 
-                tuto.listaDeEstudiantesInscritos.contains(uid) || tuto.identificadorDelTutor == uid
-            ).toList();
+            final misTutoriasGlobales = universoTutorias
+                .where(
+                  (tuto) =>
+                      tuto.listaDeEstudiantesInscritos.contains(uid) ||
+                      tuto.identificadorDelTutor == uid,
+                )
+                .toList();
 
             // Clasificación
-            final eventosDelDia = _obtenerEventosParaElDia(_diaSeleccionado, misTutoriasGlobales);
-            final proximasTutorias = misTutoriasGlobales.where((t) => t.estadoDeLaSolicitud != 'finalizada' && t.estadoDeLaSolicitud != 'cancelada').toList();
-            final historialTutorias = misTutoriasGlobales.where((t) => t.estadoDeLaSolicitud == 'finalizada' || t.estadoDeLaSolicitud == 'cancelada').toList();
+            final eventosDelDia = _obtenerEventosParaElDia(
+              _diaSeleccionado,
+              misTutoriasGlobales,
+            );
+            final proximasTutorias = misTutoriasGlobales
+                .where(
+                  (t) =>
+                      t.estadoDeLaSolicitud != 'finalizada' &&
+                      t.estadoDeLaSolicitud != 'cancelada',
+                )
+                .toList();
+            final historialTutorias = misTutoriasGlobales
+                .where(
+                  (t) =>
+                      t.estadoDeLaSolicitud == 'finalizada' ||
+                      t.estadoDeLaSolicitud == 'cancelada',
+                )
+                .toList();
 
             return TabBarView(
               children: [
@@ -127,10 +173,11 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
                   children: [
                     TableCalendar<TutoriaModel>(
                       firstDay: DateTime.utc(2023, 1, 1),
-                      lastDay: DateTime.utc(2030, 12, 31),
+                      lastDay: DateTime.utc(2030, 31),
                       focusedDay: _diaFocal,
                       calendarFormat: _formatoCalendario,
-                      selectedDayPredicate: (day) => isSameDay(_diaSeleccionado, day),
+                      selectedDayPredicate: (day) =>
+                          isSameDay(_diaSeleccionado, day),
                       onDaySelected: (selectedDay, focusedDay) {
                         setState(() {
                           _diaSeleccionado = selectedDay;
@@ -147,7 +194,8 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
                       onPageChanged: (focusedDay) {
                         _diaFocal = focusedDay;
                       },
-                      eventLoader: (day) => _obtenerEventosParaElDia(day, misTutoriasGlobales),
+                      eventLoader: (day) =>
+                          _obtenerEventosParaElDia(day, misTutoriasGlobales),
                       calendarStyle: CalendarStyle(
                         todayDecoration: BoxDecoration(
                           color: Colors.blue.shade200,
@@ -173,12 +221,13 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
                       child: _ModuloListaDeTutorias(
                         loteEspecifico: eventosDelDia,
                         uidActual: uid,
-                        mensajeVacio: 'No hay tutorías agendadas para el día de este calendario.',
+                        mensajeVacio:
+                            'No hay tutorías agendadas para el día de este calendario.',
                       ),
                     ),
                   ],
                 ),
-                
+
                 // Tab 2: Próximas Tutorías
                 _ModuloListaDeTutorias(
                   loteEspecifico: proximasTutorias,
@@ -190,13 +239,16 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
                 _ModuloListaDeTutorias(
                   loteEspecifico: historialTutorias,
                   uidActual: uid,
-                  mensajeVacio: 'No has asistido a ninguna tutoría en el pasado.',
+                  mensajeVacio:
+                      'No has asistido a ninguna tutoría en el pasado.',
                 ),
               ],
             );
           },
         ),
-        floatingActionButton: authProv.usuarioActual?.rolEnElSistema.toString() == "RolSistema.tutor" 
+        floatingActionButton:
+            authProv.usuarioActual?.rolEnElSistema.toString() ==
+                "RolSistema.tutor"
             ? FloatingActionButton.extended(
                 onPressed: () => _mostrarDialogoCrearClaseFija(context, uid),
                 icon: const Icon(Icons.add),
@@ -209,7 +261,10 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
     );
   }
 
-  Future<void> _mostrarDialogoCrearClaseFija(BuildContext context, String uidTutor) async {
+  Future<void> _mostrarDialogoCrearClaseFija(
+    BuildContext context,
+    String uidTutor,
+  ) async {
     final formKey = GlobalKey<FormState>();
     final materiaController = TextEditingController();
     final temaController = TextEditingController();
@@ -223,77 +278,131 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setStateDialog) => AlertDialog(
-          title: const Text("Crear Clase Fija", style: TextStyle(color: AppTheme.primarioAzul)),
+          title: const Text(
+            "Crear Clase Fija",
+            style: TextStyle(color: AppTheme.primarioAzul),
+          ),
           content: SingleChildScrollView(
             child: Form(
               key: formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                   TextFormField(
-                     controller: materiaController,
-                     decoration: const InputDecoration(labelText: "Materia", filled: true),
-                     validator: (v) => v!.isEmpty ? "Requerido" : null,
-                   ),
-                   const SizedBox(height: 12),
-                   TextFormField(
-                     controller: temaController,
-                     decoration: const InputDecoration(labelText: "Tema", filled: true),
-                     validator: (v) => v!.isEmpty ? "Requerido" : null,
-                   ),
-                   const SizedBox(height: 12),
-                   DropdownButtonFormField<String>(
-                     initialValue: modalidad,
-                     decoration: const InputDecoration(labelText: "Modalidad", filled: true),
-                     items: const [
-                       DropdownMenuItem(value: "Virtual", child: Text("Virtual")),
-                       DropdownMenuItem(value: "Presencial", child: Text("Presencial"))
-                     ],
-                     onChanged: (v) => setStateDialog(() => modalidad = v!),
-                   ),
-                   const SizedBox(height: 12),
-                   TextFormField(
-                     controller: cupoController,
-                     keyboardType: TextInputType.number,
-                     decoration: const InputDecoration(labelText: "Cupo (Min 10)", filled: true),
-                     validator: (v) => (int.tryParse(v ?? '') ?? 0) < 1 ? "Error" : null,
-                   ),
-                   const SizedBox(height: 12),
-                   Row(
-                     children: [
-                       Expanded(
-                         child: OutlinedButton(
-                           onPressed: () async {
-                              final d = await showDatePicker(context: ctx, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 30)));
-                              if (d != null) setStateDialog(() => fecha = d);
-                           },
-                           child: Text(fecha == null ? "Fecha" : "${fecha!.day}/${fecha!.month}")
-                         ),
-                       ),
-                       const SizedBox(width: 8),
-                       Expanded(
-                         child: OutlinedButton(
-                           onPressed: () async {
-                              final t = await showTimePicker(context: ctx, initialTime: TimeOfDay.now());
-                              if (t != null) setStateDialog(() => hora = t);
-                           },
-                           child: Text(hora == null ? "Hora" : hora!.format(ctx))
-                         ),
-                       ),
-                     ],
-                   ),
-                   const SizedBox(height: 12),
-                   DropdownButtonFormField<int>(
-                     initialValue: semanasRepeticion,
-                     decoration: const InputDecoration(labelText: "Repetición Semanal", filled: true),
-                     items: const [
-                       DropdownMenuItem(value: 1, child: Text("Solo 1 clase (Sin repetir)")),
-                       DropdownMenuItem(value: 4, child: Text("Mensual (4 semanas)")),
-                       DropdownMenuItem(value: 8, child: Text("Bimestral (8 semanas)")),
-                       DropdownMenuItem(value: 16, child: Text("Todo el Semestre (16 semanas)")),
-                     ],
-                     onChanged: (v) => setStateDialog(() => semanasRepeticion = v!),
-                   ),
+                  TextFormField(
+                    controller: materiaController,
+                    decoration: const InputDecoration(
+                      labelText: "Materia",
+                      filled: true,
+                    ),
+                    validator: (v) => v!.isEmpty ? "Requerido" : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: temaController,
+                    decoration: const InputDecoration(
+                      labelText: "Tema",
+                      filled: true,
+                    ),
+                    validator: (v) => v!.isEmpty ? "Requerido" : null,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: modalidad,
+                    decoration: const InputDecoration(
+                      labelText: "Modalidad",
+                      filled: true,
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: "Virtual",
+                        child: Text("Virtual"),
+                      ),
+                      DropdownMenuItem(
+                        value: "Presencial",
+                        child: Text("Presencial"),
+                      ),
+                    ],
+                    onChanged: (v) => setStateDialog(() => modalidad = v!),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: cupoController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: "Cupo (Min 10)",
+                      filled: true,
+                    ),
+                    validator: (v) =>
+                        (int.tryParse(v ?? '') ?? 0) < 1 ? "Error" : null,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () async {
+                            final d = await showDatePicker(
+                              context: ctx,
+                              initialDate: DateTime.now(),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 30),
+                              ),
+                            );
+                            if (d != null) setStateDialog(() => fecha = d);
+                          },
+                          child: Text(
+                            fecha == null
+                                ? "Fecha"
+                                : "${fecha!.day}/${fecha!.month}",
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () async {
+                            final t = await showTimePicker(
+                              context: ctx,
+                              initialTime: TimeOfDay.now(),
+                            );
+                            if (t != null) setStateDialog(() => hora = t);
+                          },
+                          child: Text(
+                            hora == null ? "Hora" : hora!.format(ctx),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int>(
+                    initialValue: semanasRepeticion,
+                    decoration: const InputDecoration(
+                      labelText: "Repetición Semanal",
+                      filled: true,
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 1,
+                        child: Text("Solo 1 clase (Sin repetir)"),
+                      ),
+                      DropdownMenuItem(
+                        value: 4,
+                        child: Text("Mensual (4 semanas)"),
+                      ),
+                      DropdownMenuItem(
+                        value: 8,
+                        child: Text("Bimestral (8 semanas)"),
+                      ),
+                      DropdownMenuItem(
+                        value: 16,
+                        child: Text("Todo el Semestre (16 semanas)"),
+                      ),
+                    ],
+                    onChanged: (v) =>
+                        setStateDialog(() => semanasRepeticion = v!),
+                  ),
                 ],
               ),
             ),
@@ -301,52 +410,76 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text("Cancelar", style: TextStyle(color: Colors.grey)),
+              child: const Text(
+                "Cancelar",
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AppTheme.primarioAzul),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.primarioAzul,
+              ),
               onPressed: () async {
-                if (formKey.currentState!.validate() && fecha != null && hora != null) {
-                   final fechaFinal = DateTime(fecha!.year, fecha!.month, fecha!.day, hora!.hour, hora!.minute);
-                   
-                   int creadas = 0;
-                   final prove = context.read<TutoriasProvider>();
+                if (formKey.currentState!.validate() &&
+                    fecha != null &&
+                    hora != null) {
+                  final fechaFinal = DateTime(
+                    fecha!.year,
+                    fecha!.month,
+                    fecha!.day,
+                    hora!.hour,
+                    hora!.minute,
+                  );
 
-                   for (int i = 0; i < semanasRepeticion; i++) {
-                     final fechaIteracion = fechaFinal.add(Duration(days: 7 * i));
-                     final clasePlano = TutoriaModel(
-                       identificadorDeTutoria: '',
-                       materiaOAsignatura: materiaController.text,
-                       temaEspecifico: temaController.text,
-                       carrera: 'General',
-                       identificadorDelTutor: uidTutor,
-                       listaDeEstudiantesInscritos: [],
-                       modalidadDeClase: modalidad,
-                       estadoDeLaSolicitud: 'pendiente',
-                       fechaHoraSugerida: fechaIteracion,
-                       duracionMinutos: 60,
-                       cupoMaximo: int.tryParse(cupoController.text) ?? 10,
-                       esGrupal: true,
-                     );
-                     
-                     final ok = await prove.crearClaseFijaTutor(clasePlano);
-                     if (ok) creadas++;
-                   }
-                   
-                   Navigator.pop(ctx, creadas > 0);
+                  int creadas = 0;
+                  final prove = context.read<TutoriasProvider>();
+
+                  for (int i = 0; i < semanasRepeticion; i++) {
+                    final fechaIteracion = fechaFinal.add(
+                      Duration(days: 7 * i),
+                    );
+                    final clasePlano = TutoriaModel(
+                      identificadorDeTutoria: '',
+                      materiaOAsignatura: materiaController.text,
+                      temaEspecifico: temaController.text,
+                      carrera: 'General',
+                      identificadorDelTutor: uidTutor,
+                      listaDeEstudiantesInscritos: [],
+                      modalidadDeClase: modalidad,
+                      estadoDeLaSolicitud: 'pendiente',
+                      fechaHoraSugerida: fechaIteracion,
+                      duracionMinutos: 60,
+                      cupoMaximo: int.tryParse(cupoController.text) ?? 10,
+                      esGrupal: true,
+                    );
+
+                    final ok = await prove.crearClaseFijaTutor(clasePlano);
+                    if (ok) creadas++;
+                  }
+
+                  Navigator.pop(ctx, creadas > 0);
                 } else {
-                   ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text("Completa y elige fecha/hora")));
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(
+                      content: Text("Completa y elige fecha/hora"),
+                    ),
+                  );
                 }
               },
               child: const Text("Crear"),
-            )
+            ),
           ],
-        )
-      )
+        ),
+      ),
     );
 
     if (exito == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("¡Clase fija creada con éxito!"), backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("¡Clase fija creada con éxito!"),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 }
@@ -419,7 +552,9 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
     if (datos.enlaceOReunion == null || datos.enlaceOReunion!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('El profesor aún no ha provisto un enlace para esta materia.'),
+          content: Text(
+            'El profesor aún no ha provisto un enlace para esta materia.',
+          ),
           duration: Duration(seconds: 3),
         ),
       );
@@ -442,8 +577,14 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
           '¿Estás seguro que deseas dar por culminada la clase? Esta acción generará el cierre de horas oficiales en tu récord.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirmar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Confirmar'),
+          ),
         ],
       ),
     );
@@ -460,10 +601,14 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
             });
 
         if (context.mounted) {
-          await proveedorNotificador.cargarTutoriasSuscritasDelUsuario(uidActual);
+          await proveedorNotificador.cargarTutoriasSuscritasDelUsuario(
+            uidActual,
+          );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('¡Tutoría finalizada! Horas oficiales dictadas actualizadas.'),
+              content: Text(
+                '¡Tutoría finalizada! Horas oficiales dictadas actualizadas.',
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -472,7 +617,9 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Sucedió un error reportando la hora de fin a la Base de Datos.'),
+              content: Text(
+                'Sucedió un error reportando la hora de fin a la Base de Datos.',
+              ),
               backgroundColor: Colors.redAccent,
             ),
           );
@@ -486,21 +633,32 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Cancelar Tutoría', style: TextStyle(color: Colors.red)),
+        title: const Text(
+          'Cancelar Tutoría',
+          style: TextStyle(color: Colors.red),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Esta acción cancelará la clase y notificará a los estudiantes inscritos. Por favor, indica el motivo:'),
+            const Text(
+              'Esta acción cancelará la clase y notificará a los estudiantes inscritos. Por favor, indica el motivo:',
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: motivoCtrl,
-              decoration: const InputDecoration(labelText: "Motivo de cancelación", border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: "Motivo de cancelación",
+                border: OutlineInputBorder(),
+              ),
               maxLines: 3,
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Volver')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Volver'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
@@ -519,16 +677,25 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
       final uidActual = autProvider.usuarioActual?.identificadorUnico;
       if (uidActual == null) return;
 
-      bool exito = await proveedor.cancelarTutoriaComoTutor(datos.identificadorDeTutoria, motivoCtrl.text.trim());
+      bool exito = await proveedor.cancelarTutoriaComoTutor(
+        datos.identificadorDeTutoria,
+        motivoCtrl.text.trim(),
+      );
 
       if (exito && context.mounted) {
         await proveedor.cargarTutoriasSuscritasDelUsuario(uidActual);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tutoría cancelada exitosamente.'), backgroundColor: Colors.orange),
+          const SnackBar(
+            content: Text('Tutoría cancelada exitosamente.'),
+            backgroundColor: Colors.orange,
+          ),
         );
       } else if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(proveedor.mensajeDeErrorDelSistema), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(proveedor.mensajeDeErrorDelSistema),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -538,21 +705,34 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('¿Seguro que deseas salir?', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('Perderás tu cupo en esta tutoría y la comunidad tendrá uno libre disponible.'),
+        title: const Text(
+          '¿Seguro que deseas salir?',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Perderás tu cupo en esta tutoría y la comunidad tendrá uno libre disponible.',
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Conservar cupo', style: TextStyle(color: Colors.blueGrey)),
+            child: const Text(
+              'Conservar cupo',
+              style: TextStyle(color: Colors.blueGrey),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-            child: const Text('Sí, abandonar', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Sí, abandonar',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -560,7 +740,9 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
 
     if (confirmar == true && context.mounted) {
       final proveedor = context.read<TutoriasProvider>();
-      bool exito = await proveedor.abandonarTutoria(datos.identificadorDeTutoria);
+      bool exito = await proveedor.abandonarTutoria(
+        datos.identificadorDeTutoria,
+      );
 
       if (exito && context.mounted) {
         await proveedor.cargarTutoriasSuscritasDelUsuario(uidActual);
@@ -583,13 +765,13 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
     }
   }
 
-  Widget _construirSelectorEstrellas(Function(int) alTocar, int valorActual) {
+  Widget _construirSelectorEstrellas(BuildContext context, Function(int) alTocar, int valorActual) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -597,7 +779,9 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
           return IconButton(
             icon: Icon(
               index < valorActual ? Icons.star : Icons.star_border,
-              color: index < valorActual ? AppTheme.primarioAzul : Colors.grey.shade400,
+              color: index < valorActual
+                  ? AppTheme.primarioAzul
+                  : Colors.grey.shade400,
               size: 32,
             ),
             onPressed: () => alTocar(index + 1),
@@ -619,29 +803,61 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
         return StatefulBuilder(
           builder: (context, setEstadoInterno) {
             return Dialog(
-              backgroundColor: Colors.grey.shade100, // Background gris global de la UI evaluacion
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: Colors
+                  .grey
+                  .shade100, // Background gris global de la UI evaluacion
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('Evaluar Tutoría', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: AppTheme.primarioAzul), textAlign: TextAlign.center),
+                    const Text(
+                      'Evaluar Tutoría',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 22,
+                        color: AppTheme.primarioAzul,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 24),
-                    const Text('¿Qué tal fue el contenido de la clase?', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
+                    const Text(
+                      '¿Qué tal fue el contenido de la clase?',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     const SizedBox(height: 8),
-                    _construirSelectorEstrellas((valor) => setEstadoInterno(() => notaClase = valor), notaClase),
-                    
+                    _construirSelectorEstrellas(
+                      context,
+                      (valor) => setEstadoInterno(() => notaClase = valor),
+                      notaClase,
+                    ),
+
                     const SizedBox(height: 24),
-                    
-                    const Text('¿Cómo calificarías al tutor?', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
+
+                    const Text(
+                      '¿Cómo calificarías al tutor?',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     const SizedBox(height: 8),
-                    _construirSelectorEstrellas((valor) => setEstadoInterno(() => notaTutor = valor), notaTutor),
-                    
+                    _construirSelectorEstrellas(
+                      context,
+                      (valor) => setEstadoInterno(() => notaTutor = valor),
+                      notaTutor,
+                    ),
+
                     const SizedBox(height: 32),
-                    
-                    const Text('Comentarios:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
+
+                    const Text(
+                      'Comentarios:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: ctrlComentario,
@@ -662,13 +878,24 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(contextDialogo),
-                          child: const Text('CANCELAR', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                          child: const Text(
+                            'CANCELAR',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                         FilledButton(
                           style: FilledButton.styleFrom(
                             backgroundColor: AppTheme.primarioAzul,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           onPressed: (notaClase == 0 || notaTutor == 0)
                               ? null
@@ -676,32 +903,87 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                                   final confirm = await showDialog<bool>(
                                     context: contextDialogo,
                                     builder: (ctx) => AlertDialog(
-                                      title: const Text('Verificación final', style: TextStyle(fontWeight: FontWeight.bold)),
-                                      content: const Text('¿Estás seguro de enviar esta evaluación? No podrás modificarla después.'),
+                                      title: const Text(
+                                        'Verificación final',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      content: const Text(
+                                        '¿Estás seguro de enviar esta evaluación? No podrás modificarla después.',
+                                      ),
                                       actions: [
-                                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Regresar', style: TextStyle(color: Colors.grey))),
-                                        FilledButton(onPressed: () => Navigator.pop(ctx, true), style: FilledButton.styleFrom(backgroundColor: AppTheme.primarioAzul), child: const Text('Sí, enviar')),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, false),
+                                          child: const Text(
+                                            'Regresar',
+                                            style: TextStyle(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ),
+                                        FilledButton(
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, true),
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor:
+                                                AppTheme.primarioAzul,
+                                          ),
+                                          child: const Text('Sí, enviar'),
+                                        ),
                                       ],
                                     ),
                                   );
 
                                   if (confirm == true) {
-                                    final double calculoPromedio = (notaClase + notaTutor) / 2.0;
-                                    final proveedorRef = context.read<TutoriasProvider>();
-                                    bool fueExitoso = await proveedorRef.enviarEvaluacionTutoria(
-                                      datos.identificadorDeTutoria, datos.identificadorDelTutor, calculoPromedio, ctrlComentario.text.trim()
-                                    );
-                                    if (contextDialogo.mounted) Navigator.pop(contextDialogo);
+                                    final double calculoPromedio =
+                                        (notaClase + notaTutor) / 2.0;
+                                    final proveedorRef = context
+                                        .read<TutoriasProvider>();
+                                    bool fueExitoso = await proveedorRef
+                                        .enviarEvaluacionTutoria(
+                                          datos.identificadorDeTutoria,
+                                          datos.identificadorDelTutor,
+                                          calculoPromedio,
+                                          ctrlComentario.text.trim(),
+                                        );
+                                    if (contextDialogo.mounted)
+                                      Navigator.pop(contextDialogo);
                                     if (context.mounted) {
                                       if (fueExitoso) {
-                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('¡Aporte cualitativo guardado!'), backgroundColor: Colors.green, behavior: SnackBarBehavior.floating));
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              '¡Aporte cualitativo guardado!',
+                                            ),
+                                            backgroundColor: Colors.green,
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
                                       } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(proveedorRef.mensajeDeErrorDelSistema), backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating));
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              proveedorRef
+                                                  .mensajeDeErrorDelSistema,
+                                            ),
+                                            backgroundColor: Colors.redAccent,
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
                                       }
                                     }
                                   }
                                 },
-                          child: const Text('ENVIAR EVALUACIÓN', style: TextStyle(fontWeight: FontWeight.bold)),
+                          child: const Text(
+                            'ENVIAR EVALUACIÓN',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ],
                     ),
@@ -720,10 +1002,14 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
     showModalBottomSheet(
       context: contextoPadre,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (sheetContext) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -731,68 +1017,126 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(datos.materiaOAsignatura, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                  Text(
+                    datos.materiaOAsignatura,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 8),
-                  Text(datos.temaEspecifico, style: const TextStyle(fontSize: 16, color: Colors.grey), textAlign: TextAlign.center),
+                  Text(
+                    datos.temaEspecifico,
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
                   const Divider(height: 32),
-                  ListTile(leading: const Icon(Icons.location_on), title: Text(datos.lugar ?? "Lugar por definir")),
-                  ListTile(leading: const Icon(Icons.person), title: Text(datos.nombre_tutor ?? (datos.identificadorDelTutor.isEmpty ? "Tutor por asignar" : "Tutor Asignado"))),
-                  ListTile(leading: const Icon(Icons.phone), title: Text(datos.contacto_tutor ?? "Contacto no provisto")),
+                  ListTile(
+                    leading: const Icon(Icons.location_on),
+                    title: Text(datos.lugar ?? "Lugar por definir"),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.person),
+                    title: Text(
+                      datos.nombre_tutor ??
+                          (datos.identificadorDelTutor.isEmpty
+                              ? "Tutor por asignar"
+                              : "Tutor Asignado"),
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.phone),
+                    title: Text(datos.contacto_tutor ?? "Contacto no provisto"),
+                  ),
                   const SizedBox(height: 16),
-                  
+
                   // Action buttons inside bottom sheet
-                  if (!esDictando && datos.enlaceOReunion != null && datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' && datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')
+                  if (!esDictando &&
+                      datos.enlaceOReunion != null &&
+                      datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' &&
+                      datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')
                     FilledButton.icon(
                       onPressed: () {
-                         Navigator.pop(sheetContext);
-                         _abrirEnlaceGenuino(contextoPadre);
+                        Navigator.pop(sheetContext);
+                        _abrirEnlaceGenuino(contextoPadre);
                       },
                       icon: const Icon(Icons.link),
-                      label: const Text('Entrar a la clase virtual / Ver enlace'),
+                      label: const Text(
+                        'Entrar a la clase virtual / Ver enlace',
+                      ),
                     ),
-                  
-                  if (!esDictando && datos.estadoDeLaSolicitud.toLowerCase() == 'finalizada')
-                     (datos.registro_asistencia != null && datos.registro_asistencia![uidActual] == false)
-                     ? const Center(child: Text('No asisiste a esta sesión. Sin evaluación.', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)))
-                     : datos.alumnosQueYaEvaluaron.contains(uidActual)
-                     ? const Center(child: Text('Ya evaluaste esta sesión.', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)))
-                     : FilledButton.icon(
-                         onPressed: () {
-                            Navigator.pop(sheetContext);
-                            _mostrarDialogoDeEvaluacion(contextoPadre);
-                         },
-                         icon: const Icon(Icons.rate_review),
-                         label: const Text('Evaluar Sesión'),
-                       ),
 
-                  if (esDictando && (datos.estadoDeLaSolicitud.toLowerCase() == 'aceptada' || datos.estadoDeLaSolicitud.toLowerCase() == 'abierta'))
+                  if (!esDictando &&
+                      datos.estadoDeLaSolicitud.toLowerCase() == 'finalizada')
+                    (datos.registro_asistencia != null &&
+                            datos.registro_asistencia![uidActual] == false)
+                        ? const Center(
+                            child: Text(
+                              'No asisiste a esta sesión. Sin evaluación.',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        : datos.alumnosQueYaEvaluaron.contains(uidActual)
+                        ? const Center(
+                            child: Text(
+                              'Ya evaluaste esta sesión.',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        : FilledButton.icon(
+                            onPressed: () {
+                              Navigator.pop(sheetContext);
+                              _mostrarDialogoDeEvaluacion(contextoPadre);
+                            },
+                            icon: const Icon(Icons.rate_review),
+                            label: const Text('Evaluar Sesión'),
+                          ),
+
+                  if (esDictando &&
+                      (datos.estadoDeLaSolicitud.toLowerCase() == 'aceptada' ||
+                          datos.estadoDeLaSolicitud.toLowerCase() == 'abierta'))
                     FilledButton.icon(
-                      style: FilledButton.styleFrom(backgroundColor: Colors.deepOrange),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.deepOrange,
+                      ),
                       onPressed: () {
-                         Navigator.pop(sheetContext);
-                         _culminarTutoriaDada(contextoPadre);
+                        Navigator.pop(sheetContext);
+                        _culminarTutoriaDada(contextoPadre);
                       },
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Text('Dar por Culminada'),
                     ),
 
-                  if (esDictando && datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' && datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')
+                  if (esDictando &&
+                      datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' &&
+                      datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')
                     TextButton.icon(
                       style: TextButton.styleFrom(foregroundColor: Colors.red),
                       onPressed: () {
-                         Navigator.pop(sheetContext);
-                         _cancelarTutoriaTutor(contextoPadre);
+                        Navigator.pop(sheetContext);
+                        _cancelarTutoriaTutor(contextoPadre);
                       },
                       icon: const Icon(Icons.cancel),
                       label: const Text('Cancelar Tutoría'),
                     ),
 
-                  if (!esDictando && datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' && datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')
+                  if (!esDictando &&
+                      datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' &&
+                      datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')
                     TextButton(
-                      style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                      ),
                       onPressed: () {
-                         Navigator.pop(sheetContext);
-                         _abandonarTutoriaEstudiante(contextoPadre);
+                        Navigator.pop(sheetContext);
+                        _abandonarTutoriaEstudiante(contextoPadre);
                       },
                       child: const Text('Abandonar Clase'),
                     ),
@@ -801,7 +1145,7 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
             ),
           ),
         );
-      }
+      },
     );
   }
 
@@ -815,13 +1159,14 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
       elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade300, width: 1),
+        side: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300, width: 1),
       ),
-      color: Colors.white,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: esDictando ? AppTheme.primarioAzul.withValues(alpha: 0.1) : Colors.teal.shade50,
+          backgroundColor: esDictando
+              ? AppTheme.primarioAzul.withValues(alpha: 0.1)
+              : Colors.teal.shade50,
           child: Icon(
             esDictando ? Icons.co_present : Icons.import_contacts,
             color: esDictando ? AppTheme.primarioAzul : Colors.teal.shade600,
@@ -829,7 +1174,7 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
         ),
         title: Text(
           datos.materiaOAsignatura,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -845,23 +1190,33 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: colorDeEstado.withAlpha(50),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                     datos.estadoDeLaSolicitud.toUpperCase(),
-                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colorDeEstado),
+                    datos.estadoDeLaSolicitud.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: colorDeEstado,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   esDictando ? '(Soy el Tutor)' : '(Asistente)',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54),
-                )
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
-            )
+            ),
           ],
         ),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),

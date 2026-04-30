@@ -18,18 +18,25 @@ class AdminDashboardView extends StatefulWidget {
 }
 
 class _AdminDashboardViewState extends State<AdminDashboardView> {
-
   Future<void> _logout() async {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Cerrar Sesión', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('¿Estás seguro que deseas desconectarte del Panel de Administración?'),
+        title: const Text(
+          'Cerrar Sesión',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          '¿Estás seguro que deseas desconectarte del Panel de Administración?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true), 
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Sí, Desconectar'),
           ),
         ],
@@ -50,14 +57,22 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.fondoClaro,
       appBar: AppBar(
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Image.asset(
             'assets/images/logo_vecta.png',
             height: 40,
-            errorBuilder: (context, error, stackTrace) => const Center(child: Text("VECTA", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white))),
+            errorBuilder: (context, error, stackTrace) => const Center(
+              child: Text(
+                "VECTA",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              ),
+            ),
           ),
         ),
         title: const Text('Panel de Administración - VECTA'),
@@ -67,7 +82,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: _logout,
             tooltip: 'Cerrar Sesión',
-          )
+          ),
         ],
       ),
       body: SafeArea(
@@ -82,7 +97,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.1,
-                  color: AppTheme.textoOscuro,
                 ),
               ),
               const SizedBox(height: 20),
@@ -100,7 +114,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       icono: Icons.warning_amber_rounded,
                       colorRef: Colors.red,
                       onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const TribunalBaneosView()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TribunalBaneosView(),
+                          ),
+                        );
                       },
                     ),
                     _TarjetaMenu(
@@ -108,7 +127,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       icono: Icons.school,
                       colorRef: Colors.blueAccent,
                       onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const BuzonPostulacionesView()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const BuzonPostulacionesView(),
+                          ),
+                        );
                       },
                     ),
                     _TarjetaMenu(
@@ -116,7 +140,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       icono: Icons.bar_chart,
                       colorRef: AppTheme.primarioVerde,
                       onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const MetricasView()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MetricasView(),
+                          ),
+                        );
                       },
                     ),
                     _TarjetaMenu(
@@ -124,7 +153,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       icono: Icons.people,
                       colorRef: Colors.teal,
                       onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ListaEstudiantesView()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ListaEstudiantesView(),
+                          ),
+                        );
                       },
                     ),
                     _TarjetaMenu(
@@ -132,7 +166,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       icono: Icons.history,
                       colorRef: Colors.deepPurple,
                       onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const HistorialTutoriasView()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const HistorialTutoriasView(),
+                          ),
+                        );
                       },
                     ),
                   ],
@@ -180,7 +219,13 @@ class _TarjetaMenu extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textoOscuro)),
+                child: Text(
+                  titulo,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
               ),
             ],
           ),

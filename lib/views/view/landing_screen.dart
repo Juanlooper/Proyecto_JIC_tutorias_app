@@ -45,7 +45,6 @@ class LandingScreen extends StatelessWidget {
         bool esMovil = constraints.maxWidth < 800;
 
         return Scaffold(
-          backgroundColor: AppTheme.fondoClaro,
           body: SingleChildScrollView(
             child: Padding(
               padding: EdgeInsets.symmetric(
@@ -87,11 +86,7 @@ class LandingScreen extends StatelessWidget {
             const SizedBox(width: 10),
             const Text(
               'VECTA',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textoOscuro,
-              ),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -101,10 +96,7 @@ class LandingScreen extends StatelessWidget {
               onPressed: () => _irAAyuda(context),
               child: Text(
                 'Ayuda',
-                style: TextStyle(
-                  color: AppTheme.textoOscuro,
-                  fontSize: esMovil ? 14 : 16,
-                ),
+                style: TextStyle(fontSize: esMovil ? 14 : 16),
               ),
             ),
             const SizedBox(width: 15),
@@ -176,18 +168,13 @@ class LandingScreen extends StatelessWidget {
             fontSize: esMovil ? 36 : 60,
             fontWeight: FontWeight.bold,
             height: 1.1,
-            color: AppTheme.textoOscuro,
           ),
         ),
         const SizedBox(height: 20),
         Text(
           'Conéctate con tutores calificados de la UTP y asegura tu éxito académico. Todo listo a un solo clic.',
           textAlign: esMovil ? TextAlign.center : TextAlign.left,
-          style: TextStyle(
-            fontSize: esMovil ? 16 : 18,
-            color: AppTheme.textoOscuro.withOpacity(0.8),
-            height: 1.5,
-          ),
+          style: TextStyle(fontSize: esMovil ? 16 : 18, height: 1.5),
         ),
       ],
     );
@@ -242,15 +229,9 @@ class LandingScreen extends StatelessWidget {
   Widget _buildIlustracion(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.textoOscuro.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: [BoxShadow(blurRadius: 20, offset: const Offset(0, 10))],
         border: Border.all(color: AppTheme.grisTexto.withOpacity(0.1)),
       ),
       child: ClipRRect(

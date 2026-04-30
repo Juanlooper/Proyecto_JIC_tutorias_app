@@ -7,9 +7,9 @@ class AyudaScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.fondoClaro,
+      
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppTheme.primarioVerde),
@@ -62,7 +62,7 @@ class AyudaScreen extends StatelessWidget {
           style: TextStyle(
             fontSize: 36,
             fontWeight: FontWeight.bold,
-            color: AppTheme.textoOscuro,
+            
           ),
         ),
         const SizedBox(height: 10),
@@ -100,7 +100,7 @@ class AyudaScreen extends StatelessWidget {
           pregunta,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            color: AppTheme.textoOscuro,
+            
           ),
         ),
         children: [

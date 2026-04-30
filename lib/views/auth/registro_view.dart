@@ -10,7 +10,7 @@ class VectaColors {
   static const Color backgroundGray = Color(0xFFF8FAFC);
   static const Color textGray = Color(0xFF8B929A);
   static const Color softBlue = Color(0xFF89A6E4);
-  static const Color secondaryBlue = Color(0xFF1951CB); 
+  static const Color secondaryBlue = Color(0xFF1951CB);
   static const Color lightGreen = Color(0xFF8AD1C2);
   static const Color errorRed = Colors.red;
 }
@@ -30,7 +30,7 @@ class _RegistroViewState extends State<RegistroView> {
   final TextEditingController _ctrlTelefonoEmergencia = TextEditingController();
   final TextEditingController _ctrlContactoEmergencia = TextEditingController();
   final TextEditingController _ctrlParentesco = TextEditingController();
-  
+
   // Controladores de Credenciales
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -41,7 +41,13 @@ class _RegistroViewState extends State<RegistroView> {
   String? _carreraSeleccionada;
   final TextEditingController _ctrlDropdownCarrera = TextEditingController();
 
-  final List<String> _anos = ['Primer Año', 'Segundo Año', 'Tercer Año', 'Cuarto Año', 'Quinto Año'];
+  final List<String> _anos = [
+    'Primer Año',
+    'Segundo Año',
+    'Tercer Año',
+    'Cuarto Año',
+    'Quinto Año',
+  ];
   final Map<String, List<String>> _facultadesUTP = {
     'Facultad de Ingeniería de Sistemas Computacionales (FISC)': [
       'Lic. en Ingeniería de Sistemas y Computación',
@@ -139,14 +145,37 @@ class _RegistroViewState extends State<RegistroView> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text('Ayuda: $tituloField', style: const TextStyle(fontWeight: FontWeight.bold, color: VectaColors.darkBlue)),
-          content: Text(explicacion, style: const TextStyle(fontSize: 16, color: VectaColors.textGray, height: 1.4)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            'Ayuda: $tituloField',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: VectaColors.darkBlue,
+            ),
+          ),
+          content: Text(
+            explicacion,
+            style: const TextStyle(
+              fontSize: 16,
+              color: VectaColors.textGray,
+              height: 1.4,
+            ),
+          ),
           actions: [
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: VectaColors.primaryGreen, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: VectaColors.primaryGreen,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
               onPressed: () => Navigator.pop(context),
-              child: const Text('Entendido', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Entendido',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         );
@@ -163,7 +192,7 @@ class _RegistroViewState extends State<RegistroView> {
         _errorEmail = 'Debe ser tu correo institucional (@utp.ac.pa)';
         _emailEsValido = false;
       } else {
-        _errorEmail = null; 
+        _errorEmail = null;
         _emailEsValido = true;
       }
     });
@@ -171,36 +200,65 @@ class _RegistroViewState extends State<RegistroView> {
 
   Future<void> _intentarCrearCuenta() async {
     // Validaciones basicas
-    if (_ctrlPrimerNombre.text.trim().isEmpty || _ctrlPrimerApellido.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Por favor, ingresa tu primer nombre y primer apellido.'), backgroundColor: VectaColors.errorRed));
+    if (_ctrlPrimerNombre.text.trim().isEmpty ||
+        _ctrlPrimerApellido.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Por favor, ingresa tu primer nombre y primer apellido.',
+          ),
+          backgroundColor: VectaColors.errorRed,
+        ),
+      );
       return;
     }
-    
+
     if (_facultadSeleccionada == null || _carreraSeleccionada == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Por favor, selecciona tu facultad y carrera.'), backgroundColor: VectaColors.errorRed));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, selecciona tu facultad y carrera.'),
+          backgroundColor: VectaColors.errorRed,
+        ),
+      );
       return;
     }
 
     if (!_emailEsValido) {
       _validarEmail(_emailController.text);
       if (!_emailEsValido) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Revisa tu correo institucional.'), backgroundColor: VectaColors.errorRed));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Revisa tu correo institucional.'),
+            backgroundColor: VectaColors.errorRed,
+          ),
+        );
         return;
       }
     }
 
     if (_passwordController.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La contraseña debe tener al menos 6 caracteres.'), backgroundColor: VectaColors.errorRed));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('La contraseña debe tener al menos 6 caracteres.'),
+          backgroundColor: VectaColors.errorRed,
+        ),
+      );
       return;
     }
 
     if (!_aceptaTerminos) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Debes aceptar los términos y condiciones.'), backgroundColor: VectaColors.errorRed));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes aceptar los términos y condiciones.'),
+          backgroundColor: VectaColors.errorRed,
+        ),
+      );
       return;
     }
 
     // Si todo está bien, registramos
-    String nombreEnsamblado = "${_ctrlPrimerNombre.text.trim()} ${_ctrlPrimerApellido.text.trim()}";
+    String nombreEnsamblado =
+        "${_ctrlPrimerNombre.text.trim()} ${_ctrlPrimerApellido.text.trim()}";
     String correoLimpio = _emailController.text.trim().toLowerCase();
     String claveLimpa = _passwordController.text.trim();
 
@@ -212,9 +270,15 @@ class _RegistroViewState extends State<RegistroView> {
       nombreEscrito: nombreEnsamblado,
       facultadElegidaEnMenu: _facultadSeleccionada,
       carreraElegidaEnMenu: _carreraSeleccionada,
-      celular: _ctrlCelularPersonal.text.trim().isNotEmpty ? _ctrlCelularPersonal.text.trim() : null,
-      contactoEmergenciaNombre: _ctrlContactoEmergencia.text.trim().isNotEmpty ? _ctrlContactoEmergencia.text.trim() : null,
-      contactoEmergenciaTelefono: _ctrlTelefonoEmergencia.text.trim().isNotEmpty ? _ctrlTelefonoEmergencia.text.trim() : null,
+      celular: _ctrlCelularPersonal.text.trim().isNotEmpty
+          ? _ctrlCelularPersonal.text.trim()
+          : null,
+      contactoEmergenciaNombre: _ctrlContactoEmergencia.text.trim().isNotEmpty
+          ? _ctrlContactoEmergencia.text.trim()
+          : null,
+      contactoEmergenciaTelefono: _ctrlTelefonoEmergencia.text.trim().isNotEmpty
+          ? _ctrlTelefonoEmergencia.text.trim()
+          : null,
       anoCursando: _anoSeleccionado,
     );
 
@@ -225,7 +289,9 @@ class _RegistroViewState extends State<RegistroView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Cuenta creada. Por favor verifica tu correo (revisa la carpeta de spam o correo no deseado) antes de iniciar sesión.'),
+            content: Text(
+              'Cuenta creada. Por favor verifica tu correo (revisa la carpeta de spam o correo no deseado) antes de iniciar sesión.',
+            ),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 8),
           ),
@@ -234,7 +300,10 @@ class _RegistroViewState extends State<RegistroView> {
       }
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(motorDeIdentidad.mensajeDeError), backgroundColor: VectaColors.errorRed),
+        SnackBar(
+          content: Text(motorDeIdentidad.mensajeDeError),
+          backgroundColor: VectaColors.errorRed,
+        ),
       );
     }
   }
@@ -257,14 +326,24 @@ class _RegistroViewState extends State<RegistroView> {
                 Align(
                   alignment: Alignment.topLeft,
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: VectaColors.primaryGreen, size: 30),
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: VectaColors.primaryGreen,
+                      size: 30,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
                 // Logo de Vecta
                 Container(
                   padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: VectaColors.primaryGreen, width: 2)),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: VectaColors.primaryGreen,
+                      width: 2,
+                    ),
+                  ),
                   child: ClipOval(
                     child: Image.asset(
                       'assets/images/logo_vecta.png',
@@ -276,122 +355,245 @@ class _RegistroViewState extends State<RegistroView> {
                 ),
                 const SizedBox(height: 15),
                 // Título principal
-                const Text('Completa tu expediente estudiantil', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: VectaColors.primaryGreen), textAlign: TextAlign.center,),
+                const Text(
+                  'Completa tu expediente estudiantil',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: VectaColors.primaryGreen,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 35),
-                
+
                 // SECCIÓN 1: Datos Personales
                 Row(
                   children: [
-                    Expanded(child: _buildHelpTextField('Primer Nombre', Icons.person, 'Por favor, ingresa tu primer nombre legal. Solo se permiten letras.', type: _FieldType.soloLetras, controller: _ctrlPrimerNombre)),
+                    Expanded(
+                      child: _buildHelpTextField(
+                        'Primer Nombre',
+                        Icons.person,
+                        'Por favor, ingresa tu primer nombre legal. Solo se permiten letras.',
+                        type: _FieldType.soloLetras,
+                        controller: _ctrlPrimerNombre,
+                      ),
+                    ),
                     const SizedBox(width: 20),
-                    Expanded(child: _buildHelpTextField('Primer Apellido', Icons.badge, 'Por favor, ingresa tu primer apellido legal. Solo se permiten letras.', type: _FieldType.soloLetras, controller: _ctrlPrimerApellido)),
+                    Expanded(
+                      child: _buildHelpTextField(
+                        'Primer Apellido',
+                        Icons.badge,
+                        'Por favor, ingresa tu primer apellido legal. Solo se permiten letras.',
+                        type: _FieldType.soloLetras,
+                        controller: _ctrlPrimerApellido,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 15),
                 // Campo de Cédula con el formato exacto del Forms
                 _buildHelpTextField(
-                  'Cédula (Ej. 08-0000-000000)', 
-                  Icons.credit_card, 
+                  'Cédula (Ej. 08-0000-000000)',
+                  Icons.credit_card,
                   'Utiliza el formato NN-NNNN-NNNNNN (2 dígitos, guión, 4 dígitos, guión, 6 dígitos). Los guiones se insertan automáticamente.',
-                  type: _FieldType.cedula
+                  type: _FieldType.cedula,
                 ),
                 const SizedBox(height: 15),
                 // Año que cursa (Menú desplegable)
-                _buildDropdownField('Año que cursa', Icons.school, _anos, _anoSeleccionado, (val) {
-                  setState(() => _anoSeleccionado = val);
-                }, 'Selecciona el año académico que estás cursando actualmente.'),
+                _buildDropdownField(
+                  'Año que cursa',
+                  Icons.school,
+                  _anos,
+                  _anoSeleccionado,
+                  (val) {
+                    setState(() => _anoSeleccionado = val);
+                  },
+                  'Selecciona el año académico que estás cursando actualmente.',
+                ),
                 const SizedBox(height: 15),
                 // Facultad y Carrera dinámicas
                 Row(
                   children: [
-                    Expanded(child: _buildDropdownField('Facultad', Icons.account_balance, _facultadesUTP.keys.toList(), _facultadSeleccionada, (val) {
-                      setState(() {
-                        _facultadSeleccionada = val;
-                        _carreraSeleccionada = null; // Resetea la carrera
-                        _ctrlDropdownCarrera.clear();
-                      });
-                    }, 'Selecciona la facultad a la que pertenece tu carrera.')),
+                    Expanded(
+                      child: _buildDropdownField(
+                        'Facultad',
+                        Icons.account_balance,
+                        _facultadesUTP.keys.toList(),
+                        _facultadSeleccionada,
+                        (val) {
+                          setState(() {
+                            _facultadSeleccionada = val;
+                            _carreraSeleccionada = null; // Resetea la carrera
+                            _ctrlDropdownCarrera.clear();
+                          });
+                        },
+                        'Selecciona la facultad a la que pertenece tu carrera.',
+                      ),
+                    ),
                     const SizedBox(width: 20),
-                    Expanded(child: _buildSearchableDropdown('Carrera', Icons.menu_book, 
-                      _facultadSeleccionada != null ? _facultadesUTP[_facultadSeleccionada]! : [], 
-                      _carreraSeleccionada, 
-                      _ctrlDropdownCarrera,
-                      (val) { setState(() => _carreraSeleccionada = val); },
-                      'Escribe o selecciona tu carrera en la lista.'
-                    )),
+                    Expanded(
+                      child: _buildSearchableDropdown(
+                        'Carrera',
+                        Icons.menu_book,
+                        _facultadSeleccionada != null
+                            ? _facultadesUTP[_facultadSeleccionada]!
+                            : [],
+                        _carreraSeleccionada,
+                        _ctrlDropdownCarrera,
+                        (val) {
+                          setState(() => _carreraSeleccionada = val);
+                        },
+                        'Escribe o selecciona tu carrera en la lista.',
+                      ),
+                    ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 35),
                 const Divider(color: VectaColors.lightGreen, thickness: 1),
                 const SizedBox(height: 25),
-                
+
                 // SECCIÓN 2: Datos de emergencia
-                const Text('Datos de contacto de emergencia', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: VectaColors.primaryGreen), textAlign: TextAlign.center,),
+                const Text(
+                  'Datos de contacto de emergencia',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: VectaColors.primaryGreen,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 25),
-                
+
                 Row(
                   children: [
-                    Expanded(child: _buildHelpTextField(
-                      'Celular personal', 
-                      Icons.smartphone, 
-                      'El prefijo +507 ya está puesto. Ingresa los 8 dígitos restantes; un guión se pondrá automáticamente después de los 4 primeros números.',
-                      type: _FieldType.celular, controller: _ctrlCelularPersonal
-                    )),
+                    Expanded(
+                      child: _buildHelpTextField(
+                        'Celular personal',
+                        Icons.smartphone,
+                        'El prefijo +507 ya está puesto. Ingresa los 8 dígitos restantes; un guión se pondrá automáticamente después de los 4 primeros números.',
+                        type: _FieldType.celular,
+                        controller: _ctrlCelularPersonal,
+                      ),
+                    ),
                     const SizedBox(width: 20),
-                    Expanded(child: _buildHelpTextField(
-                      'Teléfono de emergencia', 
-                      Icons.phone, 
-                      'El prefijo +507 ya está puesto. Ingresa los 8 dígitos restantes; un guión se pondrá automáticamente después de los 4 primeros números.',
-                      type: _FieldType.celular, controller: _ctrlTelefonoEmergencia
-                    )),
+                    Expanded(
+                      child: _buildHelpTextField(
+                        'Teléfono de emergencia',
+                        Icons.phone,
+                        'El prefijo +507 ya está puesto. Ingresa los 8 dígitos restantes; un guión se pondrá automáticamente después de los 4 primeros números.',
+                        type: _FieldType.celular,
+                        controller: _ctrlTelefonoEmergencia,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 15),
                 Row(
                   children: [
-                    Expanded(child: _buildHelpTextField('Contacto de emergencia (Nombre)', Icons.health_and_safety, 'Nombre completo de la persona que debemos contactar en caso de una emergencia real.', controller: _ctrlContactoEmergencia)),
+                    Expanded(
+                      child: _buildHelpTextField(
+                        'Contacto de emergencia (Nombre)',
+                        Icons.health_and_safety,
+                        'Nombre completo de la persona que debemos contactar en caso de una emergencia real.',
+                        controller: _ctrlContactoEmergencia,
+                      ),
+                    ),
                     const SizedBox(width: 20),
-                    Expanded(child: _buildHelpTextField('Parentesco', Icons.family_restroom, 'Ejemplo: Madre, Padre, Tío, Hermano/a. Solo se permiten letras.', type: _FieldType.soloLetras, controller: _ctrlParentesco)),
+                    Expanded(
+                      child: _buildHelpTextField(
+                        'Parentesco',
+                        Icons.family_restroom,
+                        'Ejemplo: Madre, Padre, Tío, Hermano/a. Solo se permiten letras.',
+                        type: _FieldType.soloLetras,
+                        controller: _ctrlParentesco,
+                      ),
+                    ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 35),
                 const Divider(color: VectaColors.lightGreen, thickness: 1),
                 const SizedBox(height: 25),
 
                 // SECCIÓN 3: Credenciales
-                const Text('Crea tus credenciales de acceso', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: VectaColors.primaryGreen), textAlign: TextAlign.center,),
+                const Text(
+                  'Crea tus credenciales de acceso',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: VectaColors.primaryGreen,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 35),
-                
+
                 Container(
                   width: 500,
                   padding: const EdgeInsets.all(30),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10))],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withValues(alpha: 0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
                   child: Column(
                     children: [
                       TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        onChanged: _validarEmail, 
+                        onChanged: _validarEmail,
                         decoration: InputDecoration(
                           hintText: 'Correo institucional (@utp.ac.pa)',
-                          hintStyle: const TextStyle(color: VectaColors.softBlue),
-                          prefixIcon: const Icon(Icons.email, color: VectaColors.secondaryBlue),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.help_outline, color: VectaColors.secondaryBlue, size: 20),
-                            onPressed: () => _mostrarVentanaAyuda('Correo Electrónico', 'Ingresa tu dirección de correo electrónico institucional de la UTP. El sistema solo acepta direcciones que terminen en "@utp.ac.pa".'),
+                          hintStyle: const TextStyle(
+                            color: VectaColors.softBlue,
                           ),
-                          filled: true, fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _errorEmail == null ? VectaColors.softBlue : VectaColors.errorRed)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _errorEmail == null ? VectaColors.primaryGreen : VectaColors.errorRed, width: 2)),
+                          prefixIcon: const Icon(
+                            Icons.email,
+                            color: VectaColors.secondaryBlue,
+                          ),
+                          suffixIcon: IconButton(
+                            icon: const Icon(
+                              Icons.help_outline,
+                              color: VectaColors.secondaryBlue,
+                              size: 20,
+                            ),
+                            onPressed: () => _mostrarVentanaAyuda(
+                              'Correo Electrónico',
+                              'Ingresa tu dirección de correo electrónico institucional de la UTP. El sistema solo acepta direcciones que terminen en "@utp.ac.pa".',
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(
+                              color: _errorEmail == null
+                                  ? VectaColors.softBlue
+                                  : VectaColors.errorRed,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(
+                              color: _errorEmail == null
+                                  ? VectaColors.primaryGreen
+                                  : VectaColors.errorRed,
+                              width: 2,
+                            ),
+                          ),
                           errorText: _errorEmail,
-                          errorStyle: const TextStyle(color: VectaColors.errorRed),
+                          errorStyle: const TextStyle(
+                            color: VectaColors.errorRed,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -400,14 +602,21 @@ class _RegistroViewState extends State<RegistroView> {
                         obscureText: _obscureText,
                         decoration: InputDecoration(
                           hintText: 'Contraseña (min. 6 caracteres)',
-                          hintStyle: const TextStyle(color: VectaColors.softBlue),
-                          prefixIcon: const Icon(Icons.lock, color: VectaColors.secondaryBlue),
+                          hintStyle: const TextStyle(
+                            color: VectaColors.softBlue,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.lock,
+                            color: VectaColors.secondaryBlue,
+                          ),
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
                                 icon: Icon(
-                                  _obscureText ? Icons.visibility_off : Icons.visibility,
+                                  _obscureText
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
                                   color: VectaColors.secondaryBlue,
                                   size: 20,
                                 ),
@@ -418,15 +627,36 @@ class _RegistroViewState extends State<RegistroView> {
                                 },
                               ),
                               IconButton(
-                                icon: const Icon(Icons.help_outline, color: VectaColors.secondaryBlue, size: 20),
-                                onPressed: () => _mostrarVentanaAyuda('Contraseña', 'Crea una contraseña segura de al menos 6 caracteres. Recuerda usar mayúsculas, minúsculas, números y símbolos para mayor seguridad.'),
+                                icon: const Icon(
+                                  Icons.help_outline,
+                                  color: VectaColors.secondaryBlue,
+                                  size: 20,
+                                ),
+                                onPressed: () => _mostrarVentanaAyuda(
+                                  'Contraseña',
+                                  'Crea una contraseña segura de al menos 6 caracteres. Recuerda usar mayúsculas, minúsculas, números y símbolos para mayor seguridad.',
+                                ),
                               ),
                             ],
                           ),
-                          filled: true, fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: VectaColors.softBlue)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: VectaColors.primaryGreen, width: 2)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(
+                              color: VectaColors.softBlue,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(
+                              color: VectaColors.primaryGreen,
+                              width: 2,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -438,15 +668,26 @@ class _RegistroViewState extends State<RegistroView> {
                 Container(
                   width: 600,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(15),
                     border: Border.all(color: VectaColors.softBlue),
                   ),
                   child: Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    data: Theme.of(
+                      context,
+                    ).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
-                      title: const Text('Leer Términos y Condiciones', style: TextStyle(color: VectaColors.darkBlue, fontWeight: FontWeight.bold)),
-                      leading: const Icon(Icons.policy, color: VectaColors.secondaryBlue),
+                      title: const Text(
+                        'Leer Términos y Condiciones',
+                        style: TextStyle(
+                          color: VectaColors.darkBlue,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      leading: const Icon(
+                        Icons.policy,
+                        color: VectaColors.secondaryBlue,
+                      ),
                       iconColor: VectaColors.primaryGreen,
                       collapsedIconColor: VectaColors.secondaryBlue,
                       children: [
@@ -495,7 +736,11 @@ Vecta es una herramienta tecnológica diseñada para facilitar el apoyo académi
 
 7. Cambios en estas Políticas
 Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas regulaciones legales o mejoras en la aplicación. Te notificaremos a través de la app o por correo electrónico si se realizan cambios importantes.''',
-                            style: TextStyle(color: VectaColors.darkBlue, fontSize: 13, height: 1.5),
+                            style: TextStyle(
+                              color: VectaColors.darkBlue,
+                              fontSize: 13,
+                              height: 1.5,
+                            ),
                             textAlign: TextAlign.justify,
                           ),
                         ),
@@ -504,33 +749,47 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
                   ),
                 ),
                 const SizedBox(height: 20),
-                
+
                 // CUADRO de términos y condiciones (Checkbox)
                 Container(
                   width: 600,
                   padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(color: VectaColors.softBlue.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(15)),
+                  decoration: BoxDecoration(
+                    color: VectaColors.softBlue.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Checkbox(
                         value: _aceptaTerminos,
                         activeColor: VectaColors.secondaryBlue,
-                        side: const BorderSide(color: VectaColors.secondaryBlue, width: 2),
-                        onChanged: semaforoCarga ? null : (bool? valorNuevo) => setState(() => _aceptaTerminos = valorNuevo ?? false),
+                        side: const BorderSide(
+                          color: VectaColors.secondaryBlue,
+                          width: 2,
+                        ),
+                        onChanged: semaforoCarga
+                            ? null
+                            : (bool? valorNuevo) => setState(
+                                () => _aceptaTerminos = valorNuevo ?? false,
+                              ),
                       ),
                       const SizedBox(width: 10),
                       const Expanded(
                         child: Text(
                           'He leído y autorizo que se almacenen y gestionen mis datos personales y de contacto según la Ley 81 de protección de Datos Personales. Comprendo que estos datos son de uso estrictamente confidencial para fines académicos y protocolos de emergencia.',
-                          style: TextStyle(color: VectaColors.secondaryBlue, fontSize: 14, height: 1.5),
+                          style: TextStyle(
+                            color: VectaColors.secondaryBlue,
+                            fontSize: 14,
+                            height: 1.5,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 40),
-                
+
                 // BOTÓN FINAL
                 SizedBox(
                   width: 300,
@@ -538,13 +797,29 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: VectaColors.primaryGreen,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
                       elevation: 0,
                     ),
                     onPressed: semaforoCarga ? null : _intentarCrearCuenta,
                     child: semaforoCarga
-                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('Crear cuenta y registrarme', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            'Crear cuenta y registrarme',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -556,27 +831,34 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
   }
 
   // auxiliar para crear campos de texto con iconos de ayuda y validaciones
-  Widget _buildHelpTextField(String hint, IconData icon, String ayuda, { _FieldType type = _FieldType.soloLetras, TextEditingController? controller }) {
-    
+  Widget _buildHelpTextField(
+    String hint,
+    IconData icon,
+    String ayuda, {
+    _FieldType type = _FieldType.soloLetras,
+    TextEditingController? controller,
+  }) {
     TextInputType keyboardType = TextInputType.text;
     List<TextInputFormatter>? formatters = [];
 
     switch (type) {
       case _FieldType.cedula:
         keyboardType = TextInputType.number;
-        formatters = [_CedulaFormatter()]; 
+        formatters = [_CedulaFormatter()];
         break;
       case _FieldType.celular:
         keyboardType = TextInputType.number;
-        formatters = [_CelularFormatter()]; 
+        formatters = [_CelularFormatter()];
         break;
       case _FieldType.soloNumeros:
         keyboardType = TextInputType.number;
-        formatters = [FilteringTextInputFormatter.digitsOnly]; 
+        formatters = [FilteringTextInputFormatter.digitsOnly];
         break;
       case _FieldType.soloLetras:
         keyboardType = TextInputType.text;
-        formatters = [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]'))]; 
+        formatters = [
+          FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]')),
+        ];
         break;
     }
 
@@ -585,61 +867,123 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
       keyboardType: keyboardType,
       inputFormatters: formatters,
       decoration: InputDecoration(
-        hintText: hint, hintStyle: const TextStyle(color: VectaColors.softBlue, fontSize: 15),
+        hintText: hint,
+        hintStyle: const TextStyle(color: VectaColors.softBlue, fontSize: 15),
         prefixIcon: Icon(icon, color: VectaColors.secondaryBlue, size: 22),
         prefixText: type == _FieldType.celular ? '+507 ' : null,
-        prefixStyle: const TextStyle(color: VectaColors.darkBlue, fontWeight: FontWeight.bold),
-        
+        prefixStyle: const TextStyle(
+          color: VectaColors.darkBlue,
+          fontWeight: FontWeight.bold,
+        ),
+
         suffixIcon: IconButton(
-          icon: const Icon(Icons.help_outline, color: VectaColors.secondaryBlue, size: 20),
+          icon: const Icon(
+            Icons.help_outline,
+            color: VectaColors.secondaryBlue,
+            size: 20,
+          ),
           onPressed: () => _mostrarVentanaAyuda(hint.split(' (')[0], ayuda),
         ),
-        filled: true, fillColor: Colors.white,
+        filled: true,
+        fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(vertical: 16),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: VectaColors.softBlue)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: VectaColors.primaryGreen, width: 2)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: VectaColors.softBlue),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(
+            color: VectaColors.primaryGreen,
+            width: 2,
+          ),
+        ),
       ),
     );
   }
 
   // crear menús desplegables con icono de ayuda
-  Widget _buildDropdownField(String hint, IconData icon, List<String> items, String? selectedValue, void Function(String?) onChanged, String ayuda) {
+  Widget _buildDropdownField(
+    String hint,
+    IconData icon,
+    List<String> items,
+    String? selectedValue,
+    void Function(String?) onChanged,
+    String ayuda,
+  ) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: VectaColors.softBlue)),
-      child: Stack( 
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: VectaColors.softBlue),
+      ),
+      child: Stack(
         children: [
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
-              hintText: hint, hintStyle: const TextStyle(color: VectaColors.softBlue),
+              hintText: hint,
+              hintStyle: const TextStyle(color: VectaColors.softBlue),
               prefixIcon: Icon(icon, color: VectaColors.secondaryBlue),
-              border: InputBorder.none, 
-              contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 16,
+                horizontal: 12,
+              ),
             ),
             initialValue: selectedValue,
-            icon: const Icon(Icons.arrow_drop_down, color: VectaColors.secondaryBlue),
+            icon: const Icon(
+              Icons.arrow_drop_down,
+              color: VectaColors.secondaryBlue,
+            ),
             isExpanded: true,
-            items: items.map((String val) => DropdownMenuItem(value: val, child: Text(val, style: const TextStyle(color: VectaColors.darkBlue)))).toList(),
+            items: items
+                .map(
+                  (String val) => DropdownMenuItem(
+                    value: val,
+                    child: Text(
+                      val,
+                      style: const TextStyle(color: VectaColors.darkBlue),
+                    ),
+                  ),
+                )
+                .toList(),
             onChanged: onChanged,
           ),
           Positioned(
             right: 35,
             top: 15,
             child: IconButton(
-              icon: const Icon(Icons.help_outline, color: VectaColors.secondaryBlue, size: 20),
+              icon: const Icon(
+                Icons.help_outline,
+                color: VectaColors.secondaryBlue,
+                size: 20,
+              ),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               onPressed: () => _mostrarVentanaAyuda(hint, ayuda),
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
   // crear menú desplegable con búsqueda (DropdownMenu)
-  Widget _buildSearchableDropdown(String hint, IconData icon, List<String> items, String? selectedValue, TextEditingController controller, void Function(String?) onChanged, String ayuda) {
+  Widget _buildSearchableDropdown(
+    String hint,
+    IconData icon,
+    List<String> items,
+    String? selectedValue,
+    TextEditingController controller,
+    void Function(String?) onChanged,
+    String ayuda,
+  ) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: VectaColors.softBlue)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: VectaColors.softBlue),
+      ),
       child: Stack(
         children: [
           LayoutBuilder(
@@ -648,38 +992,55 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
                 width: constraints.maxWidth,
                 controller: controller,
                 hintText: hint,
-                textStyle: const TextStyle(color: VectaColors.darkBlue, overflow: TextOverflow.ellipsis),
+                textStyle: const TextStyle(
+                  color: VectaColors.darkBlue,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 inputDecorationTheme: const InputDecorationTheme(
                   hintStyle: TextStyle(color: VectaColors.softBlue),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                  contentPadding: EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 12,
+                  ),
                 ),
                 leadingIcon: Icon(icon, color: VectaColors.secondaryBlue),
-                trailingIcon: const Icon(Icons.arrow_drop_down, color: VectaColors.secondaryBlue),
+                trailingIcon: const Icon(
+                  Icons.arrow_drop_down,
+                  color: VectaColors.secondaryBlue,
+                ),
                 enableFilter: true,
                 enableSearch: true,
                 initialSelection: selectedValue,
                 onSelected: onChanged,
-                dropdownMenuEntries: items.map<DropdownMenuEntry<String>>((String val) {
+                dropdownMenuEntries: items.map<DropdownMenuEntry<String>>((
+                  String val,
+                ) {
                   return DropdownMenuEntry<String>(
                     value: val,
                     label: val,
-                    style: MenuItemButton.styleFrom(foregroundColor: VectaColors.darkBlue),
+                    style: MenuItemButton.styleFrom(
+                      foregroundColor: VectaColors.darkBlue,
+                    ),
                   );
                 }).toList(),
               );
-            }
+            },
           ),
           Positioned(
             right: 35,
             top: 15,
             child: IconButton(
-              icon: const Icon(Icons.help_outline, color: VectaColors.secondaryBlue, size: 20),
+              icon: const Icon(
+                Icons.help_outline,
+                color: VectaColors.secondaryBlue,
+                size: 20,
+              ),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               onPressed: () => _mostrarVentanaAyuda(hint, ayuda),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -691,15 +1052,18 @@ enum _FieldType { soloLetras, soloNumeros, cedula, celular }
 // Formateadores especiales
 class _CedulaFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    String texto = newValue.text.replaceAll(RegExp(r'\D'), ''); 
-    if (texto.length > 12) texto = texto.substring(0, 12); 
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    String texto = newValue.text.replaceAll(RegExp(r'\D'), '');
+    if (texto.length > 12) texto = texto.substring(0);
 
     String formateado = '';
     for (int i = 0; i < texto.length; i++) {
       formateado += texto[i];
       if (i == 1 || i == 5) {
-        if (i != texto.length - 1) { 
+        if (i != texto.length - 1) {
           formateado += '-';
         }
       }
@@ -707,27 +1071,30 @@ class _CedulaFormatter extends TextInputFormatter {
 
     return TextEditingValue(
       text: formateado,
-      selection: TextSelection.collapsed(offset: formateado.length), 
+      selection: TextSelection.collapsed(offset: formateado.length),
     );
   }
 }
 
 class _CelularFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    String texto = newValue.text.replaceAll(RegExp(r'\D'), ''); 
-    if (texto.length > 8) texto = texto.substring(0, 8); 
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    String texto = newValue.text.replaceAll(RegExp(r'\D'), '');
+    if (texto.length > 8) texto = texto.substring(0, 8);
 
     String formateado = '';
     if (texto.length > 4) {
-      formateado = '${texto.substring(0, 4)}-${texto.substring(4)}'; 
+      formateado = '${texto.substring(0, 4)}-${texto.substring(4)}';
     } else {
       formateado = texto;
     }
 
     return TextEditingValue(
       text: formateado,
-      selection: TextSelection.collapsed(offset: formateado.length), 
+      selection: TextSelection.collapsed(offset: formateado.length),
     );
   }
 }
