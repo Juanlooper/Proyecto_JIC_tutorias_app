@@ -25,6 +25,7 @@ class _MetricasViewState extends State<MetricasView> {
   // Horas
   final Map<String, double> _horasPorTutor = {};
   final Map<String, double> _horasPorMateria = {};
+  final Map<String, double> _horasPorAlumno = {};
   
   bool _estaCargando = true;
 
@@ -74,6 +75,11 @@ class _MetricasViewState extends State<MetricasView> {
           
           _horasPorTutor[tutorNombre] = (_horasPorTutor[tutorNombre] ?? 0) + horas;
           _horasPorMateria[nombreCorto] = (_horasPorMateria[nombreCorto] ?? 0) + horas;
+          
+          for (var uid in inscritos) {
+             final nombreEst = uid.toString().length > 4 ? uid.toString().substring(0,4) : uid.toString();
+             _horasPorAlumno['Alum $nombreEst'] = (_horasPorAlumno['Alum $nombreEst'] ?? 0) + horas;
+          }
         }
       }
       
@@ -123,6 +129,11 @@ class _MetricasViewState extends State<MetricasView> {
                 const SizedBox(height: 16),
                 _buildHorasChartCard(_horasPorMateria, Colors.orangeAccent, 'Hrs'),
                 
+                const SizedBox(height: 32),
+                _buildTitulo('Horas Recibidas por Estudiante'),
+                const SizedBox(height: 16),
+                _buildHorasChartCard(_horasPorAlumno, Colors.lightBlue, 'Hrs'),
+
                 const SizedBox(height: 32),
                 Row(
                   children: [

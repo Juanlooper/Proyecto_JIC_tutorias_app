@@ -8,6 +8,7 @@ import '../../providers/tutorias_provider.dart';
 import '../../models/tutoria_model.dart';
 import '../../models/usuario_model.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/moderacion_servicio.dart';
 
 import 'package:table_calendar/table_calendar.dart';
 
@@ -505,6 +506,10 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
               if (motivoCtrl.text.trim().isEmpty) return;
+              if (ModeracionServicio.contieneLenguajeToxico(motivoCtrl.text.trim())) {
+                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Por favor, redacta un motivo sin lenguaje ofensivo.'), backgroundColor: Colors.red));
+                 return;
+              }
               Navigator.pop(ctx, true);
             },
             child: const Text('Confirmar Cancelación'),
@@ -578,6 +583,10 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               if (esTarde && excusaCtrl.text.trim().isEmpty) return; // Requiere texto
+              if (esTarde && ModeracionServicio.contieneLenguajeToxico(excusaCtrl.text.trim())) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lenguaje inapropiado detectado. Por favor, sé respetuoso.'), backgroundColor: Colors.red));
+                  return;
+              }
               Navigator.pop(ctx, true);
             },
             style: ElevatedButton.styleFrom(

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../providers/tutorias_provider.dart';
 import '../../models/tutoria_model.dart';
+import '../../core/utils/moderacion_servicio.dart';
 
 class SugerirTutoriaView extends StatefulWidget {
   const SugerirTutoriaView({super.key});
@@ -101,6 +102,17 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
 
   Future<void> _enviarSugerencia() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (ModeracionServicio.contieneLenguajeToxico(_materiaController.text) || 
+        ModeracionServicio.contieneLenguajeToxico(_motivosController.text)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("El texto ingresado contiene lenguaje inapropiado u ofensivo. Por favor, corrígelo antes de enviar."),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
 
     if (_fechaSeleccionada == null || _horaSeleccionada == null) {
       ScaffoldMessenger.of(context).showSnackBar(

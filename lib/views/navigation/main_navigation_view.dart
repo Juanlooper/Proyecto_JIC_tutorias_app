@@ -271,12 +271,16 @@ class _MainNavigationViewState extends State<MainNavigationView> {
                 stream: FirebaseFirestore.instance
                     .collection('notificaciones')
                     .where('usuarioId', isEqualTo: usuarioActual.identificadorUnico)
-                    .where('leida', isEqualTo: false)
                     .snapshots(),
                 builder: (context, snapshot) {
                   int noLeidas = 0;
                   if (snapshot.hasData) {
-                    noLeidas = snapshot.data!.docs.length;
+                    for (var doc in snapshot.data!.docs) {
+                      final data = doc.data() as Map<String, dynamic>?;
+                      if (data != null && data['leida'] == false) {
+                        noLeidas++;
+                      }
+                    }
                   }
                   return Stack(
                     alignment: Alignment.center,

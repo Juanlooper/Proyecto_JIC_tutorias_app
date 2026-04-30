@@ -240,6 +240,12 @@ class TutoriasProvider extends ChangeNotifier {
           'fechaReporte': DateTime.now().toIso8601String(),
           'estado': 'pendiente', // pendiente, perdonado, penalizado
         });
+
+        // Notificar a los administradores sobre el nuevo caso en el tribunal
+        await notificarAdministradores(
+          'Nueva Excusa en Tribunal ⚖️',
+          'Un estudiante canceló tardíamente la clase de ${data['materiaOAsignatura'] ?? 'una materia'} y ha enviado una justificación.',
+        );
       }
 
       // Notificar al tutor que un estudiante abandonó
@@ -950,6 +956,13 @@ class TutoriasProvider extends ChangeNotifier {
         });
       });
 
+      // Notificar a los administradores para seguimiento
+      await notificarAdministradores(
+        'Evaluación a Estudiante',
+        'Tutor calificó al alumno $estudianteId con ${estrellas.toStringAsFixed(0)} estrellas. ${comentario.isNotEmpty ? 'Comentario: $comentario' : ''}',
+        tipo: estrellas <= 2 ? 'alerta_roja' : 'info',
+      );
+
       _apagarSenalIndicadoraDeEspera();
       return true;
     } catch (e) {
@@ -1014,5 +1027,27 @@ class TutoriasProvider extends ChangeNotifier {
       return false;
     }
   }
-}
+  /// Envía una notificación a todos los administradores del sistema.
+  Future<void> notificarAdministradores(String titulo, String mensaje, {String tipo = 'alerta_admin'}) async {
+    try {
+      final adminsSnapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .where('rolEnElSistema', isEqualTo: 'admin')
+          .get();
 
+      final fechaIso = DateTime.now().toIso8601String();
+      for (var doc in adminsSnapshot.docs) {
+        await FirebaseFirestore.instance.collection('notificaciones').add({
+          'usuarioId': doc.id,
+          'titulo': titulo,
+          'mensaje': mensaje,
+          'fecha': fechaIso,
+          'leida': false,
+          'tipo': tipo,
+        });
+      }
+    } catch (e) {
+      debugPrint('Error al notificar administradores: $e');
+    }
+  }
+}
