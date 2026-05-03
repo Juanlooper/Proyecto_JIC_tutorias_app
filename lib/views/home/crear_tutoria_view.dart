@@ -4,6 +4,7 @@ import '../../providers/autenticacion_provider.dart';
 import '../../providers/tutorias_provider.dart';
 import '../../models/tutoria_model.dart';
 import '../../models/usuario_model.dart';
+import '../../core/utils/moderacion_servicio.dart';
 
 class CrearTutoriaView extends StatefulWidget {
   const CrearTutoriaView({super.key});
@@ -64,6 +65,17 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
 
   Future<void> _confirmarYSubirTutoria(UsuarioModel usuarioCreador) async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (ModeracionServicio.contieneLenguajeToxico(_materiaController.text) || 
+        ModeracionServicio.contieneLenguajeToxico(_temaController.text)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("El texto ingresado contiene lenguaje inapropiado u ofensivo. Por favor, corrígelo antes de publicar."),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
       return;
     }
 

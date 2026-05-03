@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/autenticacion_provider.dart';
+import '../../core/utils/moderacion_servicio.dart';
 
 class VectaColors {
   // principal
@@ -213,6 +214,11 @@ class _RegistroViewState extends State<RegistroView> {
       return;
     }
 
+    if (ModeracionServicio.contieneLenguajeToxico(_ctrlPrimerNombre.text) || 
+        ModeracionServicio.contieneLenguajeToxico(_ctrlPrimerApellido.text)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Por favor, usa tu nombre real. El lenguaje ofensivo no está permitido en Vecta.'), backgroundColor: VectaColors.errorRed));
+      return;
+    }
     if (_facultadSeleccionada == null || _carreraSeleccionada == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -236,13 +242,13 @@ class _RegistroViewState extends State<RegistroView> {
       }
     }
 
-    if (_passwordController.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('La contraseña debe tener al menos 6 caracteres.'),
-          backgroundColor: VectaColors.errorRed,
-        ),
-      );
+    final pass = _passwordController.text;
+    final hasUppercase = pass.contains(RegExp(r'[A-Z]'));
+    final hasNumber = pass.contains(RegExp(r'[0-9]'));
+    final hasSpecial = pass.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+
+    if (pass.length < 8 || !hasUppercase || !hasNumber || !hasSpecial) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.'), backgroundColor: VectaColors.errorRed));
       return;
     }
 
@@ -601,14 +607,9 @@ class _RegistroViewState extends State<RegistroView> {
                         controller: _passwordController,
                         obscureText: _obscureText,
                         decoration: InputDecoration(
-                          hintText: 'Contraseña (min. 6 caracteres)',
-                          hintStyle: const TextStyle(
-                            color: VectaColors.softBlue,
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.lock,
-                            color: VectaColors.secondaryBlue,
-                          ),
+                          hintText: 'Contraseña (min. 8 caracteres, Mayús, #, Especial)',
+                          hintStyle: const TextStyle(color: VectaColors.softBlue),
+                          prefixIcon: const Icon(Icons.lock, color: VectaColors.secondaryBlue),
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -627,15 +628,8 @@ class _RegistroViewState extends State<RegistroView> {
                                 },
                               ),
                               IconButton(
-                                icon: const Icon(
-                                  Icons.help_outline,
-                                  color: VectaColors.secondaryBlue,
-                                  size: 20,
-                                ),
-                                onPressed: () => _mostrarVentanaAyuda(
-                                  'Contraseña',
-                                  'Crea una contraseña segura de al menos 6 caracteres. Recuerda usar mayúsculas, minúsculas, números y símbolos para mayor seguridad.',
-                                ),
+                                icon: const Icon(Icons.help_outline, color: VectaColors.secondaryBlue, size: 20),
+                                onPressed: () => _mostrarVentanaAyuda('Contraseña', 'Crea una contraseña segura de al menos 8 caracteres. Obligatoriamente debe contener al menos una mayúscula, un número y un carácter especial (ej. !@#\$%^&*).'),
                               ),
                             ],
                           ),

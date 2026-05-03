@@ -151,6 +151,80 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
     }
   }
 
+  Future<void> _mostrarDialogoEvaluacion(String uidAlumno) async {
+    double estrellas = 5;
+    final comentarioCtrl = TextEditingController();
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setStateSB) {
+            return AlertDialog(
+              title: const Text("Evaluar Estudiante", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text("Califica el desempeño del estudiante. Esta información es de uso administrativo y no será visible para el alumno.", style: TextStyle(fontSize: 13, color: Colors.grey)),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < estrellas ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 32,
+                        ),
+                        onPressed: () {
+                          setStateSB(() {
+                            estrellas = index + 1.0;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: comentarioCtrl,
+                    decoration: const InputDecoration(
+                      labelText: "Comentario privado",
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancelar")),
+                FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Guardar Reporte")),
+              ],
+            );
+          }
+        );
+      }
+    );
+
+    if (confirmar == true && mounted) {
+      final proveedor = context.read<TutoriasProvider>();
+      final exito = await proveedor.enviarEvaluacionEstudiante(
+        widget.tutoria.identificadorDeTutoria,
+        uidAlumno,
+        estrellas,
+        comentarioCtrl.text.trim(),
+      );
+
+      if (mounted) {
+        if (exito) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Evaluación interna enviada con éxito.'), backgroundColor: Colors.green));
+          Navigator.pop(context); // Volver al dashboard para refrescar
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(proveedor.mensajeDeErrorDelSistema), backgroundColor: Colors.red));
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tutoria = widget.tutoria;
@@ -494,7 +568,15 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
                                       },
                                     ),
                                   ],
-                                ),
+                                )
+                                else if (tutoria.estadoDeLaSolicitud == 'finalizada' && !tutoria.alumnosEvaluadosPorTutor.contains(uidAlumno))
+                                  TextButton.icon(
+                                    icon: const Icon(Icons.star_rate, size: 16),
+                                    label: const Text('Evaluar'),
+                                    onPressed: () => _mostrarDialogoEvaluacion(uidAlumno),
+                                  )
+                                else if (tutoria.estadoDeLaSolicitud == 'finalizada' && tutoria.alumnosEvaluadosPorTutor.contains(uidAlumno))
+                                  const Text('Evaluado ✅', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
                             ],
                           ),
                           const SizedBox(height: 16),

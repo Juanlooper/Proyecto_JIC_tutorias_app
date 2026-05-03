@@ -70,9 +70,19 @@ class AutenticacionProvider extends ChangeNotifier {
     _estaInicializando = true;
     _activarIndicadorDeCargaEnPantalla();
 
+    // Esperamos a que Firebase lea su caché local (IndexedDB en web)
+    await FirebaseAuth.instance.authStateChanges().first;
+
     // Pedimos al servicio que busque de inmediato si existe un "fantasma" de sesión válida en el teléfono
     _usuarioActual = await _servicioIntegradoDeAutenticacion
         .obtenerDatosDelUsuarioActual();
+
+    // Verificación de baneo por tribunal de disciplina
+    if (_usuarioActual != null && _usuarioActual!.estaBaneado) {
+       await _servicioIntegradoDeAutenticacion.cerrarSesion();
+       _usuarioActual = null;
+       _mensajeDeError = "Tu cuenta ha sido suspendida por el Tribunal de Disciplina.";
+    }
 
     _estaInicializando = false;
     _desactivarIndicadorDeCargaEnPantalla();
@@ -108,6 +118,17 @@ class AutenticacionProvider extends ChangeNotifier {
       // Éxito. Acudimos al baúl de base de datos a traer todo su expediente formal de la JIC.
       _usuarioActual = await _servicioIntegradoDeAutenticacion
           .obtenerDatosDelUsuarioActual();
+          
+      // Verificación de baneo tras login
+      if (_usuarioActual != null && _usuarioActual!.estaBaneado) {
+         await _servicioIntegradoDeAutenticacion.cerrarSesion();
+         _usuarioActual = null;
+         _mensajeDeError = "Tu cuenta ha sido suspendida por acumular 3 strikes. Contacta administración.";
+         _desactivarIndicadorDeCargaEnPantalla();
+         notifyListeners();
+         return false;
+      }
+
       _desactivarIndicadorDeCargaEnPantalla();
       notifyListeners();
       return true;

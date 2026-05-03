@@ -75,6 +75,44 @@ class _NotificacionesViewState extends State<NotificacionesView> {
     }
   }
 
+  Future<void> _eliminarNotificacion(String id, int index) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar Notificación'),
+        content: const Text('¿Estás seguro de que deseas eliminar esta notificación?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true), 
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      )
+    );
+
+    if (confirmar == true && id.isNotEmpty) {
+      try {
+        await FirebaseFirestore.instance.collection('notificaciones').doc(id).delete();
+        if (mounted) {
+          setState(() {
+            _notificaciones.removeAt(index);
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Notificación eliminada exitosamente.')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al eliminar: $e')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -230,6 +268,11 @@ class _NotificacionesViewState extends State<NotificacionesView> {
                   ),
                 ],
               ],
+            ),
+            trailing: IconButton(
+              icon: Icon(Icons.delete_outline, color: Colors.red.shade300),
+              tooltip: 'Eliminar notificación',
+              onPressed: () => _eliminarNotificacion(notificacionId, index),
             ),
             onTap: () {
               if (!leida && notificacionId.isNotEmpty) {

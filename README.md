@@ -303,8 +303,9 @@ Para evitar facturas astronómicas de Cloud, la lógica de `TutoriasProvider` es
 Para evitar que la plataforma se vuelva caótica, el sistema promueve el sano comportamiento:
 
 - **Sistema Anti-Review Bombing:** ¿Un alumno falta a clase y quiere ponerle 1 estrella al tutor por despecho? Imposible. La UI de evaluación comprueba si el alumno asistió; si tiene falta marcada, el sistema le bloquea el acceso a las reseñas.
+- **Filtro Léxico Dinámico (Moderador de Lenguaje):** Algoritmo que detecta palabras prohibidas, toxicidad, y variantes ofuscadas (como Leetspeak y homoglifos) tanto en nombres de usuario como en las justificaciones o descripciones.
 - **Botón de Pánico (Quejas):** Si un tutor tiene conductas inapropiadas, su perfil tiene un botón rojo de reporte. Envía la data cifrada directamente a la mesa del Admin.
-- **Moderación de Reseñas:** Si un alumno deja un comentario vulgar en un perfil, el Tutor, o el Admin tienen la jerarquía para borrar el comentario abusivo desde la UI.
+- **Moderación de Reseñas y Calificaciones:** Si un alumno deja un comentario vulgar, el Admin tiene la jerarquía para borrar el comentario abusivo desde la UI. Además, calificaciones iguales o menores a 2 estrellas generan alertas automáticas a los administradores.
 - **Tribunal de Baneos:** El administrador revisa a los alumnos con altos *strikes* o tutores con demasiadas quejas, y puede apagar su bandera `estaBaneado`. Si la bandera está en `true`, `Auth` no les permitirá entrar a la app en el próximo log-in.
 
 ---
@@ -382,7 +383,11 @@ El sistema ha superado múltiples auditorías de seguridad (incluyendo escaneos 
 - **Cifrado de Credenciales:** Todas las transacciones de inicio de sesión utilizan algoritmos nativos AES manejados por Google Identity.
 - **Filtro Anti-Review Bombing:** Lógica a nivel de vista y backend para impedir que estudiantes evalúen a tutores de clases a las que nunca asistieron (verificando el `registro_asistencia`).
 
-### 4. Términos, Condiciones y Política de Privacidad de Vecta
+### 4. Autenticación y Ciberseguridad Activa (Hardening)
+- **Firebase App Check (Play Integrity & reCAPTCHA v3):** Se bloqueó el acceso público al ecosistema de Firebase. La base de datos y los buckets solo responden si la petición proviene de un humano en la web (reCAPTCHA v3 invisible) o desde la app oficial de Android sin alterar ni emular (Play Integrity), mitigando el *scraping* y ataques de denegación de servicio.
+- **Hardening de Contraseñas:** Se rechazan claves débiles mediante expresiones regulares. La plataforma exige contraseñas alfanuméricas de al menos 8 caracteres que incluyan obligatoriamente símbolos, mayúsculas y números.
+
+### 5. Términos, Condiciones y Política de Privacidad de Vecta
 Durante el registro, el usuario debe aceptar un contrato legal detallado. A continuación, se desglosa el propósito de cada cláusula estipulada en la aplicación:
 
 1. **Marco Legal y Derechos del Usuario (Derechos ARCO):** Garantiza que Vecta opera bajo la Ley No. 81 de Panamá. Asegura al estudiante que tiene el derecho de **Acceder, Rectificar, Cancelar u Oponerse** al uso de sus datos en cualquier momento.
@@ -417,6 +422,21 @@ El código original, el branding actual, y la base de datos de los primeros prot
 
 ---
 
-> **Versión del Proyecto:** 1.2.0 Release Candidate (Registration & UI Unified Upgrade)  
-> **Auditoría de Seguridad:** Completada y superada con éxito (Google Cloud Rules Enforced).  
+> **Versión del Proyecto:** 1.4.0 (Security Hardening & Production Ready)  
+
+### Registro de Actualizaciones (Changelog v1.4.0)
+- **App Check Integrado:** Firebase backend asegurado contra bots, emuladores root y scripts mediante Play Integrity API y reCAPTCHA v3 invisible.
+- **Filtros de Lenguaje y Toxicidad:** Algoritmo en el `ModeracionServicio` integrado en el formulario de registro y en la creación de peticiones para detectar groserías y ofuscaciones de texto (Leetspeak).
+- **Endurecimiento de Credenciales:** Reglas estrictas en el `RegistroView` exigiendo un mínimo de 8 caracteres, mayúsculas, números y símbolos especiales en la creación de contraseñas.
+- **Alertas Administrativas Automatizadas:** Las calificaciones por debajo de 3 estrellas en el perfil del tutor y las cancelaciones tardías disparan alertas en la central del administrador.
+- **Gráficas de Uso Global:** Se añadió a `MetricasView` un contador y visualización gráfica del impacto real mediante "Horas recibidas por estudiantes".
+
+### Registro de Actualizaciones Histórico (Changelog v1.3.0)
+- **Migración de Dominio:** Transición exitosa del ambiente de pruebas (tutorias-jic.web.app) al subdominio oficial `tutorias-vecta.web.app`.
+- **Identidad Vecta:** Reemplazo de iconos genéricos de Flutter por el logotipo oficial de Vecta en la `LandingScreen`.
+- **Refactorización UI/UX:** Implementación de `LayoutBuilder` en las pantallas de Ayuda y Soporte para asegurar una renderización impecable tanto en navegadores web de escritorio como en dispositivos móviles (Responsive Design).
+- **Formularios Dinámicos:** Integración de un menú desplegable interactivo (`DropdownButtonFormField`) en la vista de Sugerir Tutoría para estandarizar las materias (Cálculo I, Física I, etc.), con una opción "Otros" que despliega dinámicamente un campo de texto adicional.
+- **Auditoría de Código:** Resolución completa de advertencias del compilador (Linter a 0 errores), incluyendo la sustitución de código obsoleto (`.withOpacity` a `.withValues`) y dependencias huérfanas.
+
+> **Auditoría de Seguridad:** Completada y superada con éxito (Google Cloud Rules Enforced & App Check Verified).  
 > **Última actualización:** Abril 2026

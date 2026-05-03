@@ -20,6 +20,7 @@
     }
   },
   "hosting": {
+    "site": "tutorias-vecta",
     "public": "build/web",
     "ignore": [
       "firebase.json",

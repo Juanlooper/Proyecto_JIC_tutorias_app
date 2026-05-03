@@ -78,10 +78,15 @@ class LandingScreen extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Icon(
-              Icons.functions,
-              size: 45,
-              color: AppTheme.primarioVerde,
+            Image.asset(
+              'assets/images/logo_vecta.png',
+              height: 45,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.functions,
+                size: 45,
+                color: AppTheme.primarioVerde,
+              ),
             ),
             const SizedBox(width: 10),
             const Text(
@@ -161,6 +166,18 @@ class LandingScreen extends StatelessWidget {
           ? CrossAxisAlignment.center
           : CrossAxisAlignment.start,
       children: [
+        // --- LOGO GIGANTE VECTA ---
+        Image.asset(
+          'assets/images/logo_vecta.png',
+          height: esMovil ? 100 : 150,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => Icon(
+            Icons.functions,
+            size: esMovil ? 100 : 150,
+            color: AppTheme.primarioVerde,
+          ),
+        ),
+        const SizedBox(height: 24),
         Text(
           'Reserva fácil\ntu tutoría',
           textAlign: esMovil ? TextAlign.center : TextAlign.left,
@@ -174,7 +191,11 @@ class LandingScreen extends StatelessWidget {
         Text(
           'Conéctate con tutores calificados de la UTP y asegura tu éxito académico. Todo listo a un solo clic.',
           textAlign: esMovil ? TextAlign.center : TextAlign.left,
-          style: TextStyle(fontSize: esMovil ? 16 : 18, height: 1.5),
+          style: TextStyle(
+            fontSize: esMovil ? 16 : 18,
+            color: AppTheme.textoOscuro.withValues(alpha: 0.8),
+            height: 1.5,
+          ),
         ),
       ],
     );
@@ -229,10 +250,23 @@ class LandingScreen extends StatelessWidget {
   Widget _buildIlustracion(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primarioVerde.withValues(alpha: 0.1),
+            AppTheme.primarioAzul.withValues(alpha: 0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [BoxShadow(blurRadius: 20, offset: const Offset(0, 10))],
-        border: Border.all(color: AppTheme.grisTexto.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.textoOscuro.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+        border: Border.all(color: AppTheme.grisTexto.withValues(alpha: 0.1)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),

@@ -207,7 +207,7 @@ class TutoriasProvider extends ChangeNotifier {
   }
 
   /// Permite a un estudiante darse de baja (retirar su apoyo/inscripción) de una tutoría, de manera rápida y eficiente sin mutar arrays locales manualmente.
-  Future<bool> abandonarTutoria(String tutoriaId) async {
+  Future<bool> abandonarTutoria(String tutoriaId, {String? excusa}) async {
     _iluminarSenalIndicadoraDeEspera();
     _purgarCasillasDeAdvertencias();
 
@@ -215,7 +215,6 @@ class TutoriasProvider extends ChangeNotifier {
       final uidUsuarioActual = FirebaseAuth.instance.currentUser?.uid;
       if (uidUsuarioActual == null) throw Exception("Debes iniciar sesión para realizar esta acción.");
 
-      // Como abandonarTutoria se usaba también para retirar el apoyo, necesitamos saber si era una sugerencia
       final docSnapshot = await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).get();
       if (!docSnapshot.exists) throw Exception("Tutoría no encontrada.");
       
@@ -228,6 +227,25 @@ class TutoriasProvider extends ChangeNotifier {
         await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).update({
           'listaDeEstudiantesInscritos': FieldValue.arrayRemove([uidUsuarioActual])
         });
+      }
+
+      // Si hay una excusa por cancelación tardía, la reportamos al tribunal
+      if (excusa != null && excusa.trim().isNotEmpty) {
+        await FirebaseFirestore.instance.collection('reportes_tribunal').add({
+          'alumnoId': uidUsuarioActual,
+          'tutoriaId': tutoriaId,
+          'materia': data['materiaOAsignatura'] ?? 'Desconocida',
+          'fechaTutoria': data['fechaHoraSugerida'] ?? '',
+          'excusa': excusa.trim(),
+          'fechaReporte': DateTime.now().toIso8601String(),
+          'estado': 'pendiente', // pendiente, perdonado, penalizado
+        });
+
+        // Notificar a los administradores sobre el nuevo caso en el tribunal
+        await notificarAdministradores(
+          'Nueva Excusa en Tribunal ⚖️',
+          'Un estudiante canceló tardíamente la clase de ${data['materiaOAsignatura'] ?? 'una materia'} y ha enviado una justificación.',
+        );
       }
 
       // Notificar al tutor que un estudiante abandonó
@@ -611,12 +629,41 @@ class TutoriasProvider extends ChangeNotifier {
         for (var entry in asistenciaAlumnos.entries) {
           if (entry.value == false) {
             final usuarioRef = FirebaseFirestore.instance.collection('usuarios').doc(entry.key);
-            transaction.update(usuarioRef, {
-              'strikes_inasistencia': FieldValue.increment(1),
-            });
+            final usuarioSnapshot = await transaction.get(usuarioRef);
+            
+            if (usuarioSnapshot.exists) {
+              final datosUsuario = usuarioSnapshot.data()!;
+              final strikesActuales = datosUsuario['strikes_inasistencia'] ?? 0;
+              final nuevosStrikes = strikesActuales + 1;
+              
+              Map<String, dynamic> actualizacion = {
+                'strikes_inasistencia': nuevosStrikes,
+              };
+              
+              if (nuevosStrikes >= 3) {
+                actualizacion['esta_baneado'] = true;
+              }
+              
+              transaction.update(usuarioRef, actualizacion);
+            }
           }
         }
       });
+
+      // Notificar a los administradores sobre los strikes
+      final uidsPenalizados = asistenciaAlumnos.entries.where((e) => !e.value).map((e) => e.key).toList();
+      if (uidsPenalizados.isNotEmpty) {
+        final adminsSnapshot = await FirebaseFirestore.instance.collection('usuarios').where('rolEnElSistema', isEqualTo: 'admin').get();
+        final adminUids = adminsSnapshot.docs.map((e) => e.id).toList();
+        for (var alumnoUid in uidsPenalizados) {
+          await _notificarMultiples(
+            uids: adminUids,
+            titulo: 'Alerta Administrativa: Strike',
+            mensaje: 'El alumno $alumnoUid recibió un strike por inasistencia en tutoría de id: $tutoriaId.',
+            tipo: 'alerta_roja',
+          );
+        }
+      }
 
       // Refrescar y avisar exito
       await cargarListadoDeTutoriasPendientes();
@@ -860,6 +907,16 @@ class TutoriasProvider extends ChangeNotifier {
         tipo: 'info',
       );
 
+      // Notificar a los administradores sobre la reseña
+      final adminsSnapshot = await db.collection('usuarios').where('rolEnElSistema', isEqualTo: 'admin').get();
+      final adminUids = adminsSnapshot.docs.map((e) => e.id).toList();
+      await _notificarMultiples(
+        uids: adminUids,
+        titulo: 'Alerta Administrativa: Nueva Reseña',
+        mensaje: 'Tutor: $tutorId | Calificación: ${estrellas.toStringAsFixed(0)} | Comentario: $comentario',
+        tipo: estrellas <= 2 ? 'alerta_roja' : 'info',
+      );
+
       _apagarSenalIndicadoraDeEspera();
       // Delegamos la reactividad 100% al StreamBuilder. No invocamos notifyListeners() extra ni recargamos listas locales manualmente.
       return true;
@@ -867,6 +924,52 @@ class TutoriasProvider extends ChangeNotifier {
       _mensajeDeErrorDelSistema = "Fallo en la matriz de red intentando asentar la calificación.";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners(); // Se necesita para mostrar el error localmente
+      return false;
+    }
+  }
+
+  /// Permite al tutor evaluar a un estudiante. (Uso interno/administrativo).
+  Future<bool> enviarEvaluacionEstudiante(String tutoriaId, String estudianteId, double estrellas, String comentario) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final uidTutor = FirebaseAuth.instance.currentUser?.uid;
+      if (uidTutor == null) throw Exception("Sesión inactiva. Vuelve a ingresar.");
+
+      final db = FirebaseFirestore.instance;
+      final docTutoria = db.collection('tutorias').doc(tutoriaId);
+      final docEval = db.collection('evaluaciones_estudiantes').doc();
+
+      await db.runTransaction((transaction) async {
+        transaction.update(docTutoria, {
+          'alumnosEvaluadosPorTutor': FieldValue.arrayUnion([estudianteId])
+        });
+
+        transaction.set(docEval, {
+          'tutorId': uidTutor,
+          'estudianteId': estudianteId,
+          'tutoriaId': tutoriaId,
+          'estrellas': estrellas,
+          'comentario': comentario,
+          'fecha': DateTime.now().toIso8601String(),
+        });
+      });
+
+      // Notificar a los administradores para seguimiento
+      await notificarAdministradores(
+        'Evaluación a Estudiante',
+        'Tutor calificó al alumno $estudianteId con ${estrellas.toStringAsFixed(0)} estrellas. ${comentario.isNotEmpty ? 'Comentario: $comentario' : ''}',
+        tipo: estrellas <= 2 ? 'alerta_roja' : 'info',
+      );
+
+      _apagarSenalIndicadoraDeEspera();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "Error al enviar la evaluación del estudiante.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
       return false;
     }
   }
@@ -924,5 +1027,27 @@ class TutoriasProvider extends ChangeNotifier {
       return false;
     }
   }
-}
+  /// Envía una notificación a todos los administradores del sistema.
+  Future<void> notificarAdministradores(String titulo, String mensaje, {String tipo = 'alerta_admin'}) async {
+    try {
+      final adminsSnapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .where('rolEnElSistema', isEqualTo: 'admin')
+          .get();
 
+      final fechaIso = DateTime.now().toIso8601String();
+      for (var doc in adminsSnapshot.docs) {
+        await FirebaseFirestore.instance.collection('notificaciones').add({
+          'usuarioId': doc.id,
+          'titulo': titulo,
+          'mensaje': mensaje,
+          'fecha': fechaIso,
+          'leida': false,
+          'tipo': tipo,
+        });
+      }
+    } catch (e) {
+      debugPrint('Error al notificar administradores: $e');
+    }
+  }
+}

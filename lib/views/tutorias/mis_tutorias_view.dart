@@ -8,6 +8,7 @@ import '../../providers/tutorias_provider.dart';
 import '../../models/tutoria_model.dart';
 import '../../models/usuario_model.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/moderacion_servicio.dart';
 
 import 'package:table_calendar/table_calendar.dart';
 
@@ -77,8 +78,9 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
                       ),
                       onPressed: () {
                         final controller = DefaultTabController.of(context);
-                        if (controller.index > 0)
+                        if (controller.index > 0) {
                           controller.animateTo(controller.index - 1);
+                        }
                       },
                     ),
                     const Expanded(
@@ -105,8 +107,9 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
                       ),
                       onPressed: () {
                         final controller = DefaultTabController.of(context);
-                        if (controller.index < controller.length - 1)
+                        if (controller.index < controller.length - 1) {
                           controller.animateTo(controller.index + 1);
+                        }
                       },
                     ),
                   ],
@@ -663,6 +666,19 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
               if (motivoCtrl.text.trim().isEmpty) return;
+              if (ModeracionServicio.contieneLenguajeToxico(
+                motivoCtrl.text.trim(),
+              )) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Por favor, redacta un motivo sin lenguaje ofensivo.',
+                    ),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
               Navigator.pop(ctx, true);
             },
             child: const Text('Confirmar Cancelación'),
@@ -702,15 +718,44 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
   }
 
   Future<void> _abandonarTutoriaEstudiante(BuildContext context) async {
+    final horasRestantes = datos.fechaHoraSugerida
+        .difference(DateTime.now())
+        .inHours;
+    final esTarde = horasRestantes < 12;
+    final excusaCtrl = TextEditingController();
+
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text(
-          '¿Seguro que deseas salir?',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          esTarde ? 'Cancelación Tardía (< 12h)' : '¿Seguro que deseas salir?',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: esTarde ? Colors.red : Colors.black87,
+          ),
         ),
-        content: const Text(
-          'Perderás tu cupo en esta tutoría y la comunidad tendrá uno libre disponible.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              esTarde
+                  ? 'Estás cancelando con menos de 12 horas de anticipación. Esto es una falta al reglamento. Debes proveer una justificación válida para el Tribunal de Disciplina o recibirás un Strike.'
+                  : 'Perderás tu cupo en esta tutoría y la comunidad tendrá uno libre disponible.',
+            ),
+            if (esTarde) ...[
+              const SizedBox(height: 16),
+              TextField(
+                controller: excusaCtrl,
+                decoration: const InputDecoration(
+                  labelText: "Motivo de fuerza mayor",
+                  border: OutlineInputBorder(),
+                  hintText: "Ej. Emergencia médica...",
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ],
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
@@ -722,7 +767,25 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
             ),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
+            onPressed: () {
+              if (esTarde && excusaCtrl.text.trim().isEmpty)
+                return; // Requiere texto
+              if (esTarde &&
+                  ModeracionServicio.contieneLenguajeToxico(
+                    excusaCtrl.text.trim(),
+                  )) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Lenguaje inapropiado detectado. Por favor, sé respetuoso.',
+                    ),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(ctx, true);
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               shape: RoundedRectangleBorder(
@@ -740,16 +803,23 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
 
     if (confirmar == true && context.mounted) {
       final proveedor = context.read<TutoriasProvider>();
+      final excusa = esTarde ? excusaCtrl.text.trim() : null;
+
       bool exito = await proveedor.abandonarTutoria(
         datos.identificadorDeTutoria,
+        excusa: excusa,
       );
 
       if (exito && context.mounted) {
         await proveedor.cargarTutoriasSuscritasDelUsuario(uidActual);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Te has dado de baja exitosamente.'),
-            backgroundColor: Colors.black87,
+          SnackBar(
+            content: Text(
+              esTarde
+                  ? 'Has sido dado de baja. Tu excusa fue enviada al Tribunal.'
+                  : 'Te has dado de baja exitosamente.',
+            ),
+            backgroundColor: esTarde ? Colors.orange.shade800 : Colors.black87,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -765,13 +835,21 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
     }
   }
 
-  Widget _construirSelectorEstrellas(BuildContext context, Function(int) alTocar, int valorActual) {
+  Widget _construirSelectorEstrellas(
+    BuildContext context,
+    Function(int) alTocar,
+    int valorActual,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey.shade700
+              : Colors.grey.shade300,
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -948,8 +1026,9 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                                           calculoPromedio,
                                           ctrlComentario.text.trim(),
                                         );
-                                    if (contextDialogo.mounted)
+                                    if (contextDialogo.mounted) {
                                       Navigator.pop(contextDialogo);
+                                    }
                                     if (context.mounted) {
                                       if (fueExitoso) {
                                         ScaffoldMessenger.of(
@@ -1159,7 +1238,12 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
       elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300, width: 1),
+        side: BorderSide(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey.shade700
+              : Colors.grey.shade300,
+          width: 1,
+        ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_theme.dart';
 
 import '../../providers/autenticacion_provider.dart';
@@ -266,14 +267,62 @@ class _MainNavigationViewState extends State<MainNavigationView> {
             // [Campanita de Notificaciones]
             Padding(
               padding: const EdgeInsets.only(right: 4.0),
-              child: IconButton(
-                icon: const Icon(Icons.notifications, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const NotificacionesView(),
-                    ),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('notificaciones')
+                    .where(
+                      'usuarioId',
+                      isEqualTo: usuarioActual.identificadorUnico,
+                    )
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  int noLeidas = 0;
+                  if (snapshot.hasData) {
+                    for (var doc in snapshot.data!.docs) {
+                      final data = doc.data() as Map<String, dynamic>?;
+                      if (data != null && data['leida'] == false) {
+                        noLeidas++;
+                      }
+                    }
+                  }
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.notifications,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const NotificacionesView(),
+                            ),
+                          );
+                        },
+                      ),
+                      if (noLeidas > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.redAccent,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              noLeidas > 9 ? '9+' : noLeidas.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   );
                 },
               ),
@@ -288,7 +337,10 @@ class _MainNavigationViewState extends State<MainNavigationView> {
                   backgroundColor: Colors.white24,
                   child: Icon(Icons.person, color: Colors.white),
                 ),
-                offset: const Offset(0, 45), // Desplazamiento hacia abajo para que no tape el AppBar
+                offset: const Offset(
+                  0,
+                  45,
+                ), // Desplazamiento hacia abajo para que no tape el AppBar
                 onSelected: (String valor) {
                   if (valor == 'perfil') {
                     Navigator.push(

@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/autenticacion_provider.dart';
 import '../../models/usuario_model.dart';
 import '../auth/login_view.dart';
+import '../../core/utils/moderacion_servicio.dart';
 
 class PerfilView extends StatefulWidget {
   const PerfilView({super.key});
@@ -59,6 +60,17 @@ class _PerfilViewState extends State<PerfilView> {
               onPressed: () async {
                 if (llaveFormulario.currentState!.validate()) {
                   final String nuevoValor = controladorCampo.text.trim();
+                  if (ModeracionServicio.contieneLenguajeToxico(nuevoValor)) {
+                    if (contextDialogo.mounted) {
+                      ScaffoldMessenger.of(contextDialogo).showSnackBar(
+                        const SnackBar(
+                          content: Text('Lenguaje inapropiado u ofensivo detectado. Por favor, sé respetuoso.'),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    }
+                    return;
+                  }
                   if (nuevoValor != valorPrevio) {
                     await _actualizarCampoEnFirestore(
                       context,
