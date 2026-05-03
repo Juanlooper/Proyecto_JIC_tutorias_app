@@ -30,7 +30,12 @@ class _NotificacionesViewState extends State<NotificacionesView> {
   Future<void> _cargarNotificaciones() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
-      if (mounted) setState(() { _error = "Sesión inactiva."; _cargando = false; });
+      if (mounted) {
+        setState(() {
+          _error = "Sesión inactiva.";
+          _cargando = false;
+        });
+      }
       return;
     }
 
@@ -53,12 +58,19 @@ class _NotificacionesViewState extends State<NotificacionesView> {
       });
 
       if (mounted) {
-        setState(() { _notificaciones = lista; _cargando = false; _error = null; });
+        setState(() {
+          _notificaciones = lista;
+          _cargando = false;
+          _error = null;
+        });
       }
     } catch (e) {
       debugPrint('ERROR NOTIFICACIONES: $e');
       if (mounted) {
-        setState(() { _error = e.toString(); _cargando = false; });
+        setState(() {
+          _error = e.toString();
+          _cargando = false;
+        });
       }
     }
   }
@@ -105,7 +117,10 @@ class _NotificacionesViewState extends State<NotificacionesView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notificaciones', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Notificaciones',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: AppTheme.primarioAzul,
         foregroundColor: Colors.white,
         centerTitle: true,
@@ -113,20 +128,25 @@ class _NotificacionesViewState extends State<NotificacionesView> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              setState(() { _cargando = true; _error = null; });
+              setState(() {
+                _cargando = true;
+                _error = null;
+              });
               _cargarNotificaciones();
             },
           ),
         ],
       ),
-      backgroundColor: AppTheme.fondoClaro,
+
       body: _buildBody(),
     );
   }
 
   Widget _buildBody() {
     if (_cargando) {
-      return const Center(child: CircularProgressIndicator(color: AppTheme.primarioAzul));
+      return const Center(
+        child: CircularProgressIndicator(color: AppTheme.primarioAzul),
+      );
     }
 
     if (_error != null) {
@@ -140,11 +160,18 @@ class _NotificacionesViewState extends State<NotificacionesView> {
               const SizedBox(height: 16),
               const Text("No se pudieron cargar las notificaciones."),
               const SizedBox(height: 8),
-              SelectableText(_error!, style: const TextStyle(fontSize: 11, color: Colors.grey), textAlign: TextAlign.center),
+              SelectableText(
+                _error!,
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: () {
-                  setState(() { _cargando = true; _error = null; });
+                  setState(() {
+                    _cargando = true;
+                    _error = null;
+                  });
                   _cargarNotificaciones();
                 },
                 icon: const Icon(Icons.refresh),
@@ -161,9 +188,16 @@ class _NotificacionesViewState extends State<NotificacionesView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.notifications_off_outlined, size: 64, color: Colors.grey.shade400),
+            Icon(
+              Icons.notifications_off_outlined,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
             const SizedBox(height: 16),
-            Text('No tienes notificaciones.', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+            Text(
+              'No tienes notificaciones.',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+            ),
           ],
         ),
       );
@@ -181,7 +215,9 @@ class _NotificacionesViewState extends State<NotificacionesView> {
         final fechaRaw = data['fecha'] ?? '';
 
         DateTime? fecha;
-        try { fecha = DateTime.parse(fechaRaw); } catch (_) {}
+        try {
+          fecha = DateTime.parse(fechaRaw);
+        } catch (_) {}
 
         final fechaStr = fecha != null
             ? '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')} - ${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')} Hrs'
@@ -193,14 +229,21 @@ class _NotificacionesViewState extends State<NotificacionesView> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: leida ? Colors.grey.shade300 : AppTheme.primarioAzul.withValues(alpha: 0.3),
+              color: leida
+                  ? Colors.grey.shade300
+                  : AppTheme.primarioAzul.withValues(alpha: 0.3),
             ),
           ),
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
             leading: CircleAvatar(
-              backgroundColor: leida ? Colors.grey.shade300 : AppTheme.primarioAzul.withValues(alpha: 0.1),
+              backgroundColor: leida
+                  ? Colors.grey.shade300
+                  : AppTheme.primarioAzul.withValues(alpha: 0.1),
               child: Icon(
                 Icons.notifications,
                 color: leida ? Colors.grey.shade600 : AppTheme.primarioAzul,
@@ -210,7 +253,6 @@ class _NotificacionesViewState extends State<NotificacionesView> {
               titulo,
               style: TextStyle(
                 fontWeight: leida ? FontWeight.normal : FontWeight.bold,
-                color: Colors.black87,
               ),
             ),
             subtitle: Column(
@@ -220,8 +262,11 @@ class _NotificacionesViewState extends State<NotificacionesView> {
                 Text(mensaje, style: TextStyle(color: Colors.grey.shade700)),
                 if (fechaStr.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  Text(fechaStr, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                ]
+                  Text(
+                    fechaStr,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
               ],
             ),
             trailing: IconButton(
@@ -231,9 +276,11 @@ class _NotificacionesViewState extends State<NotificacionesView> {
             ),
             onTap: () {
               if (!leida && notificacionId.isNotEmpty) {
-                FirebaseFirestore.instance.collection('notificaciones').doc(notificacionId).update({
-                  'leida': true,
-                }).catchError((_) {});
+                FirebaseFirestore.instance
+                    .collection('notificaciones')
+                    .doc(notificacionId)
+                    .update({'leida': true})
+                    .catchError((_) {});
                 setState(() {
                   _notificaciones[index]['leida'] = true;
                 });

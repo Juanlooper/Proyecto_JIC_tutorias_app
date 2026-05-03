@@ -16,7 +16,7 @@ class ExplorarView extends StatefulWidget {
 class _ExplorarViewState extends State<ExplorarView> {
   final TextEditingController _controladorDeBusqueda = TextEditingController();
   String _terminoBusqueda = '';
-  
+
   @override
   void initState() {
     super.initState();
@@ -39,15 +39,16 @@ class _ExplorarViewState extends State<ExplorarView> {
     final elUsuario = identidadMotor.usuarioActual;
 
     if (elUsuario == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nuestra comunidad', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-        backgroundColor: Colors.transparent,
+        title: const Text(
+          'Nuestra comunidad',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+
         elevation: 0,
       ),
       body: Column(
@@ -69,30 +70,52 @@ class _ExplorarViewState extends State<ExplorarView> {
           // Grilla Principal usando StreamBuilder para Reactividad Total
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('usuarios').where('rolEnElSistema', isEqualTo: 'tutor').snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('usuarios')
+                  .where('rolEnElSistema', isEqualTo: 'tutor')
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                
+
                 if (snapshot.hasError) {
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(32.0),
-                      child: Text('Error de red al cargar tutores.', style: TextStyle(color: Colors.redAccent)),
-                    )
+                      child: Text(
+                        'Error de red al cargar tutores.',
+                        style: TextStyle(color: Colors.redAccent),
+                      ),
+                    ),
                   );
                 }
 
                 final docs = snapshot.data?.docs ?? [];
-                List<UsuarioModel> tutoresVirtuales = docs.map((d) => UsuarioModel.fromMap(d.data() as Map<String, dynamic>)).toList();
+                List<UsuarioModel> tutoresVirtuales = docs
+                    .map(
+                      (d) => UsuarioModel.fromMap(
+                        d.data() as Map<String, dynamic>,
+                      ),
+                    )
+                    .toList();
 
                 if (_terminoBusqueda.isNotEmpty) {
                   tutoresVirtuales = tutoresVirtuales.where((maestro) {
-                    final concuerdaNombre = maestro.nombreCompleto.toLowerCase().contains(_terminoBusqueda);
-                    final concuerdaFacultad = (maestro.facultad?.toLowerCase() ?? '').contains(_terminoBusqueda);
-                    final concuerdaCarrera = (maestro.carrera?.toLowerCase() ?? '').contains(_terminoBusqueda);
-                    return concuerdaNombre || concuerdaFacultad || concuerdaCarrera;
+                    final concuerdaNombre = maestro.nombreCompleto
+                        .toLowerCase()
+                        .contains(_terminoBusqueda);
+                    final concuerdaFacultad =
+                        (maestro.facultad?.toLowerCase() ?? '').contains(
+                          _terminoBusqueda,
+                        );
+                    final concuerdaCarrera =
+                        (maestro.carrera?.toLowerCase() ?? '').contains(
+                          _terminoBusqueda,
+                        );
+                    return concuerdaNombre ||
+                        concuerdaFacultad ||
+                        concuerdaCarrera;
                   }).toList();
                 }
 
@@ -110,15 +133,18 @@ class _ExplorarViewState extends State<ExplorarView> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
                   itemCount: tutoresVirtuales.length,
                   itemBuilder: (context, index) {
                     final mentor = tutoresVirtuales[index];
                     return TarjetaComunidad(mentor: mentor);
                   },
                 );
-              }
-            )
+              },
+            ),
           ),
         ],
       ),
@@ -138,9 +164,8 @@ class TarjetaComunidad extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: Colors.grey.shade300, width: 1),
+        side: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300, width: 1),
       ),
-      color: Colors.white,
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -162,13 +187,13 @@ class TarjetaComunidad extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: Color(0xFF1E293B), // Oscuro corporativo
+                    // Oscuro corporativo
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              
+
               // Columna Central: Área de especialidad
               Expanded(
                 flex: 4,
@@ -211,8 +236,8 @@ class TarjetaComunidad extends StatelessWidget {
                         return Icon(
                           Icons.star,
                           size: 16,
-                          color: index < estrellasLlenas 
-                              ? Colors.teal.shade500 
+                          color: index < estrellasLlenas
+                              ? Colors.teal.shade500
                               : Colors.grey.shade300,
                         );
                       }),

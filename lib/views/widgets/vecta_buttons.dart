@@ -76,7 +76,9 @@ class VectaButtonSecondary extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primarioVerde,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: AppTheme.primarioVerde.withValues(alpha: 0.6),
+          disabledBackgroundColor: AppTheme.primarioVerde.withValues(
+            alpha: 0.6,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

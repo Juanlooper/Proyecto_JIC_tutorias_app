@@ -38,4 +38,29 @@ class AppTheme {
       ),
     );
   }
+
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      scaffoldBackgroundColor: const Color(0xFF121212), // Fondo oscuro
+      colorScheme: ColorScheme.fromSeed(
+        brightness: Brightness.dark,
+        seedColor: primarioAzul,
+        primary: primarioAzul,
+        secondary: primarioVerde,
+        surface: const Color(0xFF121212), // Tarjetas y paneles oscuros
+      ),
+      textTheme: GoogleFonts.interTextTheme().copyWith(
+        displayLarge: GoogleFonts.poppins(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+        titleLarge: GoogleFonts.poppins(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+        bodyMedium: GoogleFonts.inter(color: Colors.white70),
+      ),
+    );
+  }
 }

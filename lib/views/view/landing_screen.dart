@@ -45,7 +45,6 @@ class LandingScreen extends StatelessWidget {
         bool esMovil = constraints.maxWidth < 800;
 
         return Scaffold(
-          backgroundColor: AppTheme.fondoClaro,
           body: SingleChildScrollView(
             child: Padding(
               padding: EdgeInsets.symmetric(
@@ -92,11 +91,7 @@ class LandingScreen extends StatelessWidget {
             const SizedBox(width: 10),
             const Text(
               'VECTA',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textoOscuro,
-              ),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -106,10 +101,7 @@ class LandingScreen extends StatelessWidget {
               onPressed: () => _irAAyuda(context),
               child: Text(
                 'Ayuda',
-                style: TextStyle(
-                  color: AppTheme.textoOscuro,
-                  fontSize: esMovil ? 14 : 16,
-                ),
+                style: TextStyle(fontSize: esMovil ? 14 : 16),
               ),
             ),
             const SizedBox(width: 15),
@@ -193,7 +185,6 @@ class LandingScreen extends StatelessWidget {
             fontSize: esMovil ? 36 : 60,
             fontWeight: FontWeight.bold,
             height: 1.1,
-            color: AppTheme.textoOscuro,
           ),
         ),
         const SizedBox(height: 20),

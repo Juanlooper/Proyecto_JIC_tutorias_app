@@ -5,17 +5,22 @@ import '../../core/theme/app_theme.dart';
 class TribunalBaneosView extends StatelessWidget {
   const TribunalBaneosView({super.key});
 
-  Future<void> _perdonarBaneo(BuildContext context, String docId, String nombre) async {
+  Future<void> _perdonarBaneo(
+    BuildContext context,
+    String docId,
+    String nombre,
+  ) async {
     try {
-      await FirebaseFirestore.instance.collection('usuarios').doc(docId).update({
-        'esta_baneado': false,
-        'strikes_inasistencia': 0,
-      });
+      await FirebaseFirestore.instance.collection('usuarios').doc(docId).update(
+        {'esta_baneado': false, 'strikes_inasistencia': 0},
+      );
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('La cuenta de $nombre ha sido perdonada y restaurada.'),
+            content: Text(
+              'La cuenta de $nombre ha sido perdonada y restaurada.',
+            ),
             backgroundColor: AppTheme.primarioVerde,
           ),
         );

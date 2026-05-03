@@ -26,16 +26,12 @@ class MisSugerenciasView extends StatelessWidget {
     final esTutor = elUsuario.tieneRol(RolSistema.tutor);
 
     return Scaffold(
-      backgroundColor: AppTheme.fondoClaro,
       appBar: AppBar(
         title: const Text(
           "Bolsa de Sugerencias",
-          style: TextStyle(
-            color: Color(0xFF1E293B),
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.transparent,
+
         elevation: 0,
         centerTitle: true,
       ),
@@ -104,17 +100,13 @@ class MisSugerenciasView extends StatelessWidget {
           const SizedBox(height: 16),
           const Text(
             "La bolsa está vacía.",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black45,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           const Text(
             "¡Sé el primero en proponer una tutoría!",
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.black38),
+            style: TextStyle(fontSize: 14),
           ),
         ],
       ),
@@ -236,9 +228,8 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade300, width: 1.0),
+        side: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300, width: 1.0),
       ),
-      color: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -253,7 +244,6 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
-                      color: Color(0xFF1E293B),
                     ),
                   ),
                 ),
@@ -285,7 +275,7 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Tema: ${sugerencia.temaEspecifico}',
-              style: const TextStyle(fontSize: 14, color: Colors.black87),
+              style: const TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 16),
             const Divider(height: 1),

@@ -11,7 +11,8 @@ class ComunidadSugerenciasView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final motorAutenticacion = context.read<AutenticacionProvider>();
-    final uidUsuarioActual = motorAutenticacion.usuarioActual?.identificadorUnico;
+    final uidUsuarioActual =
+        motorAutenticacion.usuarioActual?.identificadorUnico;
 
     if (uidUsuarioActual == null) {
       return const Scaffold(
@@ -20,20 +21,16 @@ class ComunidadSugerenciasView extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FC),
+      
       appBar: AppBar(
         title: const Text(
           "Bolsa de la Comunidad",
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20),
         ),
-        backgroundColor: Colors.transparent,
+
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        iconTheme: const IconThemeData(),
       ),
       body: StreamBuilder<QuerySnapshot>(
         // Optimizamos interceptando al menos el estado principal desde la petición para aminorar los datos locales
@@ -48,7 +45,9 @@ class ComunidadSugerenciasView extends StatelessWidget {
             );
           }
           if (snapshot.hasError) {
-            return const Center(child: Text("Algo salió mal al conectar con la base de datos."));
+            return const Center(
+              child: Text("Algo salió mal al conectar con la base de datos."),
+            );
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -57,11 +56,16 @@ class ComunidadSugerenciasView extends StatelessWidget {
 
           // Filtro estricto local secundario: Extraemos SOLO las que carecen de identificador de tutor
           final documentosCrudos = snapshot.data!.docs;
-          final peticionesComunitarias = documentosCrudos.map((doc) {
-            return TutoriaModel.fromMap(doc.data() as Map<String, dynamic>);
-          }).where((modelo) {
-            return modelo.identificadorDelTutor.isEmpty; // Refuerzo de regla arquitectónica
-          }).toList();
+          final peticionesComunitarias = documentosCrudos
+              .map((doc) {
+                return TutoriaModel.fromMap(doc.data() as Map<String, dynamic>);
+              })
+              .where((modelo) {
+                return modelo
+                    .identificadorDelTutor
+                    .isEmpty; // Refuerzo de regla arquitectónica
+              })
+              .toList();
 
           if (peticionesComunitarias.isEmpty) {
             return _construirEstadoVacio();
@@ -73,31 +77,38 @@ class ComunidadSugerenciasView extends StatelessWidget {
             itemCount: peticionesComunitarias.length,
             itemBuilder: (context, index) {
               final recomendacionGlobal = peticionesComunitarias[index];
-              final bool apoyaActualmente = recomendacionGlobal.listaDeEstudiantesInscritos.contains(uidUsuarioActual);
+              final bool apoyaActualmente = recomendacionGlobal
+                  .listaDeEstudiantesInscritos
+                  .contains(uidUsuarioActual);
 
               return _TarjetaVotacionComunitaria(
                 sugerencia: recomendacionGlobal,
                 yaEstaUnido: apoyaActualmente,
                 onUnirseClick: () async {
-                  final managerLogic = Provider.of<TutoriasProvider>(context, listen: false);
-                  bool completado = await managerLogic.apoyarSugerencia(recomendacionGlobal.identificadorDeTutoria);
+                  final managerLogic = Provider.of<TutoriasProvider>(
+                    context,
+                    listen: false,
+                  );
+                  bool completado = await managerLogic.apoyarSugerencia(
+                    recomendacionGlobal.identificadorDeTutoria,
+                  );
 
                   if (completado && context.mounted) {
-                     ScaffoldMessenger.of(context).showSnackBar(
-                       const SnackBar(
-                         content: Text('¡Te has sumado a la solicitud!'),
-                         backgroundColor: Colors.green,
-                         behavior: SnackBarBehavior.floating,
-                       )
-                     );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('¡Te has sumado a la solicitud!'),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
                   } else if (context.mounted) {
-                     ScaffoldMessenger.of(context).showSnackBar(
-                       SnackBar(
-                         content: Text(managerLogic.mensajeDeErrorDelSistema),
-                         backgroundColor: Colors.redAccent,
-                         behavior: SnackBarBehavior.floating,
-                       )
-                     );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(managerLogic.mensajeDeErrorDelSistema),
+                        backgroundColor: Colors.redAccent,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
                   }
                 },
               );
@@ -117,17 +128,13 @@ class ComunidadSugerenciasView extends StatelessWidget {
           const SizedBox(height: 16),
           const Text(
             "La bolsa está silenciosa...",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.black45,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           const Text(
             "Actualmente no hay sugerencias\nen espera de profesor.",
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.black38),
+            style: TextStyle(fontSize: 14),
           ),
         ],
       ),
@@ -150,21 +157,25 @@ class _TarjetaVotacionComunitaria extends StatelessWidget {
   Widget build(BuildContext context) {
     // Computar Date y Time presentables
     final controlDia = sugerencia.fechaHoraSugerida;
-    final diaFormateado = "${controlDia.day.toString().padLeft(2, '0')}/${controlDia.month.toString().padLeft(2, '0')}/${controlDia.year}";
-    final TimeOfDay relojUI = TimeOfDay(hour: controlDia.hour, minute: controlDia.minute);
-    
+    final diaFormateado =
+        "${controlDia.day.toString().padLeft(2, '0')}/${controlDia.month.toString().padLeft(2, '0')}/${controlDia.year}";
+    final TimeOfDay relojUI = TimeOfDay(
+      hour: controlDia.hour,
+      minute: controlDia.minute,
+    );
+
     // UI del contador atractivo
     final int apoyo = sugerencia.listaDeEstudiantesInscritos.length;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+        border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -183,13 +194,17 @@ class _TarjetaVotacionComunitaria extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6C63FF).withValues(alpha: 0.1),
+                    color: const Color(0xFF6C63FF),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.school_rounded, color: Color(0xFF6C63FF), size: 28),
+                  child: const Icon(
+                    Icons.school_rounded,
+                    color: Color(0xFF6C63FF),
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(width: 16),
-                
+
                 // Metadatos
                 Expanded(
                   child: Column(
@@ -200,21 +215,43 @@ class _TarjetaVotacionComunitaria extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF2C2C2C),
+                          
                         ),
                       ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          Icon(Icons.calendar_today_rounded, size: 14, color: Colors.grey[500]),
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            size: 14,
+                            color: Colors.grey[500],
+                          ),
                           const SizedBox(width: 4),
-                          Text(diaFormateado, style: TextStyle(fontSize: 13, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+                          Text(
+                            diaFormateado,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                           const SizedBox(width: 12),
-                          Icon(Icons.access_time_rounded, size: 14, color: Colors.grey[500]),
+                          Icon(
+                            Icons.access_time_rounded,
+                            size: 14,
+                            color: Colors.grey[500],
+                          ),
                           const SizedBox(width: 4),
-                          Text(relojUI.format(context), style: TextStyle(fontSize: 13, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+                          Text(
+                            relojUI.format(context),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ],
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -226,54 +263,64 @@ class _TarjetaVotacionComunitaria extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Container(
-               padding: const EdgeInsets.all(12),
-               decoration: BoxDecoration(
-                 color: const Color(0xFFF4F7FC),
-                 borderRadius: BorderRadius.circular(8),
-               ),
-               child: Text(
-                 "Tema sugerido: ${sugerencia.temaEspecifico}",
-                 style: const TextStyle(
-                   color: Colors.black87,
-                   fontSize: 13,
-                   fontStyle: FontStyle.italic,
-                   height: 1.4,
-                 ),
-               ),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                "Tema sugerido: ${sugerencia.temaEspecifico}",
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                  height: 1.4,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 16),
 
           // Sección Inferior (Footer): Interacción y Contador Social
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 12.0,
+            ),
             decoration: BoxDecoration(
-               border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.15))),
+              border: Border(
+                top: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey),
+              ),
             ),
             child: Row(
-               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-               children: [
-                 // Contador Social Estilizado
-                 Row(
-                   children: [
-                     Icon(Icons.group_add_rounded, size: 20, color: Colors.grey[600]),
-                     const SizedBox(width: 6),
-                     Text(
-                       "Apoyando: $apoyo",
-                       style: const TextStyle(
-                         fontSize: 14,
-                         fontWeight: FontWeight.bold,
-                         color: Colors.black54,
-                       ),
-                     ),
-                   ],
-                 ),
-                 
-                 // Condicional del Botón (Pilar vital del UX)
-                 yaEstaUnido 
-                   ? _BotonDespachadoGris(texto: "Ya apoyas esta clase")
-                   : _BotonActivoVerde(texto: "Apoyar y Unirse", alPresionar: onUnirseClick),
-               ],
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Contador Social Estilizado
+                Row(
+                  children: [
+                    Icon(
+                      Icons.group_add_rounded,
+                      size: 20,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      "Apoyando: $apoyo",
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Condicional del Botón (Pilar vital del UX)
+                yaEstaUnido
+                    ? _BotonDespachadoGris(texto: "Ya apoyas esta clase")
+                    : _BotonActivoVerde(
+                        texto: "Apoyar y Unirse",
+                        alPresionar: onUnirseClick,
+                      ),
+              ],
             ),
           ),
         ],
@@ -315,19 +362,19 @@ class _BotonDespachadoGris extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-       decoration: BoxDecoration(
-         color: Colors.grey[200],
-         borderRadius: BorderRadius.circular(10),
-       ),
-       child: Text(
-         texto,
-         style: TextStyle(
-           color: Colors.grey[600],
-           fontWeight: FontWeight.w600,
-           fontSize: 13,
-         ),
-       ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        texto,
+        style: TextStyle(
+          color: Colors.grey[600],
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+        ),
+      ),
     );
   }
 }

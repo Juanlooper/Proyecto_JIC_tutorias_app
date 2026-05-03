@@ -15,8 +15,8 @@ import '../tutorias/mis_tutorias_view.dart';
 import '../estudiante/sugerir_tutoria_view.dart';
 import '../estudiante/mis_sugerencias_view.dart';
 import '../notifications/notificaciones_view.dart';
+import '../../providers/tema_provider.dart';
 
-// Importamos tu nueva pantalla diseñada hoy
 import '../tutor/dashboard_tutor_view.dart';
 import '../admin/admin_dashboard_view.dart';
 
@@ -67,7 +67,7 @@ class _MainNavigationViewState extends State<MainNavigationView> {
         await showModalBottomSheet(
           context: context,
           isScrollControlled: true,
-          backgroundColor: Colors.transparent,
+
           builder: (context) =>
               TutorialVectaWidget(rol: usuario.rolEnElSistema),
         );
@@ -270,7 +270,10 @@ class _MainNavigationViewState extends State<MainNavigationView> {
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('notificaciones')
-                    .where('usuarioId', isEqualTo: usuarioActual.identificadorUnico)
+                    .where(
+                      'usuarioId',
+                      isEqualTo: usuarioActual.identificadorUnico,
+                    )
                     .snapshots(),
                 builder: (context, snapshot) {
                   int noLeidas = 0;
@@ -286,9 +289,17 @@ class _MainNavigationViewState extends State<MainNavigationView> {
                     alignment: Alignment.center,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.notifications, color: Colors.white),
+                        icon: const Icon(
+                          Icons.notifications,
+                          color: Colors.white,
+                        ),
                         onPressed: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificacionesView()));
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const NotificacionesView(),
+                            ),
+                          );
                         },
                       ),
                       if (noLeidas > 0)
@@ -317,20 +328,29 @@ class _MainNavigationViewState extends State<MainNavigationView> {
               ),
             ),
 
-            // [Icono de Perfil]
+            // [Icono de Perfil Desplegable]
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
-              child: IconButton(
+              child: PopupMenuButton<String>(
+                // Icono visual del botón (el mismo que teníamos antes)
                 icon: const CircleAvatar(
                   backgroundColor: Colors.white24,
                   child: Icon(Icons.person, color: Colors.white),
                 ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const PerfilView()),
-                  );
+                offset: const Offset(
+                  0,
+                  45,
+                ), // Desplazamiento hacia abajo para que no tape el AppBar
+                onSelected: (String valor) {
+                  if (valor == 'perfil') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PerfilView()),
+                    );
+                  }
                 },
+                // Lógica de construcción de las opciones del menú delegada a un método
+                itemBuilder: _construirMenuDeOpciones,
               ),
             ),
           ],
@@ -364,5 +384,54 @@ class _MainNavigationViewState extends State<MainNavigationView> {
               ),
             ),
     );
+  }
+
+  /// [Arquitectura UI]
+  /// Método para construir las opciones del menú desplegable del perfil.
+  /// Retorna una lista de PopupMenuEntry para inyectar en el PopupMenuButton.
+  /// Contiene la lógica visual de las opciones, delegando el estado del
+  /// Switch de modo oscuro a un StatefulBuilder interno para aislar la reconstrucción.
+  List<PopupMenuEntry<String>> _construirMenuDeOpciones(BuildContext context) {
+    return <PopupMenuEntry<String>>[
+      const PopupMenuItem<String>(
+        value: 'perfil',
+        child: Row(
+          children: [
+            Icon(Icons.person_outline),
+            SizedBox(width: 12),
+            Text('Perfil'),
+          ],
+        ),
+      ),
+      const PopupMenuDivider(),
+      PopupMenuItem<String>(
+        value: 'tema',
+        // Deshabilitamos el tap general para manejar solo el Switch
+        enabled: false,
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.dark_mode_outlined),
+                    SizedBox(width: 12),
+                    Text('Modo oscuro', style: TextStyle()),
+                  ],
+                ),
+                Switch(
+                  // Leemos el valor global en lugar de una variable local
+                  value: context.watch<TemaProvider>().esModoOscuro,
+                  onChanged: (bool nuevoValor) {
+                    context.read<TemaProvider>().alternarTema(nuevoValor);
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    ];
   }
 }

@@ -18,15 +18,13 @@ class _MetricasViewState extends State<MetricasView> {
   int _tutoriasPendientes = 0;
   int _tutoriasFinalizadas = 0;
   int _tutoriasCanceladas = 0;
-  
+
   // Frecuencia por materia
   final Map<String, int> _materiasSolicitadas = {};
-  
   // Horas
   final Map<String, double> _horasPorTutor = {};
   final Map<String, double> _horasPorMateria = {};
   final Map<String, double> _horasPorAlumno = {};
-  
   bool _estaCargando = true;
 
   @override
@@ -37,8 +35,10 @@ class _MetricasViewState extends State<MetricasView> {
 
   Future<void> _cargarDatosYProcesarMetric() async {
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('tutorias').get();
-      
+      final snapshot = await FirebaseFirestore.instance
+          .collection('tutorias')
+          .get();
+
       int pendientes = 0;
       int finalizadas = 0;
       int canceladas = 0;
@@ -46,7 +46,7 @@ class _MetricasViewState extends State<MetricasView> {
 
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        
+
         // 1. Conteo de Estados
         final estado = data['estadoDeLaSolicitud'] ?? 'solicitada';
         if (estado == 'finalizada') {
@@ -60,12 +60,14 @@ class _MetricasViewState extends State<MetricasView> {
         // 2. Conteo de Materias
         final materia = data['materiaOAsignatura'] as String? ?? 'Desconocida';
         // Reducimos el string si es muy largo para la gráfica de barras
-        final nombreCorto = materia.length > 6 ? materia.substring(0, 6) : materia;
-        
+        final nombreCorto = materia.length > 6
+            ? materia.substring(0, 6)
+            : materia;
+
         // Sumamos la cantidad de inscritos
-        final inscritos = data['listaDeEstudiantesInscritos'] as List<dynamic>? ?? [];
+        final inscritos =
+            data['listaDeEstudiantesInscritos'] as List<dynamic>? ?? [];
         final numInscritos = inscritos.length;
-        
         conteoMaterias[nombreCorto] = (conteoMaterias[nombreCorto] ?? 0) + numInscritos;
 
         if (estado == 'finalizada') {
@@ -82,7 +84,7 @@ class _MetricasViewState extends State<MetricasView> {
           }
         }
       }
-      
+
       if (mounted) {
         setState(() {
           _tutoriasPendientes = pendientes;
@@ -95,15 +97,20 @@ class _MetricasViewState extends State<MetricasView> {
     } catch (e) {
       if (mounted) {
         setState(() => _estaCargando = false);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al procesar gráficas o conectar con la base de datos.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Error al procesar gráficas o conectar con la base de datos.',
+            ),
+          ),
+        );
       }
     }
   }
 
-
   Widget _buildContenidoMetricas() {
-    return _estaCargando 
-        ? const Center(child: CircularProgressIndicator()) 
+    return _estaCargando
+        ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -112,13 +119,13 @@ class _MetricasViewState extends State<MetricasView> {
                 _buildTitulo('Estado Global de Sesiones'),
                 const SizedBox(height: 16),
                 _buildPieChartCard(),
-                
+
                 const SizedBox(height: 32),
-                
+
                 _buildTitulo('Demanda por Materias (Alumnos Inscritos)'),
                 const SizedBox(height: 16),
                 _buildBarChartCard(),
-                
+
                 const SizedBox(height: 32),
                 _buildTitulo('Horas Impartidas por Tutor'),
                 const SizedBox(height: 16),
@@ -143,10 +150,19 @@ class _MetricasViewState extends State<MetricasView> {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         onPressed: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ListaEstudiantesView()));
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ListaEstudiantesView(),
+                            ),
+                          );
                         },
                         icon: const Icon(Icons.people),
-                        label: const Text('Directorio de Estudiantes', textAlign: TextAlign.center, style: TextStyle(fontSize: 12)),
+                        label: const Text(
+                          'Directorio de Estudiantes',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -157,15 +173,24 @@ class _MetricasViewState extends State<MetricasView> {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         onPressed: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const HistorialTutoriasView()));
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HistorialTutoriasView(),
+                            ),
+                          );
                         },
                         icon: const Icon(Icons.history_edu),
-                        label: const Text('Historial General', textAlign: TextAlign.center, style: TextStyle(fontSize: 12)),
+                        label: const Text(
+                          'Historial General',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 48), // Padding inferior
               ],
             ),
@@ -177,7 +202,6 @@ class _MetricasViewState extends State<MetricasView> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: AppTheme.fondoClaro,
         appBar: AppBar(
           title: const Text('Métricas y Análisis'),
           backgroundColor: AppTheme.primarioVerde,
@@ -192,7 +216,9 @@ class _MetricasViewState extends State<MetricasView> {
                       icon: const Icon(Icons.chevron_left, color: Colors.white),
                       onPressed: () {
                         final controller = DefaultTabController.of(context);
-                        if (controller.index > 0) controller.animateTo(controller.index - 1);
+                        if (controller.index > 0) {
+                          controller.animateTo(controller.index - 1);
+                        }
                       },
                     ),
                     const Expanded(
@@ -201,21 +227,29 @@ class _MetricasViewState extends State<MetricasView> {
                         unselectedLabelColor: Colors.white60,
                         indicatorColor: Colors.white,
                         tabs: [
-                          Tab(icon: Icon(Icons.bar_chart), text: 'Estadísticas'),
+                          Tab(
+                            icon: Icon(Icons.bar_chart),
+                            text: 'Estadísticas',
+                          ),
                           Tab(icon: Icon(Icons.security), text: 'Moderación'),
                         ],
                       ),
                     ),
                     IconButton(
-                        icon: const Icon(Icons.chevron_right, color: Colors.white),
-                        onPressed: () {
-                          final controller = DefaultTabController.of(context);
-                          if (controller.index < controller.length - 1) controller.animateTo(controller.index + 1);
-                        },
+                      icon: const Icon(
+                        Icons.chevron_right,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        final controller = DefaultTabController.of(context);
+                        if (controller.index < controller.length - 1) {
+                          controller.animateTo(controller.index + 1);
+                        }
+                      },
                     ),
                   ],
                 );
-              }
+              },
             ),
           ),
         ),
@@ -232,14 +266,17 @@ class _MetricasViewState extends State<MetricasView> {
   Widget _buildTitulo(String titulo) {
     return Text(
       titulo,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textoOscuro),
+      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       textAlign: TextAlign.center,
     );
   }
 
   Widget _buildPieChartCard() {
-    final todosCero = _tutoriasPendientes == 0 && _tutoriasFinalizadas == 0 && _tutoriasCanceladas == 0;
-    
+    final todosCero =
+        _tutoriasPendientes == 0 &&
+        _tutoriasFinalizadas == 0 &&
+        _tutoriasCanceladas == 0;
+
     return Card(
       elevation: 8,
       shadowColor: Colors.black12,
@@ -372,7 +409,8 @@ class _MetricasViewState extends State<MetricasView> {
                   sideTitles: SideTitles(
                     showTitles: true,
                     getTitlesWidget: (double value, TitleMeta meta) {
-                      if (value.toInt() >= 0 && value.toInt() < limitesKeys.length) {
+                      if (value.toInt() >= 0 &&
+                          value.toInt() < limitesKeys.length) {
                         return Padding(
                           padding: const EdgeInsets.only(top: 12.0),
                           child: Text(
