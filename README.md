@@ -52,10 +52,15 @@ Es una aplicación móvil y web escalable que conecta estudiantes que necesitan 
 
 A continuación, se detalla a qué vistas (pantallas) tiene acceso cada rol en la aplicación:
 
+**0. Público (No autenticado o Accesible por todos)**
+- **Bienvenida (`LandingScreen`)**: Pantalla de aterrizaje con la identidad visual oficial de Vecta.
+- **Ayuda y Soporte (`AyudaScreen`, `SoporteScreen`)**: Secciones de preguntas frecuentes y formulario para contactar a soporte técnico.
+
 **1. Estudiante**
 - **Cartelera (`HomeView`)**: Feed principal de clases ofertadas por tutores.
 - **Mis Tutorías (`MisTutoriasView`)**: Listado de clases a las que el estudiante se ha inscrito.
 - **Sugerencias (`MisSugerenciasView`)**: Historial y estado de las tutorías solicitadas en la Bolsa.
+- **Bolsa de la Comunidad (`ComunidadSugerenciasView`)**: Vista donde los estudiantes pueden ver solicitudes huérfanas creadas por otros y apoyarlas sumándose a ellas.
 - **Comunidad (`ExplorarView`)**: Buscador general de la comunidad de tutores y sus reseñas.
 - **Perfil (`PerfilView`)**: Gestión de datos académicos y biografía.
 - **Notificaciones (`NotificacionesView`)**: Centro In-App de alertas.
@@ -71,6 +76,10 @@ A continuación, se detalla a qué vistas (pantallas) tiene acceso cada rol en l
 - *Tiene acceso a las pantallas base del estudiante, y además:*
 - **Métricas (`AdminDashboardView` / `MetricasView`)**: Centro de mando con gráficas y estadísticas globales del uso del sistema.
 - **Tribunal de Baneos (`TribunalBaneosView`)**: Panel para resolver quejas, auditar cancelaciones y banear usuarios.
+- **Buzón de Postulaciones (`BuzonPostulacionesView`)**: Interfaz para revisar y aprobar o rechazar a estudiantes que desean convertirse en tutores.
+- **Historial de Tutorías (`HistorialTutoriasView`)**: Registro general y auditable de todas las tutorías dadas en la plataforma.
+- **Lista de Estudiantes (`ListaEstudiantesView`)**: Panel de listado y gestión de la totalidad de usuarios registrados en el sistema.
+- **Quejas (`QuejasView`)**: Panel dedicado exclusivamente a la revisión de denuncias emitidas contra tutores.
 
 ---
 
@@ -224,13 +233,15 @@ Toda la aplicación reactiva es controlada aquí mediante `ChangeNotifier`:
 
 | Categoría | Vistas Principales | Descripción |
 |---|---|---|
+| **Público** | `landing_screen`, `ayuda_screen`, `soporte_screen` | Pantalla inicial de bienvenida con la marca Vecta, sección de FAQs y formulario de contacto para soporte técnico. |
 | **Autenticación** | `login_view`, `registro_view` | Flujo unificado con buscador dinámico de carreras, validación estricta (cédula, teléfonos) y Términos & Condiciones desplegables. |
 | **Navegación** | `enrutador_roles_view`, `main_navigation_view` | Deciden de manera instantánea a qué tab enviar al usuario tras iniciar sesión basándose en su `rolEnElSistema`. Posee Campanita de Alertas centralizada. |
-| **Principal (Home)**| `home_view`, `crear_tutoria_view` | La "Cartelera". Aquí el alumno ve el feed estilo red social con las clases ofertadas, y puede llenar su solicitud subiendo sus archivos adjuntos desde su celular/PC. |
+| **Principal (Home)**| `home_view`, `sugerir_tutoria_view`, `comunidad_sugerencias_view` | La "Cartelera". Aquí el alumno ve el feed estilo red social con las clases ofertadas, llena su solicitud subiendo archivos adjuntos o apoya sugerencias en la bolsa comunitaria. |
+| **Estudiante** | `mis_sugerencias_view`, `mis_tutorias_view` | Seguimiento de las tutorías sugeridas y agenda personal de clases inscritas. |
 | **Tutor** | `dashboard_tutor_view`, `aceptar_solicitud_view`, `detalle_clase_view` | Paneles con pestañas (Pendientes / Finalizadas). En `detalle_clase_view` el tutor da clic a los archivos subidos por el alumno y los abre directamente con el visor nativo. |
 | **Notificaciones** | `notificaciones_view` | Historial de alertas de la plataforma, filtrado por usuario y con manejo robusto de excepciones (pull to refresh local). |
 | **Comunidad** | `explorar_view`, `perfil_publico_tutor_view` | Buscador de talento. Muestra las biografías de los tutores, su promedio de estrellas y el botón rojo de levantar una queja a la administración. |
-| **Administración**| `admin_dashboard_view`, `metricas_view`, `tribunal_baneos_view` | Centro de comando. Vista de alto impacto con gráficas e interruptores para banear o des-banear a un usuario con 1 clic. |
+| **Administración**| `admin_dashboard_view`, `metricas_view`, `tribunal_baneos_view`, `buzon_postulaciones_view`, `historial_tutorias_view`, `lista_estudiantes_view`, `quejas_view` | Centro de comando. Vista de alto impacto con gráficas e interruptores para banear o des-banear a un usuario con 1 clic. Adicionalmente agrupa historiales y gestión completa de postulaciones, usuarios y quejas. |
 
 ---
 
