@@ -505,6 +505,7 @@ class _ModuloListaDeTutorias extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(32.0),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.event_busy, size: 64, color: Colors.grey),
@@ -870,9 +871,19 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
   }
 
   Future<void> _mostrarDialogoDeEvaluacion(BuildContext context) async {
-    int notaClase = 0;
-    int notaTutor = 0;
+    int puntualidad = 0;
+    int dominio = 0;
+    int empatia = 0;
+    List<String> etiquetasSeleccionadas = [];
     final TextEditingController ctrlComentario = TextEditingController();
+    final TextEditingController ctrlComentarioPublico = TextEditingController();
+
+    final List<String> etiquetasPositivas = [
+      'Explica claro', 'Paciente', 'Buen material', 'Dinámico'
+    ];
+    final List<String> etiquetasNegativas = [
+      'Llegó tarde', 'Poco preparado', 'Difícil de entender', 'Se desvió del tema'
+    ];
 
     await showDialog(
       context: context,
@@ -881,12 +892,8 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
         return StatefulBuilder(
           builder: (context, setEstadoInterno) {
             return Dialog(
-              backgroundColor: Colors
-                  .grey
-                  .shade100, // Background gris global de la UI evaluacion
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
@@ -895,174 +902,125 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                   children: [
                     const Text(
                       'Evaluar Tutoría',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 22,
-                        color: AppTheme.primarioAzul,
-                      ),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      '¿Qué tal fue el contenido de la clase?',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                    _construirSelectorEstrellas(
-                      context,
-                      (valor) => setEstadoInterno(() => notaClase = valor),
-                      notaClase,
-                    ),
+                    
+                    const Text('Puntualidad y Compromiso', style: TextStyle(fontWeight: FontWeight.w600)),
+                    _construirSelectorEstrellas(context, (v) => setEstadoInterno(() => puntualidad = v), puntualidad),
+                    const SizedBox(height: 16),
 
+                    const Text('Dominio del Tema', style: TextStyle(fontWeight: FontWeight.w600)),
+                    _construirSelectorEstrellas(context, (v) => setEstadoInterno(() => dominio = v), dominio),
+                    const SizedBox(height: 16),
+
+                    const Text('Empatía y Paciencia', style: TextStyle(fontWeight: FontWeight.w600)),
+                    _construirSelectorEstrellas(context, (v) => setEstadoInterno(() => empatia = v), empatia),
                     const SizedBox(height: 24),
 
-                    const Text(
-                      '¿Cómo calificarías al tutor?',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
+                    const Text('Etiquetas Rápidas', style: TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
-                    _construirSelectorEstrellas(
-                      context,
-                      (valor) => setEstadoInterno(() => notaTutor = valor),
-                      notaTutor,
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ...etiquetasPositivas.map((t) => FilterChip(
+                          label: Text(t, style: TextStyle(fontSize: 12, color: etiquetasSeleccionadas.contains(t) ? Colors.white : Colors.green[800])),
+                          selected: etiquetasSeleccionadas.contains(t),
+                          selectedColor: Colors.green,
+                          backgroundColor: Colors.green.withValues(alpha: 0.1),
+                          onSelected: (val) {
+                            setEstadoInterno(() {
+                              val ? etiquetasSeleccionadas.add(t) : etiquetasSeleccionadas.remove(t);
+                            });
+                          },
+                        )),
+                        ...etiquetasNegativas.map((t) => FilterChip(
+                          label: Text(t, style: TextStyle(fontSize: 12, color: etiquetasSeleccionadas.contains(t) ? Colors.white : Colors.red[800])),
+                          selected: etiquetasSeleccionadas.contains(t),
+                          selectedColor: Colors.red,
+                          backgroundColor: Colors.red.withValues(alpha: 0.1),
+                          onSelected: (val) {
+                            setEstadoInterno(() {
+                              val ? etiquetasSeleccionadas.add(t) : etiquetasSeleccionadas.remove(t);
+                            });
+                          },
+                        )),
+                      ],
                     ),
+                    const SizedBox(height: 24),
 
-                    const SizedBox(height: 32),
-
-                    const Text(
-                      'Comentarios:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
+                    const Text('Comentario Confidencial para Admin:', style: TextStyle(fontWeight: FontWeight.w600)),
+                    const Text('(El tutor nunca verá este mensaje)', style: TextStyle(fontSize: 11, color: Colors.grey)),
                     const SizedBox(height: 8),
                     TextField(
                       controller: ctrlComentario,
-                      maxLines: 5, // Gigantesco
+                      maxLines: 2,
                       decoration: InputDecoration(
-                        hintText: 'Escribe tu opinión detallada aquí...',
+                        hintText: 'Opcional. ¿Hubo algún problema grave?',
                         filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
+                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[900] : Colors.grey[100],
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    const Text('Comentario para la Comunidad:', style: TextStyle(fontWeight: FontWeight.w600)),
+                    const Text('(Visible públicamente en el perfil del tutor)', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: ctrlComentarioPublico,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        hintText: 'Opcional. Deja un comentario de agradecimiento.',
+                        filled: true,
+                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[900] : Colors.grey[100],
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                       ),
                     ),
                     const SizedBox(height: 32),
+                    
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(contextDialogo),
-                          child: const Text(
-                            'CANCELAR',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: const Text('CANCELAR', style: TextStyle(color: Colors.grey)),
                         ),
                         FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppTheme.primarioAzul,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: (notaClase == 0 || notaTutor == 0)
+                          style: FilledButton.styleFrom(backgroundColor: AppTheme.primarioAzul),
+                          onPressed: (puntualidad == 0 || dominio == 0 || empatia == 0)
                               ? null
                               : () async {
-                                  final confirm = await showDialog<bool>(
-                                    context: contextDialogo,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text(
-                                        'Verificación final',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      content: const Text(
-                                        '¿Estás seguro de enviar esta evaluación? No podrás modificarla después.',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(ctx, false),
-                                          child: const Text(
-                                            'Regresar',
-                                            style: TextStyle(
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ),
-                                        FilledButton(
-                                          onPressed: () =>
-                                              Navigator.pop(ctx, true),
-                                          style: FilledButton.styleFrom(
-                                            backgroundColor:
-                                                AppTheme.primarioAzul,
-                                          ),
-                                          child: const Text('Sí, enviar'),
-                                        ),
-                                      ],
-                                    ),
+                                  final double dPunt = puntualidad.toDouble();
+                                  final double dDom = dominio.toDouble();
+                                  final double dEmp = empatia.toDouble();
+                                  
+                                  final proveedorRef = context.read<TutoriasProvider>();
+                                  bool exito = await proveedorRef.enviarEvaluacionTutoria(
+                                    datos.identificadorDeTutoria,
+                                    datos.identificadorDelTutor,
+                                    dPunt,
+                                    dDom,
+                                    dEmp,
+                                    etiquetasSeleccionadas,
+                                    ctrlComentario.text.trim(),
+                                    ctrlComentarioPublico.text.trim(),
                                   );
-
-                                  if (confirm == true) {
-                                    final double calculoPromedio =
-                                        (notaClase + notaTutor) / 2.0;
-                                    final proveedorRef = context
-                                        .read<TutoriasProvider>();
-                                    bool fueExitoso = await proveedorRef
-                                        .enviarEvaluacionTutoria(
-                                          datos.identificadorDeTutoria,
-                                          datos.identificadorDelTutor,
-                                          calculoPromedio,
-                                          ctrlComentario.text.trim(),
-                                        );
-                                    if (contextDialogo.mounted) {
-                                      Navigator.pop(contextDialogo);
-                                    }
-                                    if (context.mounted) {
-                                      if (fueExitoso) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              '¡Aporte cualitativo guardado!',
-                                            ),
-                                            backgroundColor: Colors.green,
-                                            behavior: SnackBarBehavior.floating,
-                                          ),
-                                        );
-                                      } else {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              proveedorRef
-                                                  .mensajeDeErrorDelSistema,
-                                            ),
-                                            backgroundColor: Colors.redAccent,
-                                            behavior: SnackBarBehavior.floating,
-                                          ),
-                                        );
-                                      }
-                                    }
+                                  
+                                  if (contextDialogo.mounted) Navigator.pop(contextDialogo);
+                                  
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(exito ? '¡Evaluación dimensional guardada!' : proveedorRef.mensajeDeErrorDelSistema),
+                                        backgroundColor: exito ? Colors.green : Colors.redAccent,
+                                      ),
+                                    );
                                   }
                                 },
-                          child: const Text(
-                            'ENVIAR EVALUACIÓN',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
+                          child: const Text('ENVIAR'),
                         ),
                       ],
                     ),
@@ -1075,6 +1033,7 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
       },
     );
     ctrlComentario.dispose();
+    ctrlComentarioPublico.dispose();
   }
 
   void _abrirDetallesTutoria(BuildContext contextoPadre, bool esDictando) {
@@ -1271,6 +1230,17 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
+            if (datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' && datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('📍 Lugar/Mod: ${datos.lugar ?? datos.modalidadDeClase}', style: const TextStyle(fontSize: 12, color: Colors.blueAccent)),
+                    Text('📞 Contacto: ${datos.contacto_tutor ?? 'No provisto'}', style: const TextStyle(fontSize: 12, color: Colors.blueAccent)),
+                  ],
+                ),
+              ),
             Row(
               children: [
                 Container(
@@ -1301,6 +1271,21 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                 ),
               ],
             ),
+            if (!esDictando && datos.estadoDeLaSolicitud.toLowerCase() == 'finalizada' && !datos.alumnosQueYaEvaluaron.contains(uidActual) && (datos.registro_asistencia == null || datos.registro_asistencia![uidActual] != false))
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: ElevatedButton.icon(
+                  onPressed: () => _mostrarDialogoDeEvaluacion(context),
+                  icon: const Icon(Icons.star_rate, size: 16),
+                  label: const Text('Calificar Tutoría', style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(0, 32),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                ),
+              ),
           ],
         ),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),

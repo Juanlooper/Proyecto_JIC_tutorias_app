@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/usuario_model.dart';
 import '../../providers/autenticacion_provider.dart';
+import '../../providers/tutorias_provider.dart';
 
 class PerfilPublicoTutorView extends StatefulWidget {
   final UsuarioModel mentor;
@@ -444,7 +445,14 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
                                       ),
                                       onPressed: () async {
                                         try {
-                                          await rese.reference.delete();
+                                          if (esAdmin) {
+                                            await context.read<TutoriasProvider>().eliminarComentarioPublico(
+                                              widget.mentor.identificadorUnico, 
+                                              rese.id
+                                            );
+                                          } else {
+                                            await rese.reference.delete();
+                                          }
                                           await _calcularMetricas();
                                           if (ctx.mounted) {
                                             ScaffoldMessenger.of(
@@ -476,11 +484,24 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
                                     ),
                                 ],
                               ),
-                              subtitle: Text(
-                                '"${datos['comentario'] ?? 'Sin comentario'}"',
-                                style: const TextStyle(
-                                  fontStyle: FontStyle.italic,
-                                ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '"${datos['comentario_publico'] ?? datos['comentario'] ?? 'Sin comentario'}"',
+                                    style: const TextStyle(
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                  if (esAdmin && datos['comentario_admin'] != null && datos['comentario_admin'].toString().isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: Text(
+                                        'Privado (Solo Admin): ${datos['comentario_admin']}',
+                                        style: const TextStyle(fontSize: 12, color: Colors.red),
+                                      ),
+                                    ),
+                                ],
                               ),
                             );
                           },

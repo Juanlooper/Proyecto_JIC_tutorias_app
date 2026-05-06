@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../providers/tutorias_provider.dart';
 import '../../models/tutoria_model.dart';
 import '../../core/utils/moderacion_servicio.dart';
+import '../../services/firebase_storage_servicio.dart';
 
 class SugerirTutoriaView extends StatefulWidget {
   const SugerirTutoriaView({super.key});
@@ -40,8 +41,11 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
   String _materiaSeleccionada = 'CÁLCULO I';
 
   bool _estaCargando = false;
-  String? _archivoSubidoUrl;
-  String? _archivoSubidoNombre;
+  List<String> _archivosSubidosUrl = [];
+  List<String> _archivosSubidosNombre = [];
+  
+  // Variables para mostrar el progreso de subida si fuera necesario (opcional)
+  bool _estaSubiendoArchivos = false;
 
   @override
   void dispose() {
@@ -138,14 +142,14 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
     );
 
     final uidLocal = FirebaseAuth.instance.currentUser?.uid ?? 'anonimo';
-    final enlacesOpcionales = _archivoSubidoUrl != null
+    final enlacesOpcionales = _archivosSubidosUrl.isNotEmpty
         ? {
-            uidLocal: [_archivoSubidoUrl!],
+            uidLocal: _archivosSubidosUrl,
           }
         : null;
-    final nombresOpcionales = _archivoSubidoNombre != null
+    final nombresOpcionales = _archivosSubidosNombre.isNotEmpty
         ? {
-            uidLocal: [_archivoSubidoNombre!],
+            uidLocal: _archivosSubidosNombre,
           }
         : null;
 
@@ -436,6 +440,76 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                 ),
                 const SizedBox(height: 24),
 
+                const SizedBox(height: 32),
+
+                // Botón de Archivos Adjuntos Múltiples
+                _construirLabel("Archivos Adjuntos (Opcional)"),
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
+                  child: Text(
+                    "Se recomienda unir todo en un solo PDF o DOCX. Máximo 3 archivos.",
+                    style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+                  ),
+                ),
+                if (_archivosSubidosNombre.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: _decoracionSimuladaCaja(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: _archivosSubidosNombre.map((nombre) => 
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.attach_file, size: 16, color: Color(0xFF6C63FF)),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(nombre, style: const TextStyle(fontSize: 14))),
+                            ],
+                          ),
+                        )
+                      ).toList(),
+                    ),
+                  ),
+                ElevatedButton.icon(
+                  onPressed: _estaSubiendoArchivos ? null : () async {
+                    setState(() {
+                      _estaSubiendoArchivos = true;
+                    });
+                    try {
+                      final servicio = FirebaseStorageServicio();
+                      final resultados = await servicio.seleccionarYSubirMultiplesArchivos(carpetaDestino: 'tutorias_sugeridas');
+                      
+                      if (resultados.isNotEmpty) {
+                        setState(() {
+                          _archivosSubidosUrl = resultados.map((r) => r['url']!).toList();
+                          _archivosSubidosNombre = resultados.map((r) => r['nombre']!).toList();
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Archivos adjuntados correctamente'), backgroundColor: Colors.green));
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+                    } finally {
+                      setState(() {
+                        _estaSubiendoArchivos = false;
+                      });
+                    }
+                  },
+                  icon: _estaSubiendoArchivos 
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.upload_file),
+                  label: Text(_estaSubiendoArchivos ? "Subiendo..." : "Adjuntar Archivos (Máx 3)"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF6C63FF),
+                    elevation: 0,
+                    side: const BorderSide(color: Color(0xFF6C63FF)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                ),
+                
                 const SizedBox(height: 32),
 
                 // Botón Gigante (Call to Action)

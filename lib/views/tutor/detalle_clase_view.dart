@@ -19,6 +19,7 @@ class DetalleClaseView extends StatefulWidget {
 class _DetalleClaseViewState extends State<DetalleClaseView> {
   bool _modoPaseDeLista = false;
   final Map<String, bool> _asistenciaMapa = {};
+  final Map<String, TextEditingController> _feedbackMapa = {};
 
   @override
   void initState() {
@@ -26,7 +27,16 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
     // Por defecto marcamos a todos los estudiantes inscritos como presentes (true)
     for (var uid in widget.tutoria.listaDeEstudiantesInscritos) {
       _asistenciaMapa[uid] = true;
+      _feedbackMapa[uid] = TextEditingController();
     }
+  }
+
+  @override
+  void dispose() {
+    for (var ctrl in _feedbackMapa.values) {
+      ctrl.dispose();
+    }
+    super.dispose();
   }
 
   Future<void> _finalizarClase() async {
@@ -56,9 +66,18 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
 
     if (confirmar == true && mounted) {
       final proveedor = context.read<TutoriasProvider>();
+      
+      Map<String, Map<String, dynamic>> payload = {};
+      for (var uid in widget.tutoria.listaDeEstudiantesInscritos) {
+        payload[uid] = {
+          'asistio': _asistenciaMapa[uid] ?? false,
+          'feedback': _feedbackMapa[uid]?.text.trim() ?? '',
+        };
+      }
+      
       final exito = await proveedor.registrarAsistenciaClase(
         widget.tutoria.identificadorDeTutoria,
-        _asistenciaMapa,
+        payload,
       );
 
       if (mounted) {
@@ -569,16 +588,36 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
                                     ),
                                   ],
                                 )
-                                else if (tutoria.estadoDeLaSolicitud == 'finalizada' && !tutoria.alumnosEvaluadosPorTutor.contains(uidAlumno))
-                                  TextButton.icon(
-                                    icon: const Icon(Icons.star_rate, size: 16),
-                                    label: const Text('Evaluar'),
-                                    onPressed: () => _mostrarDialogoEvaluacion(uidAlumno),
-                                  )
-                                else if (tutoria.estadoDeLaSolicitud == 'finalizada' && tutoria.alumnosEvaluadosPorTutor.contains(uidAlumno))
-                                  const Text('Evaluado ✅', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
+                                  else if (tutoria.estadoDeLaSolicitud == 'finalizada' && !tutoria.alumnosEvaluadosPorTutor.contains(uidAlumno))
+                                    TextButton.icon(
+                                      icon: const Icon(Icons.star_rate, size: 16),
+                                      label: const Text('Evaluar Desempeño'),
+                                      onPressed: () => _mostrarDialogoEvaluacion(uidAlumno),
+                                    )
+                                  else if (tutoria.estadoDeLaSolicitud == 'finalizada' && tutoria.alumnosEvaluadosPorTutor.contains(uidAlumno))
+                                    const Text('Evaluado ✅', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
+                              ],
+                            ),
+                            
+                            if (_modoPaseDeLista && presente) ...[
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Expediente Clínico (Receta Académica):',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey),
+                              ),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: _feedbackMapa[uidAlumno],
+                                decoration: InputDecoration(
+                                  hintText: 'Opcional. Deja recomendaciones de estudio, temas a reforzar...',
+                                  hintStyle: const TextStyle(fontSize: 12),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                  filled: true,
+                                  fillColor: Colors.blue.withValues(alpha: 0.05),
+                                ),
+                                maxLines: 2,
+                              ),
                             ],
-                          ),
                           const SizedBox(height: 16),
                           const Text(
                             'Motivo para asistir:',

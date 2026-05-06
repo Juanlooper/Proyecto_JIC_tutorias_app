@@ -37,6 +37,12 @@ service cloud.firestore {
       // Eliminación: Deshabilitada.
       // Por qué: Mantener la integridad del historial de registros en el sistema académico.
       allow delete: if false;
+
+      // Evaluaciones del Tutor
+      match /evaluaciones/{evalId} {
+        allow read: if estaAutenticado();
+        allow create: if estaAutenticado();
+      }
     }
 
     match /tutorias/{tutoriaId} {
@@ -78,12 +84,22 @@ service cloud.firestore {
       // Actualización: Solo el dueño de la notificación puede marcarla como leída.
       allow update: if estaAutenticado() && resource.data.usuarioId == request.auth.uid;
       
-      // Eliminación: Solo admin.
-      allow delete: if false;
+      // Eliminación: El usuario destinatario puede borrar sus notificaciones.
+      allow delete: if estaAutenticado() && resource.data.usuarioId == request.auth.uid;
     }
 
     match /quejas/{quejaId} {
       // Lectura y escritura: Cualquier autenticado puede crear quejas; solo admin puede leerlas.
+      allow create: if estaAutenticado();
+      allow read: if estaAutenticado() && obtenerRolDelUsuario() == 'admin';
+    }
+
+    match /evaluaciones_estudiantes/{docId} {
+      allow read: if estaAutenticado();
+      allow create: if estaAutenticado();
+    }
+
+    match /reportes_tribunal/{reportId} {
       allow create: if estaAutenticado();
       allow read: if estaAutenticado() && obtenerRolDelUsuario() == 'admin';
     }

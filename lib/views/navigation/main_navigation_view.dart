@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -32,9 +33,13 @@ class _MainNavigationViewState extends State<MainNavigationView> {
 
   final ScrollController _scrollControllerBarraSuperior = ScrollController();
 
+  StreamSubscription<QuerySnapshot>? _notificacionesSub;
+  bool _inicializadoListenerNotificaciones = false;
+
   @override
   void dispose() {
     _scrollControllerBarraSuperior.dispose(); // Limpieza de memoria obligatoria
+    _notificacionesSub?.cancel();
     super.dispose();
   }
 
@@ -43,6 +48,56 @@ class _MainNavigationViewState extends State<MainNavigationView> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _verificarYMostrarTutorial();
+    });
+  }
+
+  void _iniciarListenerNotificaciones(String uid) {
+    if (_inicializadoListenerNotificaciones) return;
+    _inicializadoListenerNotificaciones = true;
+    _notificacionesSub = FirebaseFirestore.instance
+        .collection('notificaciones')
+        .where('usuarioId', isEqualTo: uid)
+        .snapshots()
+        .listen((snapshot) {
+      // Usamos docChanges para ver únicamente los cambios recientes
+      for (var change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          final data = change.doc.data() as Map<String, dynamic>?;
+          if (data != null && data['leida'] == false) {
+            // Verificar que la notificación sea reciente (opcional, para no mostrar viejas al iniciar)
+            final fechaStr = data['fecha'] as String?;
+            if (fechaStr != null) {
+              final fechaNotif = DateTime.tryParse(fechaStr);
+              if (fechaNotif != null && DateTime.now().difference(fechaNotif).inSeconds < 10) {
+                // Es una notificación recién creada
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.notifications_active, color: Colors.white),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              data['titulo'] ?? 'Nueva notificación',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      backgroundColor: const Color(0xFF1CA887),
+                      duration: const Duration(seconds: 4),
+                      behavior: SnackBarBehavior.floating,
+                      margin: const EdgeInsets.only(top: 60, left: 20, right: 20),
+                      dismissDirection: DismissDirection.up,
+                    ),
+                  );
+                }
+              }
+            }
+          }
+        }
+      }
     });
   }
 
@@ -122,6 +177,9 @@ class _MainNavigationViewState extends State<MainNavigationView> {
     if (usuarioActual == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
+    // Inicializamos el listener in-app de notificaciones para este usuario.
+    _iniciarListenerNotificaciones(usuarioActual.identificadorUnico);
 
     final bool esAdmin = usuarioActual.tieneRol(RolSistema.admin);
 

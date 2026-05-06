@@ -98,6 +98,12 @@ class TutoriaModel {
   /// Creador original de la solicitud (si era una tutoría sugerida)
   final String? creador;
 
+  /// Fecha en la que la solicitud fue creada en el sistema. Vital para calcular SLA.
+  final DateTime? fecha_creacion_solicitud;
+
+  /// Fecha en la que la solicitud fue aceptada por un tutor. Vital para calcular SLA.
+  final DateTime? fecha_aceptacion_solicitud;
+
   /// Constructor base. Se encarga de ensamblar en la memoria RAM una tutoría cuando llamamos la clase.
   /// El atributo 'required' indica qué pieza es indispensable para considerarse legalmente una tutoría.
   TutoriaModel({
@@ -128,6 +134,8 @@ class TutoriaModel {
     this.alumnosEvaluadosPorTutor = const [],
     this.estudiantesApoyando = const [],
     this.creador,
+    this.fecha_creacion_solicitud,
+    this.fecha_aceptacion_solicitud,
   });
 
   /// Transforma nuestra estructura de datos de objeto a formato mapa de clave/valor.
@@ -162,6 +170,8 @@ class TutoriaModel {
       'alumnosEvaluadosPorTutor': alumnosEvaluadosPorTutor,
       'estudiantesApoyando': estudiantesApoyando,
       'creador': creador,
+      'fecha_creacion_solicitud': fecha_creacion_solicitud?.toIso8601String(),
+      'fecha_aceptacion_solicitud': fecha_aceptacion_solicitud?.toIso8601String(),
     };
   }
 
@@ -186,6 +196,8 @@ class TutoriaModel {
         alumnosEvaluadosPorTutor: [],
         estudiantesApoyando: [],
         creador: null,
+        fecha_creacion_solicitud: null,
+        fecha_aceptacion_solicitud: null,
       );
     }
 
@@ -264,6 +276,8 @@ class TutoriaModel {
           ? List<String>.from(mapaDeDatos['estudiantesApoyando'])
           : [],
       creador: mapaDeDatos['creador'],
+      fecha_creacion_solicitud: mapaDeDatos['fecha_creacion_solicitud'] != null ? DateTime.tryParse(mapaDeDatos['fecha_creacion_solicitud']) : null,
+      fecha_aceptacion_solicitud: mapaDeDatos['fecha_aceptacion_solicitud'] != null ? DateTime.tryParse(mapaDeDatos['fecha_aceptacion_solicitud']) : null,
     );
   }
 
@@ -296,6 +310,8 @@ class TutoriaModel {
     List<String>? alumnosEvaluadosPorTutor,
     List<String>? estudiantesApoyando,
     String? creador,
+    DateTime? fecha_creacion_solicitud,
+    DateTime? fecha_aceptacion_solicitud,
   }) {
     return TutoriaModel(
       identificadorDeTutoria: identificadorDeTutoria ?? this.identificadorDeTutoria,
@@ -325,6 +341,8 @@ class TutoriaModel {
       alumnosEvaluadosPorTutor: alumnosEvaluadosPorTutor ?? this.alumnosEvaluadosPorTutor,
       estudiantesApoyando: estudiantesApoyando ?? this.estudiantesApoyando,
       creador: creador ?? this.creador,
+      fecha_creacion_solicitud: fecha_creacion_solicitud ?? this.fecha_creacion_solicitud,
+      fecha_aceptacion_solicitud: fecha_aceptacion_solicitud ?? this.fecha_aceptacion_solicitud,
     );
   }
 }

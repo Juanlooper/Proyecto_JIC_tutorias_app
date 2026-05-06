@@ -86,6 +86,66 @@ class FirebaseStorageServicio {
     }
   }
 
+  /// Permite seleccionar y subir hasta 3 archivos, devolviendo una lista de mapas con 'url' y 'nombre'.
+  Future<List<Map<String, String>>> seleccionarYSubirMultiplesArchivos({required String carpetaDestino}) async {
+    try {
+      FilePickerResult? resultado = await FilePicker.pickFiles(
+        allowMultiple: true,
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'ppt', 'pptx'],
+        withData: true, 
+      );
+
+      if (resultado == null) return [];
+
+      List<PlatformFile> archivos = resultado.files;
+      if (archivos.length > 3) {
+        throw Exception("Solo se permite adjuntar un máximo de 3 archivos. Se recomienda unir todo en un solo PDF o DOCX.");
+      }
+
+      List<Map<String, String>> archivosSubidos = [];
+      final uidActual = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_anonimo';
+
+      for (var file in archivos) {
+        if (kIsWeb && file.bytes == null) continue;
+        if (!kIsWeb && file.path == null) continue;
+
+        if (file.size > 5 * 1024 * 1024) {
+          throw Exception("El archivo ${file.name} es demasiado pesado (Máximo 5MB).");
+        }
+
+        String extensionBase = file.extension ?? 'bin';
+        String nombreOriginal = file.name;
+        String marcaDeTiempo = DateTime.now().millisecondsSinceEpoch.toString();
+        // Agregamos un hash simple basado en el nombre para evitar colisiones si se suben varios rápido
+        String nombreSeguro = 'adjunto_${uidActual}_${marcaDeTiempo}_${nombreOriginal.hashCode}.$extensionBase';
+        String rutaEnBucket = '$carpetaDestino/$nombreSeguro';
+
+        final ref = _storage.ref().child(rutaEnBucket);
+        UploadTask uploadTask;
+        
+        if (kIsWeb) {
+          uploadTask = ref.putData(file.bytes!);
+        } else {
+          uploadTask = ref.putFile(File(file.path!));
+        }
+
+        final snapshot = await uploadTask;
+        final stringPublicoSeguro = await snapshot.ref.getDownloadURL();
+        
+        archivosSubidos.add({
+          'url': stringPublicoSeguro,
+          'nombre': nombreOriginal
+        });
+      }
+
+      return archivosSubidos;
+    } catch (e) {
+      debugPrint("Error subiendo múltiples archivos: $e");
+      throw Exception(e.toString());
+    }
+  }
+
   /// Método inteligente que se encarga de localizar el archivo físico en el bucket a través
   /// de su URL pública y eliminarlo para mantener el costo en cero.
   Future<bool> eliminarArchivoFisico(String urlDeDescarga) async {

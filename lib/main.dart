@@ -16,6 +16,7 @@ import 'providers/admin_provider.dart';
 
 // Vistas principales (Con la ruta corregida a la carpeta auth)
 import 'views/view/landing_screen.dart';
+import 'views/navigation/main_navigation_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,8 +54,8 @@ class TutoriasApp extends StatelessWidget {
         // 4. Inyección del manejador de Tema
         ChangeNotifierProvider(create: (_) => TemaProvider()),
       ],
-      child: Consumer<TemaProvider>(
-        builder: (context, proveedorDeTema, hijo) {
+      child: Consumer2<TemaProvider, AutenticacionProvider>(
+        builder: (context, proveedorDeTema, authProv, hijo) {
           return MaterialApp(
             title: 'Vecta Tutorías',
             debugShowCheckedModeBanner: false,
@@ -62,7 +63,11 @@ class TutoriasApp extends StatelessWidget {
             theme: proveedorDeTema.esModoOscuro
                 ? AppTheme.darkTheme
                 : AppTheme.lightTheme,
-            home: const LandingScreen(),
+            home: authProv.estaInicializando
+                ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+                : (authProv.usuarioActual != null
+                    ? const MainNavigationView()
+                    : const LandingScreen()),
           );
         },
       ),

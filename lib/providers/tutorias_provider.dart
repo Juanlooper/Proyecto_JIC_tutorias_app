@@ -125,6 +125,7 @@ class TutoriasProvider extends ChangeNotifier {
         estadoDeLaSolicitud: 'solicitada', // Distinguir de 'pendiente'
         listaDeEstudiantesInscritos: [], // El estudiante NO inicia inscrito (Regla de negocio nueva)
         estudiantesApoyando: apoyadoresIniciales,
+        fecha_creacion_solicitud: DateTime.now(), // SLA Timestamp
       );
 
       Map<String, dynamic> datosNube = solicitudProcesada.toMap();
@@ -595,9 +596,9 @@ class TutoriasProvider extends ChangeNotifier {
     }
   }
 
-  /// Método de asistencia de alumnos (Fase 2.1).
-  /// Modifica registro de asistencia y penaliza (strike) a infractores de ausentismo.
-  Future<bool> registrarAsistenciaClase(String tutoriaId, Map<String, bool> asistenciaAlumnos) async {
+  /// Método combinado: Toma de Asistencia y Expediente Clínico Académico (Módulo 3).
+  /// Penaliza a los alumnos faltistas y añade feedback formativo a los que sí asistieron.
+  Future<bool> registrarAsistenciaClase(String tutoriaId, Map<String, Map<String, dynamic>> asistenciasYFeedback) async {
     _iluminarSenalIndicadoraDeEspera();
     _purgarCasillasDeAdvertencias();
 
@@ -617,20 +618,32 @@ class TutoriasProvider extends ChangeNotifier {
         }
       }
 
+      final tutorId = FirebaseAuth.instance.currentUser?.uid;
+
+      // Extraer solo la asistencia en un mapa plano para guardarlo en la tutoría (Retrocompatibilidad UI)
+      Map<String, bool> asistenciaPlana = {};
+      for (var entry in asistenciasYFeedback.entries) {
+        asistenciaPlana[entry.key] = entry.value['asistio'] as bool? ?? false;
+      }
+
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final tutoriaRef = FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId);
         
         transaction.update(tutoriaRef, {
-          'registro_asistencia': asistenciaAlumnos,
+          'registro_asistencia': asistenciaPlana,
           'estadoDeLaSolicitud': 'finalizada',
         });
 
-        // Iteramos alumnos y penalizamos si tienen false (no asistieron)
-        for (var entry in asistenciaAlumnos.entries) {
-          if (entry.value == false) {
-            final usuarioRef = FirebaseFirestore.instance.collection('usuarios').doc(entry.key);
+        // Iteramos alumnos: penalizamos inasistencias o agregamos receta médica académica
+        for (var entry in asistenciasYFeedback.entries) {
+          final uidAlumno = entry.key;
+          final asistio = entry.value['asistio'] as bool? ?? false;
+          final feedback = entry.value['feedback'] as String? ?? '';
+          
+          final usuarioRef = FirebaseFirestore.instance.collection('usuarios').doc(uidAlumno);
+          
+          if (!asistio) {
             final usuarioSnapshot = await transaction.get(usuarioRef);
-            
             if (usuarioSnapshot.exists) {
               final datosUsuario = usuarioSnapshot.data()!;
               final strikesActuales = datosUsuario['strikes_inasistencia'] ?? 0;
@@ -640,18 +653,25 @@ class TutoriasProvider extends ChangeNotifier {
                 'strikes_inasistencia': nuevosStrikes,
               };
               
-              if (nuevosStrikes >= 3) {
-                actualizacion['esta_baneado'] = true;
-              }
+              if (nuevosStrikes >= 3) actualizacion['esta_baneado'] = true;
               
               transaction.update(usuarioRef, actualizacion);
             }
+          } else if (feedback.isNotEmpty) {
+            // Guardar en el Expediente Clínico Académico del alumno
+            final expedienteRef = usuarioRef.collection('expediente_academico').doc();
+            transaction.set(expedienteRef, {
+              'tutoria_id': tutoriaId,
+              'tutor_id': tutorId,
+              'fecha': DateTime.now().toIso8601String(),
+              'receta_academica': feedback,
+            });
           }
         }
       });
 
       // Notificar a los administradores sobre los strikes
-      final uidsPenalizados = asistenciaAlumnos.entries.where((e) => !e.value).map((e) => e.key).toList();
+      final uidsPenalizados = asistenciaPlana.entries.where((e) => !e.value).map((e) => e.key).toList();
       if (uidsPenalizados.isNotEmpty) {
         final adminsSnapshot = await FirebaseFirestore.instance.collection('usuarios').where('rolEnElSistema', isEqualTo: 'admin').get();
         final adminUids = adminsSnapshot.docs.map((e) => e.id).toList();
@@ -663,6 +683,20 @@ class TutoriasProvider extends ChangeNotifier {
             tipo: 'alerta_roja',
           );
         }
+      }
+      
+      // Notificar a los alumnos asistentes que recibieron feedback clínico
+      final uidsAsistentesConFeedback = asistenciasYFeedback.entries
+          .where((e) => (e.value['asistio'] == true) && (e.value['feedback'] != null && e.value['feedback'].toString().isNotEmpty))
+          .map((e) => e.key).toList();
+          
+      if (uidsAsistentesConFeedback.isNotEmpty) {
+        await _notificarMultiples(
+          uids: uidsAsistentesConFeedback,
+          titulo: 'Nuevo Reporte Académico 📋',
+          mensaje: 'Tu tutor ha dejado recomendaciones personalizadas para tu estudio. Revísalo en tu expediente.',
+          tipo: 'info',
+        );
       }
 
       // Refrescar y avisar exito
@@ -836,6 +870,7 @@ class TutoriasProvider extends ChangeNotifier {
            estadoDeLaSolicitud: 'pendiente', // Permanece pendiente para que los estudiantes se puedan inscribir
            esGrupal: true,
            cupoMaximo: 10,
+           fecha_aceptacion_solicitud: DateTime.now(), // SLA Timestamp
         );
         
         transaction.update(docRef, modeloAEnviar.toMap());
@@ -868,13 +903,43 @@ class TutoriasProvider extends ChangeNotifier {
       return false;
     }
   }
+  bool _contienePalabrasProhibidas(String texto) {
+    if (texto.isEmpty) return false;
+    final prohibidas = [
+      'mierda', 'estupido', 'estúpido', 'idiota', 'imbecil', 'imbécil', 
+      'puta', 'puto', 'cabron', 'cabrón', 'pendejo', 'pendeja', 'verga',
+      'zorra', 'maricon', 'maricón', 'maldito', 'maldita'
+    ];
+    final textoNormalizado = texto.toLowerCase();
+    for (var palabra in prohibidas) {
+      // Usamos regex simple para evitar falsos positivos si la palabra está dentro de otra?
+      // Por simplicidad, un contains() bastará para este prototipo.
+      if (textoNormalizado.contains(palabra)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Envía la evaluación de una tutoría, previniendo dobles envíos mediante operaciones atómicas 
   /// y almacenando retroalimentación de calidad nativamente dentro del perfil del tutor.
-  Future<bool> enviarEvaluacionTutoria(String tutoriaId, String tutorId, double estrellas, String comentario) async {
+  Future<bool> enviarEvaluacionTutoria(
+      String tutoriaId, 
+      String tutorId, 
+      double puntualidad, 
+      double dominio, 
+      double empatia, 
+      List<String> etiquetas, 
+      String comentarioPrivado,
+      String comentarioPublico) async {
     _iluminarSenalIndicadoraDeEspera();
     _purgarCasillasDeAdvertencias();
 
     try {
+      if (_contienePalabrasProhibidas(comentarioPublico)) {
+        throw Exception("El comentario público contiene palabras no permitidas. Mantén el respeto en la comunidad.");
+      }
+
       final uidAlumno = FirebaseAuth.instance.currentUser?.uid;
       if (uidAlumno == null) throw Exception("Sesión inactiva. Vuelve a ingresar.");
 
@@ -890,20 +955,29 @@ class TutoriasProvider extends ChangeNotifier {
         });
 
         // Transacción 2: Anotamos la evaluación como una micro-pieza atómica en la subcolección del Tutor
+        // Guardamos promedio como compatibilidad para la UI antigua si hay partes que aún lo usan.
+        double promedio = (puntualidad + dominio + empatia) / 3;
+        
         transaction.set(docTutorEval, {
-          'estrellas': estrellas,
-          'comentario': comentario,
+          'estrellas': promedio, // Retrocompatibilidad
+          'dim_puntualidad': puntualidad,
+          'dim_dominio': dominio,
+          'dim_empatia': empatia,
+          'etiquetas': etiquetas,
+          'comentario_admin': comentarioPrivado,
+          'comentario_publico': comentarioPublico,
           'fecha': DateTime.now().toIso8601String(),
           'uid_alumno': uidAlumno,
           'tutoria_id': tutoriaId,
         });
       });
 
-      // Notificar al tutor que recibió una nueva evaluación
+      // Notificar al tutor que recibió una nueva evaluación (sin revelar el comentario privado)
+      double promedioMostrar = (puntualidad + dominio + empatia) / 3;
       await _crearNotificacion(
         usuarioId: tutorId,
         titulo: 'Nueva Evaluación Recibida ⭐',
-        mensaje: 'Un estudiante te ha evaluado con ${estrellas.toStringAsFixed(0)} estrellas. ${comentario.isNotEmpty ? '"$comentario"' : ''}',
+        mensaje: 'Un estudiante te ha evaluado. Promedio: ${promedioMostrar.toStringAsFixed(1)} estrellas.',
         tipo: 'info',
       );
 
@@ -913,17 +987,41 @@ class TutoriasProvider extends ChangeNotifier {
       await _notificarMultiples(
         uids: adminUids,
         titulo: 'Alerta Administrativa: Nueva Reseña',
-        mensaje: 'Tutor: $tutorId | Calificación: ${estrellas.toStringAsFixed(0)} | Comentario: $comentario',
-        tipo: estrellas <= 2 ? 'alerta_roja' : 'info',
+        mensaje: 'Tutor: $tutorId | Calificación: ${promedioMostrar.toStringAsFixed(1)} | Comentario Privado: ${comentarioPrivado.isEmpty ? "N/A" : comentarioPrivado}',
+        tipo: promedioMostrar <= 2.5 ? 'alerta_roja' : 'info',
       );
 
       _apagarSenalIndicadoraDeEspera();
       // Delegamos la reactividad 100% al StreamBuilder. No invocamos notifyListeners() extra ni recargamos listas locales manualmente.
       return true;
     } catch (e) { debugPrint(e.toString());
-      _mensajeDeErrorDelSistema = "Fallo en la matriz de red intentando asentar la calificación.";
+      _mensajeDeErrorDelSistema = "Fallo en la matriz de red intentando asentar la calificación: ${e.toString()}";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners(); // Se necesita para mostrar el error localmente
+      return false;
+    }
+  }
+
+  /// Elimina un comentario público de una evaluación por considerarse inapropiado (Solo Admin)
+  Future<bool> eliminarComentarioPublico(String tutorId, String evaluacionId) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+    try {
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(tutorId)
+          .collection('evaluaciones')
+          .doc(evaluacionId)
+          .update({'comentario_publico': '[Eliminado por Moderación]'});
+          
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "No se pudo eliminar el comentario.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
       return false;
     }
   }

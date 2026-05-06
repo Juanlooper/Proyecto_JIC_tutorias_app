@@ -170,11 +170,9 @@ class AutenticacionProvider extends ChangeNotifier {
         );
 
     if (respuestaDeLaInscripcion == "Registro Exitoso") {
-      // Lo autorizamos, de manera que buscamos e implantamos oficialmente su perfil como usuario en control activo.
-      _usuarioActual = await _servicioIntegradoDeAutenticacion
-          .obtenerDatosDelUsuarioActual();
+      // Retornamos true sin asignar el _usuarioActual, forzando al usuario
+      // a iniciar sesión manualmente luego de verificar su correo.
       _desactivarIndicadorDeCargaEnPantalla();
-      notifyListeners();
       return true;
     } else {
       _mensajeDeError = respuestaDeLaInscripcion;

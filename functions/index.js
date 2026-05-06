@@ -106,3 +106,47 @@ exports.notificarCambioEstadoTutoria = functions.firestore
 
         return null;
     });
+
+/**
+ * Función que se dispara cada vez que se crea un documento en la colección 'notificaciones'.
+ * Se encarga de enviar una notificación push (FCM) al dispositivo del usuario.
+ */
+exports.enviarNotificacionPush = functions.firestore
+    .document('notificaciones/{notificacionId}')
+    .onCreate(async (snap, context) => {
+        const data = snap.data();
+        if (!data || !data.usuarioId) return null;
+
+        const uid = data.usuarioId;
+        const titulo = data.titulo || 'Nueva Notificación';
+        const mensaje = data.mensaje || 'Tienes una nueva notificación en Vecta.';
+
+        try {
+            const userDoc = await admin.firestore().collection('usuarios').doc(uid).get();
+            if (!userDoc.exists) {
+                console.log(`Usuario ${uid} no encontrado.`);
+                return null;
+            }
+
+            const token = userDoc.data().token_dispositivo;
+            if (!token) {
+                console.log(`El usuario ${uid} no tiene token de dispositivo.`);
+                return null;
+            }
+
+            const payload = {
+                notification: {
+                    title: titulo,
+                    body: mensaje,
+                },
+                token: token
+            };
+
+            const respuesta = await admin.messaging().send(payload);
+            console.log(`Notificación push enviada exitosamente a ${uid}:`, respuesta);
+        } catch (error) {
+            console.error(`Error enviando notificación push a ${uid}:`, error);
+        }
+
+        return null;
+    });
