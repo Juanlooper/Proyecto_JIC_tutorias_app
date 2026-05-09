@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/usuario_model.dart';
 import '../../providers/autenticacion_provider.dart';
 import '../../providers/tutorias_provider.dart';
+import '../estudiante/sugerir_tutoria_view.dart';
 
 class PerfilPublicoTutorView extends StatefulWidget {
   final UsuarioModel mentor;
@@ -234,51 +235,82 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
                       miIdentidad.identificadorUnico !=
                           widget.mentor.identificadorUnico &&
                       esTutor)
-                    SizedBox(
-                      width: 250,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: yaSuscrito
-                              ? Colors.grey.shade300
-                              : AppTheme.primarioAzul,
-                          foregroundColor: yaSuscrito
-                              ? Colors.black87
-                              : Colors.white,
-                          elevation: yaSuscrito ? 0 : 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        onPressed: () async {
-                          await autProvider.gestionarSuscripcionATutor(
-                            widget.mentor.identificadorUnico,
-                          );
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  yaSuscrito
-                                      ? 'Has dejado de seguir a este tutor'
-                                      : '¡Ahora sigues a este tutor!',
-                                ),
-                                backgroundColor: yaSuscrito
-                                    ? Colors.black87
-                                    : Colors.green,
+                    Column(
+                      children: [
+                        SizedBox(
+                          width: 250,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: yaSuscrito
+                                  ? Colors.grey.shade300
+                                  : AppTheme.primarioAzul,
+                              foregroundColor: yaSuscrito
+                                  ? Colors.black87
+                                  : Colors.white,
+                              elevation: yaSuscrito ? 0 : 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
                               ),
-                            );
-                          }
-                        },
-                        icon: Icon(
-                          yaSuscrito ? Icons.person_remove : Icons.person_add,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            onPressed: () async {
+                              await autProvider.gestionarSuscripcionATutor(
+                                widget.mentor.identificadorUnico,
+                              );
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      yaSuscrito
+                                          ? 'Has dejado de seguir a este tutor'
+                                          : '¡Ahora sigues a este tutor!',
+                                    ),
+                                    backgroundColor: yaSuscrito
+                                        ? Colors.black87
+                                        : Colors.green,
+                                  ),
+                                );
+                              }
+                            },
+                            icon: Icon(
+                              yaSuscrito ? Icons.person_remove : Icons.person_add,
+                            ),
+                            label: Text(
+                              yaSuscrito
+                                  ? 'Dejar de seguir'
+                                  : 'Seguir y Notificarme',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
                         ),
-                        label: Text(
-                          yaSuscrito
-                              ? 'Dejar de seguir'
-                              : 'Seguir y Notificarme',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: 250,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primarioVerde,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SugerirTutoriaView(tutorDestino: widget.mentor.identificadorUnico),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.lightbulb_outline),
+                            label: const Text(
+                              'Sugerir Clase Directa',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                 ],
               ),

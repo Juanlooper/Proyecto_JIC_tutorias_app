@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_theme.dart';
-
 import '../../providers/autenticacion_provider.dart';
 import '../../models/usuario_model.dart';
 import '../widgets/tutorial_vecta_widget.dart';
@@ -17,7 +16,6 @@ import '../estudiante/sugerir_tutoria_view.dart';
 import '../estudiante/mis_sugerencias_view.dart';
 import '../notifications/notificaciones_view.dart';
 import '../../providers/tema_provider.dart';
-
 import '../tutor/dashboard_tutor_view.dart';
 import '../admin/admin_dashboard_view.dart';
 
@@ -62,7 +60,7 @@ class _MainNavigationViewState extends State<MainNavigationView> {
       // Usamos docChanges para ver únicamente los cambios recientes
       for (var change in snapshot.docChanges) {
         if (change.type == DocumentChangeType.added) {
-          final data = change.doc.data() as Map<String, dynamic>?;
+          final data = change.doc.data();
           if (data != null && data['leida'] == false) {
             // Verificar que la notificación sea reciente (opcional, para no mostrar viejas al iniciar)
             final fechaStr = data['fecha'] as String?;

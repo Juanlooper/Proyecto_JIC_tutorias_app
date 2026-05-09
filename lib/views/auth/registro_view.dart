@@ -151,9 +151,9 @@ class _RegistroViewState extends State<RegistroView> {
           ),
           title: Text(
             'Ayuda: $tituloField',
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: VectaColors.darkBlue,
+              color: Theme.of(context).brightness == Brightness.dark ? Colors.white : VectaColors.darkBlue,
             ),
           ),
           content: Text(
@@ -313,6 +313,28 @@ class _RegistroViewState extends State<RegistroView> {
       );
     }
   }
+  Widget _buildResponsiveRow(Widget child1, Widget child2) {
+    bool isSmallScreen = MediaQuery.of(context).size.width < 600;
+    if (isSmallScreen) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          child1,
+          const SizedBox(height: 15),
+          child2,
+        ],
+      );
+    } else {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: child1),
+          const SizedBox(width: 20),
+          Expanded(child: child2),
+        ],
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -373,28 +395,21 @@ class _RegistroViewState extends State<RegistroView> {
                 const SizedBox(height: 35),
 
                 // SECCIÓN 1: Datos Personales
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildHelpTextField(
-                        'Primer Nombre',
-                        Icons.person,
-                        'Por favor, ingresa tu primer nombre legal. Solo se permiten letras.',
-                        type: _FieldType.soloLetras,
-                        controller: _ctrlPrimerNombre,
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: _buildHelpTextField(
-                        'Primer Apellido',
-                        Icons.badge,
-                        'Por favor, ingresa tu primer apellido legal. Solo se permiten letras.',
-                        type: _FieldType.soloLetras,
-                        controller: _ctrlPrimerApellido,
-                      ),
-                    ),
-                  ],
+                _buildResponsiveRow(
+                  _buildHelpTextField(
+                    'Primer Nombre',
+                    Icons.person,
+                    'Por favor, ingresa tu primer nombre legal. Solo se permiten letras.',
+                    type: _FieldType.soloLetras,
+                    controller: _ctrlPrimerNombre,
+                  ),
+                  _buildHelpTextField(
+                    'Primer Apellido',
+                    Icons.badge,
+                    'Por favor, ingresa tu primer apellido legal. Solo se permiten letras.',
+                    type: _FieldType.soloLetras,
+                    controller: _ctrlPrimerApellido,
+                  ),
                 ),
                 const SizedBox(height: 15),
                 // Campo de Cédula con el formato exacto del Forms
@@ -418,41 +433,34 @@ class _RegistroViewState extends State<RegistroView> {
                 ),
                 const SizedBox(height: 15),
                 // Facultad y Carrera dinámicas
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildDropdownField(
-                        'Facultad',
-                        Icons.account_balance,
-                        _facultadesUTP.keys.toList(),
-                        _facultadSeleccionada,
-                        (val) {
-                          setState(() {
-                            _facultadSeleccionada = val;
-                            _carreraSeleccionada = null; // Resetea la carrera
-                            _ctrlDropdownCarrera.clear();
-                          });
-                        },
-                        'Selecciona la facultad a la que pertenece tu carrera.',
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: _buildSearchableDropdown(
-                        'Carrera',
-                        Icons.menu_book,
-                        _facultadSeleccionada != null
-                            ? _facultadesUTP[_facultadSeleccionada]!
-                            : [],
-                        _carreraSeleccionada,
-                        _ctrlDropdownCarrera,
-                        (val) {
-                          setState(() => _carreraSeleccionada = val);
-                        },
-                        'Escribe o selecciona tu carrera en la lista.',
-                      ),
-                    ),
-                  ],
+                _buildResponsiveRow(
+                  _buildDropdownField(
+                    'Facultad',
+                    Icons.account_balance,
+                    _facultadesUTP.keys.toList(),
+                    _facultadSeleccionada,
+                    (val) {
+                      setState(() {
+                        _facultadSeleccionada = val;
+                        _carreraSeleccionada = null; // Resetea la carrera
+                        _ctrlDropdownCarrera.clear();
+                      });
+                    },
+                    'Selecciona la facultad a la que pertenece tu carrera.',
+                  ),
+                  _buildSearchableDropdown(
+                    'Carrera',
+                    Icons.menu_book,
+                    _facultadSeleccionada != null
+                        ? _facultadesUTP[_facultadSeleccionada]!
+                        : [],
+                    _carreraSeleccionada,
+                    _ctrlDropdownCarrera,
+                    (val) {
+                      setState(() => _carreraSeleccionada = val);
+                    },
+                    'Escribe o selecciona tu carrera en la lista.',
+                  ),
                 ),
 
                 const SizedBox(height: 35),
@@ -471,51 +479,37 @@ class _RegistroViewState extends State<RegistroView> {
                 ),
                 const SizedBox(height: 25),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildHelpTextField(
-                        'Celular personal',
-                        Icons.smartphone,
-                        'El prefijo +507 ya está puesto. Ingresa los 8 dígitos restantes; un guión se pondrá automáticamente después de los 4 primeros números.',
-                        type: _FieldType.celular,
-                        controller: _ctrlCelularPersonal,
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: _buildHelpTextField(
-                        'Teléfono de emergencia',
-                        Icons.phone,
-                        'El prefijo +507 ya está puesto. Ingresa los 8 dígitos restantes; un guión se pondrá automáticamente después de los 4 primeros números.',
-                        type: _FieldType.celular,
-                        controller: _ctrlTelefonoEmergencia,
-                      ),
-                    ),
-                  ],
+                _buildResponsiveRow(
+                  _buildHelpTextField(
+                    'Celular personal',
+                    Icons.smartphone,
+                    'El prefijo +507 ya está puesto. Ingresa los 8 dígitos restantes; un guión se pondrá automáticamente después de los 4 primeros números.',
+                    type: _FieldType.celular,
+                    controller: _ctrlCelularPersonal,
+                  ),
+                  _buildHelpTextField(
+                    'Teléfono de emergencia',
+                    Icons.phone,
+                    'El prefijo +507 ya está puesto. Ingresa los 8 dígitos restantes; un guión se pondrá automáticamente después de los 4 primeros números.',
+                    type: _FieldType.celular,
+                    controller: _ctrlTelefonoEmergencia,
+                  ),
                 ),
                 const SizedBox(height: 15),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildHelpTextField(
-                        'Contacto de emergencia (Nombre)',
-                        Icons.health_and_safety,
-                        'Nombre completo de la persona que debemos contactar en caso de una emergencia real.',
-                        controller: _ctrlContactoEmergencia,
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: _buildHelpTextField(
-                        'Parentesco',
-                        Icons.family_restroom,
-                        'Ejemplo: Madre, Padre, Tío, Hermano/a. Solo se permiten letras.',
-                        type: _FieldType.soloLetras,
-                        controller: _ctrlParentesco,
-                      ),
-                    ),
-                  ],
+                _buildResponsiveRow(
+                  _buildHelpTextField(
+                    'Contacto de emergencia (Nombre)',
+                    Icons.health_and_safety,
+                    'Nombre completo de la persona que debemos contactar en caso de una emergencia real.',
+                    controller: _ctrlContactoEmergencia,
+                  ),
+                  _buildHelpTextField(
+                    'Parentesco',
+                    Icons.family_restroom,
+                    'Ejemplo: Madre, Padre, Tío, Hermano/a. Solo se permiten letras.',
+                    type: _FieldType.soloLetras,
+                    controller: _ctrlParentesco,
+                  ),
                 ),
 
                 const SizedBox(height: 35),
@@ -575,7 +569,7 @@ class _RegistroViewState extends State<RegistroView> {
                             ),
                           ),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Theme.of(context).colorScheme.surface,
                           contentPadding: const EdgeInsets.symmetric(
                             vertical: 16,
                           ),
@@ -634,7 +628,7 @@ class _RegistroViewState extends State<RegistroView> {
                             ],
                           ),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Theme.of(context).colorScheme.surface,
                           contentPadding: const EdgeInsets.symmetric(
                             vertical: 16,
                           ),
@@ -671,10 +665,10 @@ class _RegistroViewState extends State<RegistroView> {
                       context,
                     ).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
-                      title: const Text(
+                      title: Text(
                         'Leer Términos y Condiciones',
                         style: TextStyle(
-                          color: VectaColors.darkBlue,
+                          color: Theme.of(context).brightness == Brightness.dark ? Colors.white : VectaColors.darkBlue,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -688,7 +682,7 @@ class _RegistroViewState extends State<RegistroView> {
                         Container(
                           padding: const EdgeInsets.all(20),
                           color: VectaColors.backgroundGray,
-                          child: const Text(
+                          child: Text(
                             '''TÉRMINOS, CONDICIONES Y POLÍTICA DE PRIVACIDAD DE VECTA: ¡Bienvenido a Vecta! Esta plataforma ha sido diseñada para facilitar la gestión y el acceso a tutorías académicas. Antes de utilizar nuestra aplicación, te pedimos que leas detenidamente los siguientes Términos y Condiciones, así como nuestra Política de Privacidad. Al registrarte y utilizar Vecta, aceptas cumplir con estas normativas.
 
 1. Marco Legal y Derechos del Usuario
@@ -731,7 +725,7 @@ Vecta es una herramienta tecnológica diseñada para facilitar el apoyo académi
 7. Cambios en estas Políticas
 Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas regulaciones legales o mejoras en la aplicación. Te notificaremos a través de la app o por correo electrónico si se realizan cambios importantes.''',
                             style: TextStyle(
-                              color: VectaColors.darkBlue,
+                              color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : VectaColors.darkBlue,
                               fontSize: 13,
                               height: 1.5,
                             ),
@@ -865,8 +859,8 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
         hintStyle: const TextStyle(color: VectaColors.softBlue, fontSize: 15),
         prefixIcon: Icon(icon, color: VectaColors.secondaryBlue, size: 22),
         prefixText: type == _FieldType.celular ? '+507 ' : null,
-        prefixStyle: const TextStyle(
-          color: VectaColors.darkBlue,
+        prefixStyle: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark ? Colors.white : VectaColors.darkBlue,
           fontWeight: FontWeight.bold,
         ),
 
@@ -879,7 +873,7 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
           onPressed: () => _mostrarVentanaAyuda(hint.split(' (')[0], ayuda),
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: Theme.of(context).colorScheme.surface,
         contentPadding: const EdgeInsets.symmetric(vertical: 16),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -936,7 +930,9 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
                     value: val,
                     child: Text(
                       val,
-                      style: const TextStyle(color: VectaColors.darkBlue),
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.white : VectaColors.darkBlue,
+                      ),
                     ),
                   ),
                 )
@@ -986,8 +982,8 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
                 width: constraints.maxWidth,
                 controller: controller,
                 hintText: hint,
-                textStyle: const TextStyle(
-                  color: VectaColors.darkBlue,
+                textStyle: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : VectaColors.darkBlue,
                   overflow: TextOverflow.ellipsis,
                 ),
                 inputDecorationTheme: const InputDecorationTheme(
@@ -1014,7 +1010,7 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
                     value: val,
                     label: val,
                     style: MenuItemButton.styleFrom(
-                      foregroundColor: VectaColors.darkBlue,
+                      foregroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.white : VectaColors.darkBlue,
                     ),
                   );
                 }).toList(),

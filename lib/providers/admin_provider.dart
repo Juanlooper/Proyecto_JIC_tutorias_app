@@ -215,7 +215,7 @@ class AdminProvider extends ChangeNotifier {
         if (totalUnicos == 0) {
           tasaRetencionTutor[tutorId] = 0.0;
         } else {
-          int repetidores = alumnos.values.where((count) => count > 1).length;
+          int repetidores = alumnos.values.where((c) => c > 1).length;
           tasaRetencionTutor[tutorId] = (repetidores / totalUnicos) * 100.0;
         }
       });

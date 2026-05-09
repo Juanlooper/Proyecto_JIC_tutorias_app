@@ -769,8 +769,9 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              if (esTarde && excusaCtrl.text.trim().isEmpty)
+              if (esTarde && excusaCtrl.text.trim().isEmpty) {
                 return; // Requiere texto
+              }
               if (esTarde &&
                   ModeracionServicio.contieneLenguajeToxico(
                     excusaCtrl.text.trim(),

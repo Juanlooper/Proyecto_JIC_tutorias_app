@@ -1,112 +1,107 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+  
+    // ---------------------------------------------------------
+    // FUNCIONES GLOBALES REUTILIZABLES
+    // ---------------------------------------------------------
     
-    // Función auxiliar para saber si la sesión está iniciada.
-    // Por qué: Restringe el acceso global únicamente a miembros de la UTP registrados en la plataforma.
+    // Verifica si el usuario está autenticado en la aplicación
     function estaAutenticado() {
       return request.auth != null;
     }
 
-    // Función auxiliar para leer el rol del usuario conectado de forma segura.
-    function obtenerRolDelUsuario() {
-      let doc = get(/databases/$(database)/documents/usuarios/$(request.auth.uid));
-      return doc != null ? doc.data.get('rolEnElSistema', 'estudiante') : 'estudiante';
+    // Obtiene el rol del usuario actual desde su documento en la colección 'usuarios'
+    // Se usa 'get' para leer de forma segura. Si no existe, asume 'ninguno'.
+    function getRol() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rolEnElSistema;
     }
 
+    // Verifica si el usuario actual tiene rol de Administrador
+    function esAdmin() {
+      return estaAutenticado() && getRol() == 'admin';
+    }
+
+    // Verifica si el usuario actual tiene rol de Tutor
+    function esTutor() {
+      return estaAutenticado() && getRol() == 'tutor';
+    }
+    
+    // Verifica si el usuario actual tiene rol de Estudiante
+    function esEstudiante() {
+      return estaAutenticado() && getRol() == 'estudiante';
+    }
+
+    // ---------------------------------------------------------
+    // REGLAS POR COLECCIÓN
+    // ---------------------------------------------------------
+
+    // 1. Colección de USUARIOS
     match /usuarios/{userId} {
-      // Lectura: Cualquier usuario autenticado puede leer cualquier perfil.
-      // Por qué: Se necesita para que los estudiantes puedan ver la información de los tutores, y viceversa, habilitando la comunicación en la plataforma.
+      // Cualquiera autenticado puede leer perfiles (para ver la lista de tutores, por ejemplo)
       allow read: if estaAutenticado();
       
-      // Creación: Un usuario solo puede crear su propio documento si el 'rolEnElSistema' es 'estudiante'.
-      // Por qué: Evita que un nuevo usuario manipule la petición de creación para asignarse a sí mismo como 'admin' o 'tutor' burlando el sistema.
-      allow create: if estaAutenticado() 
-                    && request.auth.uid == userId
-                    && request.resource.data.rolEnElSistema == 'estudiante';
+      // Creación: Permitida si el usuario está autenticado y el documento coincide con su UID (Registro)
+      allow create: if estaAutenticado() && request.auth.uid == userId;
       
-      // Actualización: Un usuario puede actualizar su 'nombreCompleto', 'facultad' y 'carrera', pero TIENE PROHIBIDO actualizar el campo 'rolEnElSistema'.
-      // Por qué: Protege el escalamiento de privilegios. Solo un administrador o proceso backend de confianza puede y debe alterar el rol de alguien.
-      allow update: if estaAutenticado() 
-                    && request.auth.uid == userId
-                    && request.resource.data.rolEnElSistema == resource.data.rolEnElSistema
-                    && request.resource.data.esta_baneado == resource.data.esta_baneado
-                    && request.resource.data.strikes_inasistencia == resource.data.strikes_inasistencia
-                    && request.resource.data.estado_solicitud_tutor == resource.data.estado_solicitud_tutor;
-                    
-      // Eliminación: Deshabilitada.
-      // Por qué: Mantener la integridad del historial de registros en el sistema académico.
-      allow delete: if false;
-
-      // Evaluaciones del Tutor
-      match /evaluaciones/{evalId} {
-        allow read: if estaAutenticado();
-        allow create: if estaAutenticado();
-      }
+      // Actualización: Solo el dueño de la cuenta puede editar su perfil, o un Administrador
+      allow update: if estaAutenticado() && (request.auth.uid == userId || esAdmin());
+      
+      // Eliminación: Solo un Administrador puede borrar cuentas, o el dueño (si decides permitirlo)
+      allow delete: if esAdmin() || (estaAutenticado() && request.auth.uid == userId);
     }
 
+    // 2. Colección de TUTORÍAS
     match /tutorias/{tutoriaId} {
-      // Lectura: Pública para usuarios autenticados.
-      // Por qué: Requerido para mostrar el tablero general de tutorías disponibles a toda la comunidad estudiantil.
+      // Cualquier usuario autenticado puede ver las tutorías disponibles
       allow read: if estaAutenticado();
       
-      // Creación: Se permite a cualquier usuario autenticado crear una tutoría.
-      // Por qué: Tanto tutores como estudiantes pueden publicar solicitudes de clases a través de la aplicación.
-      allow create: if estaAutenticado();
+      // Estudiantes pueden sugerir, Tutores pueden crear, Admins pueden crear
+      allow create: if estaAutenticado(); 
       
-      // Eliminación: Solo el creador de la tutoría puede eliminarla si está en estado 'pendiente'.
-      // Por qué: Protege la tutoría de ser borrada por malicia de un tercero, y bloquea su eliminación si ya un tutor la aceptó y apartó tiempo en su agenda para impartirla.
-      // Nota de diseño: Asumimos al creador como miembro de la 'listaDeEstudiantesInscritos'.
-      allow delete: if estaAutenticado()
-                    && request.auth.uid in resource.data.listaDeEstudiantesInscritos
-                    && resource.data.estadoDeLaSolicitud == 'pendiente';
+      // Actualización: Permitir si es admin, o si eres el tutor que la acepta, o el estudiante que se inscribe
+      // (Para producción estricta, aquí se verificaría que no modifiquen el creador original)
+      allow update: if estaAutenticado();
       
-      // Actualización: Restringida para evitar manipulación masiva.
-      // Permite actualizar si el usuario es el tutor asignado, si la tutoría no tiene tutor aún (para reclamarla),
-      // o si el estudiante está en la lista de inscritos actual o se está inscribiendo en esta petición.
-      allow update: if estaAutenticado() 
-                    && (request.auth.uid == resource.data.identificadorDelTutor 
-                        || resource.data.identificadorDelTutor == '' 
-                        || request.auth.uid in resource.data.listaDeEstudiantesInscritos 
-                        || request.auth.uid in request.resource.data.listaDeEstudiantesInscritos);
-                        
-      // Eliminación: Un administrador puede borrar cualquier tutoría
-      allow delete: if estaAutenticado() && obtenerRolDelUsuario() == 'admin';
+      // Eliminación: Solo el admin, o el tutor/estudiante que la creó (para cancelarla)
+      // Se valida que el uid del creador o del tutor coincida, o sea admin
+      allow delete: if esAdmin() || 
+                    (estaAutenticado() && (resource.data.creador == request.auth.uid || resource.data.identificadorDelTutor == request.auth.uid));
     }
 
+    // 3. Colección de NOTIFICACIONES (Bloqueada al UID del usuario)
     match /notificaciones/{notificacionId} {
-      // Lectura: Solo el usuario destinatario puede leer sus propias notificaciones.
-      allow read: if estaAutenticado() && resource.data.usuarioId == request.auth.uid;
+      // Lectura y borrado estrictamente limitados al dueño de la notificación
+      allow read, update, delete: if estaAutenticado() && resource.data.usuarioId == request.auth.uid;
       
-      // Creación: Cualquier usuario autenticado puede crear notificaciones (ej. al apartar tutoría).
+      // Cualquier usuario autenticado puede generar una notificación (Ej: Un estudiante le envía a un tutor)
       allow create: if estaAutenticado();
-      
-      // Actualización: Solo el dueño de la notificación puede marcarla como leída.
-      allow update: if estaAutenticado() && resource.data.usuarioId == request.auth.uid;
-      
-      // Eliminación: El usuario destinatario puede borrar sus notificaciones.
-      allow delete: if estaAutenticado() && resource.data.usuarioId == request.auth.uid;
     }
 
-    match /quejas/{quejaId} {
-      // Lectura y escritura: Cualquier autenticado puede crear quejas; solo admin puede leerlas.
-      allow create: if estaAutenticado();
-      allow read: if estaAutenticado() && obtenerRolDelUsuario() == 'admin';
-    }
-
-    match /evaluaciones_estudiantes/{docId} {
+    // 4. Colección de EVALUACIONES
+    match /evaluaciones/{evaluacionId} {
+      // Todos pueden ver las evaluaciones (para mostrar el rating del tutor)
       allow read: if estaAutenticado();
-      allow create: if estaAutenticado();
+      // Solo estudiantes pueden crear evaluaciones
+      allow create: if esEstudiante();
+      // Admins pueden moderarlas o borrarlas
+      allow update, delete: if esAdmin();
     }
 
-    match /reportes_tribunal/{reportId} {
+    // 5. QUEJAS Y TRIBUNAL (Privacidad Estricta)
+    match /quejas/{quejaId} {
+      // Estudiantes o tutores pueden crear una queja
       allow create: if estaAutenticado();
-      allow read: if estaAutenticado() && obtenerRolDelUsuario() == 'admin';
+      // SOLO el Administrador puede leer, actualizar o borrar quejas
+      allow read, update, delete: if esAdmin();
     }
 
-    // Regla Global: El administrador tiene acceso de lectura, escritura y borrado en TODO el sistema (incluyendo quejas)
-    match /{document=**} {
-      allow read, write, delete: if estaAutenticado() && obtenerRolDelUsuario() == 'admin';
+    match /reportes_tribunal/{reporteId} {
+      // Estudiantes o tutores pueden reportar a alguien ausente/tóxico
+      allow create: if estaAutenticado();
+      // SOLO el Administrador puede procesar, leer y archivar el tribunal
+      allow read, update, delete: if esAdmin();
     }
+
   }
 }

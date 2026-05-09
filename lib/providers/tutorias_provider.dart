@@ -157,6 +157,210 @@ class TutoriasProvider extends ChangeNotifier {
     }
   }
 
+  /// Sistema de "Sugerencia Directa".
+  /// Permite al estudiante sugerir una tutoría directamente a un tutor específico.
+  Future<bool> crearSugerenciaDirecta(TutoriaModel sugerencia, String idTutor) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final uidEstudiante = FirebaseAuth.instance.currentUser?.uid;
+      if (uidEstudiante == null) {
+        throw Exception("Sesión inactiva. Vuelve a ingresar para solicitar una clase.");
+      }
+
+      List<String> apoyadoresIniciales = [uidEstudiante];
+      final collectionRef = FirebaseFirestore.instance.collection('tutorias');
+      String docId = sugerencia.identificadorDeTutoria.isEmpty 
+          ? collectionRef.doc().id 
+          : sugerencia.identificadorDeTutoria;
+
+      TutoriaModel solicitudProcesada = sugerencia.copyWith(
+        identificadorDeTutoria: docId,
+        identificadorDelTutor: idTutor, // Tutor asignado
+        estadoDeLaSolicitud: 'sugerida_directa', // Nuevo estado
+        listaDeEstudiantesInscritos: [], 
+        estudiantesApoyando: apoyadoresIniciales,
+        fecha_creacion_solicitud: DateTime.now(),
+      );
+
+      Map<String, dynamic> datosNube = solicitudProcesada.toMap();
+      datosNube['creador'] = uidEstudiante;
+
+      await collectionRef.doc(docId).set(datosNube);
+
+      // Notificar SOLO al tutor asignado
+      await _crearNotificacion(
+        usuarioId: idTutor,
+        titulo: 'Nueva Sugerencia Directa 🎯',
+        mensaje: 'Un estudiante te ha sugerido directamente dar una clase de ${sugerencia.materiaOAsignatura}.',
+        tipo: 'info',
+      );
+
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) { 
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "Error al procesar la sugerencia directa.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Permite al tutor rechazar una sugerencia directa.
+  Future<bool> rechazarSugerenciaDirecta(String idTutoria, String razon) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final docRef = FirebaseFirestore.instance.collection('tutorias').doc(idTutoria);
+      final docSnapshot = await docRef.get();
+      if (!docSnapshot.exists) throw Exception("Tutoría no encontrada.");
+      final data = docSnapshot.data()!;
+
+      await docRef.update({
+        'estadoDeLaSolicitud': 'rechazada_directa',
+        'justificacion_cancelacion': razon,
+      });
+
+      final creador = data['creador'] ?? '';
+      if (creador.isNotEmpty) {
+        await _crearNotificacion(
+          usuarioId: creador,
+          titulo: 'Sugerencia Rechazada ❌',
+          mensaje: 'El tutor no pudo aceptar tu sugerencia de ${data['materiaOAsignatura']}. Motivo: $razon',
+          tipo: 'alerta_amarilla',
+        );
+      }
+
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "Error al rechazar la sugerencia.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Permite al tutor aceptar una sugerencia directa.
+  Future<bool> aceptarSugerenciaDirecta(String idTutoria) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final docRef = FirebaseFirestore.instance.collection('tutorias').doc(idTutoria);
+      final docSnapshot = await docRef.get();
+      if (!docSnapshot.exists) throw Exception("Tutoría no encontrada.");
+      
+      final data = docSnapshot.data()!;
+      // Si la tutoría era grupal y tiene cupo > 1, el estado es abierta. Sino, aceptada.
+      String nuevoEstado = 'aceptada';
+      int cupoMaximo = data['cupoMaximo'] ?? 1;
+      bool esGrupal = data['esGrupal'] ?? false;
+      if (esGrupal && cupoMaximo > 1) {
+        nuevoEstado = 'abierta';
+      }
+
+      await docRef.update({
+        'estadoDeLaSolicitud': nuevoEstado,
+        'fecha_aceptacion_solicitud': DateTime.now(),
+      });
+
+      final creador = data['creador'] ?? '';
+      if (creador.isNotEmpty) {
+        await _crearNotificacion(
+          usuarioId: creador,
+          titulo: '¡Sugerencia Aceptada! 🎉',
+          mensaje: 'El tutor ha aceptado tu sugerencia de ${data['materiaOAsignatura']}.',
+          tipo: 'info',
+        );
+      }
+
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "Error al aceptar la sugerencia.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+  
+  /// Permite convertir una sugerencia rechazada a la bolsa pública.
+  Future<bool> republicarSugerenciaEnBolsa(String idTutoria) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final docRef = FirebaseFirestore.instance.collection('tutorias').doc(idTutoria);
+      
+      await docRef.update({
+        'estadoDeLaSolicitud': 'solicitada',
+        'identificadorDelTutor': '', // Lo liberamos
+        'justificacion_cancelacion': null, // Borramos justificación
+      });
+
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "Error al republicar.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Permite a un tutor crear y publicar su propia clase.
+  Future<bool> tutorCreaClase(TutoriaModel claseNueva) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final uidTutor = FirebaseAuth.instance.currentUser?.uid;
+      if (uidTutor == null) throw Exception("Sesión inactiva.");
+
+      final collectionRef = FirebaseFirestore.instance.collection('tutorias');
+      String docId = claseNueva.identificadorDeTutoria.isEmpty 
+          ? collectionRef.doc().id 
+          : claseNueva.identificadorDeTutoria;
+
+      TutoriaModel claseProcesada = claseNueva.copyWith(
+        identificadorDeTutoria: docId,
+        identificadorDelTutor: uidTutor,
+        estadoDeLaSolicitud: 'aceptada', // Ya nace aceptada por el propio tutor
+        fecha_aceptacion_solicitud: DateTime.now(),
+        fecha_creacion_solicitud: DateTime.now(),
+      );
+
+      await collectionRef.doc(docId).set(claseProcesada.toMap());
+
+      await cargarListadoDeTutoriasPendientes();
+      await cargarTutoriasSuscritasDelUsuario(uidTutor);
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "Error al crear tu clase.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Permite al estudiante arrepentirse y borrar de la bolsa una solicitud huérfana que él creó.
   Future<bool> cancelarSolicitudHuerfana(String tutoriaId) async {
     _iluminarSenalIndicadoraDeEspera();
