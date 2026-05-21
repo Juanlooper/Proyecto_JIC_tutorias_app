@@ -209,11 +209,16 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
                       if (_calculandoStats && esTutor)
                         const CircularProgressIndicator()
                       else ...[
-                        _construirMetrica(
-                          esTutor ? _promedioEstrellas.toStringAsFixed(1) : '-',
-                          'Estrellas',
-                          Icons.star,
-                        ),
+                        if (esTutor && _totalEvaluaciones < 10)
+                          _construirMetrica('-', 'Nuevo', Icons.auto_awesome)
+                        else
+                          _construirMetrica(
+                            esTutor
+                                ? _promedioEstrellas.toStringAsFixed(1)
+                                : '-',
+                            'Estrellas',
+                            Icons.star,
+                          ),
                         _construirMetrica(
                           esTutor ? _totalEvaluaciones.toString() : '0',
                           'Reseñas',
@@ -273,13 +278,17 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
                               }
                             },
                             icon: Icon(
-                              yaSuscrito ? Icons.person_remove : Icons.person_add,
+                              yaSuscrito
+                                  ? Icons.person_remove
+                                  : Icons.person_add,
                             ),
                             label: Text(
                               yaSuscrito
                                   ? 'Dejar de seguir'
                                   : 'Seguir y Notificarme',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
@@ -299,7 +308,10 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => SugerirTutoriaView(tutorDestino: widget.mentor.identificadorUnico),
+                                  builder: (context) => SugerirTutoriaView(
+                                    tutorDestino:
+                                        widget.mentor.identificadorUnico,
+                                  ),
                                 ),
                               );
                             },
@@ -430,7 +442,8 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
                           .orderBy('fecha', descending: true)
                           .snapshots(),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return const CircularProgressIndicator();
                         }
                         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -478,10 +491,14 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
                                       onPressed: () async {
                                         try {
                                           if (esAdmin) {
-                                            await context.read<TutoriasProvider>().eliminarComentarioPublico(
-                                              widget.mentor.identificadorUnico, 
-                                              rese.id
-                                            );
+                                            await context
+                                                .read<TutoriasProvider>()
+                                                .eliminarComentarioPublico(
+                                                  widget
+                                                      .mentor
+                                                      .identificadorUnico,
+                                                  rese.id,
+                                                );
                                           } else {
                                             await rese.reference.delete();
                                           }
@@ -525,12 +542,19 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
                                       fontStyle: FontStyle.italic,
                                     ),
                                   ),
-                                  if (esAdmin && datos['comentario_admin'] != null && datos['comentario_admin'].toString().isNotEmpty)
+                                  if (esAdmin &&
+                                      datos['comentario_admin'] != null &&
+                                      datos['comentario_admin']
+                                          .toString()
+                                          .isNotEmpty)
                                     Padding(
                                       padding: const EdgeInsets.only(top: 4.0),
                                       child: Text(
                                         'Privado (Solo Admin): ${datos['comentario_admin']}',
-                                        style: const TextStyle(fontSize: 12, color: Colors.red),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.red,
+                                        ),
                                       ),
                                     ),
                                 ],

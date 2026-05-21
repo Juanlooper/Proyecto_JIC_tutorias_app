@@ -220,12 +220,47 @@ class TarjetaComunidad extends StatelessWidget {
                       .snapshots(),
                   builder: (context, snapshot) {
                     double promedio = 0;
+                    int totalResenas = 0;
                     if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
                       final docs = snapshot.data!.docs;
+                      totalResenas = docs.length;
                       for (var d in docs) {
                         promedio += (d['estrellas'] as num).toDouble();
                       }
                       promedio /= docs.length;
+                    }
+
+                    if (totalResenas < 10) {
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.secondaryContainer,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.auto_awesome,
+                                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Nuevo',
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
                     }
 
                     int estrellasLlenas = promedio.round();

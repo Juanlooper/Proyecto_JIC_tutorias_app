@@ -46,6 +46,8 @@ class TutoriasApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // 1. Manejo de Identidad
+        // Mantenemos tu inicialización por si cargas datos extra de Firestore al abrir la app.
         ChangeNotifierProvider(
           create: (_) => AutenticacionProvider()..inicializarSesionAlAbrirApp(),
         ),
@@ -64,10 +66,12 @@ class TutoriasApp extends StatelessWidget {
                 ? AppTheme.darkTheme
                 : AppTheme.lightTheme,
             home: authProv.estaInicializando
-                ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+                ? const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  )
                 : (authProv.usuarioActual != null
-                    ? const MainNavigationView()
-                    : const LandingScreen()),
+                      ? const MainNavigationView()
+                      : const LandingScreen()),
           );
         },
       ),
