@@ -878,6 +878,7 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
     List<String> etiquetasSeleccionadas = [];
     final TextEditingController ctrlComentario = TextEditingController();
     final TextEditingController ctrlComentarioPublico = TextEditingController();
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
     final List<String> etiquetasPositivas = [
       'Explica claro', 'Paciente', 'Buen material', 'Dinámico'
@@ -892,140 +893,173 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
       builder: (contextDialogo) {
         return StatefulBuilder(
           builder: (context, setEstadoInterno) {
+            void alCambiarEstrellas() {
+              if (puntualidad > 0 && dominio > 0 && empatia > 0) {
+                formKey.currentState?.validate();
+              }
+            }
+
             return Dialog(
               backgroundColor: Theme.of(context).colorScheme.surface,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      'Evaluar Tutoría',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    const Text('Puntualidad y Compromiso', style: TextStyle(fontWeight: FontWeight.w600)),
-                    _construirSelectorEstrellas(context, (v) => setEstadoInterno(() => puntualidad = v), puntualidad),
-                    const SizedBox(height: 16),
-
-                    const Text('Dominio del Tema', style: TextStyle(fontWeight: FontWeight.w600)),
-                    _construirSelectorEstrellas(context, (v) => setEstadoInterno(() => dominio = v), dominio),
-                    const SizedBox(height: 16),
-
-                    const Text('Empatía y Paciencia', style: TextStyle(fontWeight: FontWeight.w600)),
-                    _construirSelectorEstrellas(context, (v) => setEstadoInterno(() => empatia = v), empatia),
-                    const SizedBox(height: 24),
-
-                    const Text('Etiquetas Rápidas', style: TextStyle(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        ...etiquetasPositivas.map((t) => FilterChip(
-                          label: Text(t, style: TextStyle(fontSize: 12, color: etiquetasSeleccionadas.contains(t) ? Colors.white : Colors.green[800])),
-                          selected: etiquetasSeleccionadas.contains(t),
-                          selectedColor: Colors.green,
-                          backgroundColor: Colors.green.withValues(alpha: 0.1),
-                          onSelected: (val) {
-                            setEstadoInterno(() {
-                              val ? etiquetasSeleccionadas.add(t) : etiquetasSeleccionadas.remove(t);
-                            });
-                          },
-                        )),
-                        ...etiquetasNegativas.map((t) => FilterChip(
-                          label: Text(t, style: TextStyle(fontSize: 12, color: etiquetasSeleccionadas.contains(t) ? Colors.white : Colors.red[800])),
-                          selected: etiquetasSeleccionadas.contains(t),
-                          selectedColor: Colors.red,
-                          backgroundColor: Colors.red.withValues(alpha: 0.1),
-                          onSelected: (val) {
-                            setEstadoInterno(() {
-                              val ? etiquetasSeleccionadas.add(t) : etiquetasSeleccionadas.remove(t);
-                            });
-                          },
-                        )),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    const Text('Comentario Confidencial para Admin:', style: TextStyle(fontWeight: FontWeight.w600)),
-                    const Text('(El tutor nunca verá este mensaje)', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: ctrlComentario,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        hintText: 'Opcional. ¿Hubo algún problema grave?',
-                        filled: true,
-                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[900] : Colors.grey[100],
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              child: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'Evaluar Tutoría',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    const Text('Comentario para la Comunidad:', style: TextStyle(fontWeight: FontWeight.w600)),
-                    const Text('(Visible públicamente en el perfil del tutor)', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: ctrlComentarioPublico,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        hintText: 'Opcional. Deja un comentario de agradecimiento.',
-                        filled: true,
-                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[900] : Colors.grey[100],
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      const SizedBox(height: 24),
+                      
+                      const Text('Puntualidad y Compromiso', style: TextStyle(fontWeight: FontWeight.w600)),
+                      _construirSelectorEstrellas(context, (v) {
+                        setEstadoInterno(() => puntualidad = v);
+                        alCambiarEstrellas();
+                      }, puntualidad),
+                      const SizedBox(height: 16),
+
+                      const Text('Dominio del Tema', style: TextStyle(fontWeight: FontWeight.w600)),
+                      _construirSelectorEstrellas(context, (v) {
+                        setEstadoInterno(() => dominio = v);
+                        alCambiarEstrellas();
+                      }, dominio),
+                      const SizedBox(height: 16),
+
+                      const Text('Empatía y Paciencia', style: TextStyle(fontWeight: FontWeight.w600)),
+                      _construirSelectorEstrellas(context, (v) {
+                        setEstadoInterno(() => empatia = v);
+                        alCambiarEstrellas();
+                      }, empatia),
+                      const SizedBox(height: 24),
+
+                      const Text('Etiquetas Rápidas', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          ...etiquetasPositivas.map((t) => FilterChip(
+                            label: Text(t, style: TextStyle(fontSize: 12, color: etiquetasSeleccionadas.contains(t) ? Colors.white : Colors.green[800])),
+                            selected: etiquetasSeleccionadas.contains(t),
+                            selectedColor: Colors.green,
+                            backgroundColor: Colors.green.withValues(alpha: 0.1),
+                            onSelected: (val) {
+                              setEstadoInterno(() {
+                                val ? etiquetasSeleccionadas.add(t) : etiquetasSeleccionadas.remove(t);
+                              });
+                            },
+                          )),
+                          ...etiquetasNegativas.map((t) => FilterChip(
+                            label: Text(t, style: TextStyle(fontSize: 12, color: etiquetasSeleccionadas.contains(t) ? Colors.white : Colors.red[800])),
+                            selected: etiquetasSeleccionadas.contains(t),
+                            selectedColor: Colors.red,
+                            backgroundColor: Colors.red.withValues(alpha: 0.1),
+                            onSelected: (val) {
+                              setEstadoInterno(() {
+                                val ? etiquetasSeleccionadas.add(t) : etiquetasSeleccionadas.remove(t);
+                              });
+                            },
+                          )),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 32),
-                    
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(contextDialogo),
-                          child: const Text('CANCELAR', style: TextStyle(color: Colors.grey)),
+                      const SizedBox(height: 24),
+
+                      const Text('Comentario Confidencial para Admin:', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const Text('(El tutor nunca verá este mensaje)', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: ctrlComentario,
+                        maxLines: 2,
+                        decoration: InputDecoration(
+                          hintText: 'Opcional. ¿Hubo algún problema grave?',
+                          filled: true,
+                          fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[900] : Colors.grey[100],
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                         ),
-                        FilledButton(
-                          style: FilledButton.styleFrom(backgroundColor: AppTheme.primarioAzul),
-                          onPressed: (puntualidad == 0 || dominio == 0 || empatia == 0)
-                              ? null
-                              : () async {
-                                  final double dPunt = puntualidad.toDouble();
-                                  final double dDom = dominio.toDouble();
-                                  final double dEmp = empatia.toDouble();
-                                  
-                                  final proveedorRef = context.read<TutoriasProvider>();
-                                  bool exito = await proveedorRef.enviarEvaluacionTutoria(
-                                    datos.identificadorDeTutoria,
-                                    datos.identificadorDelTutor,
-                                    dPunt,
-                                    dDom,
-                                    dEmp,
-                                    etiquetasSeleccionadas,
-                                    ctrlComentario.text.trim(),
-                                    ctrlComentarioPublico.text.trim(),
-                                  );
-                                  
-                                  if (contextDialogo.mounted) Navigator.pop(contextDialogo);
-                                  
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(exito ? '¡Evaluación dimensional guardada!' : proveedorRef.mensajeDeErrorDelSistema),
-                                        backgroundColor: exito ? Colors.green : Colors.redAccent,
-                                      ),
+                        onChanged: (_) {
+                          formKey.currentState?.validate();
+                        },
+                        validator: (value) {
+                          if (puntualidad == 0 || dominio == 0 || empatia == 0) return null;
+                          double promedio = (puntualidad + dominio + empatia) / 3;
+                          if (promedio < 3 && (value == null || value.trim().isEmpty)) {
+                            return 'Por favor, cuéntanos qué salió mal para ayudarnos a mejorar.';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      const Text('Comentario para la Comunidad:', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const Text('(Visible públicamente en el perfil del tutor)', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: ctrlComentarioPublico,
+                        maxLines: 2,
+                        decoration: InputDecoration(
+                          hintText: 'Opcional. Deja un comentario de agradecimiento.',
+                          filled: true,
+                          fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[900] : Colors.grey[100],
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(contextDialogo),
+                            child: const Text('CANCELAR', style: TextStyle(color: Colors.grey)),
+                          ),
+                          FilledButton(
+                            style: FilledButton.styleFrom(backgroundColor: AppTheme.primarioAzul),
+                            onPressed: (puntualidad == 0 || dominio == 0 || empatia == 0)
+                                ? null
+                                : () async {
+                                    if (!formKey.currentState!.validate()) {
+                                      return;
+                                    }
+                                    
+                                    final double dPunt = puntualidad.toDouble();
+                                    final double dDom = dominio.toDouble();
+                                    final double dEmp = empatia.toDouble();
+                                    
+                                    final proveedorRef = context.read<TutoriasProvider>();
+                                    bool exito = await proveedorRef.enviarEvaluacionTutoria(
+                                      datos.identificadorDeTutoria,
+                                      datos.identificadorDelTutor,
+                                      dPunt,
+                                      dDom,
+                                      dEmp,
+                                      etiquetasSeleccionadas,
+                                      ctrlComentario.text.trim(),
+                                      ctrlComentarioPublico.text.trim(),
                                     );
-                                  }
-                                },
-                          child: const Text('ENVIAR'),
-                        ),
-                      ],
-                    ),
-                  ],
+                                    
+                                    if (contextDialogo.mounted) Navigator.pop(contextDialogo);
+                                    
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(exito ? '¡Evaluación dimensional guardada!' : proveedorRef.mensajeDeErrorDelSistema),
+                                          backgroundColor: exito ? Colors.green : Colors.redAccent,
+                                        ),
+                                      );
+                                    }
+                                  },
+                            child: const Text('ENVIAR'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
