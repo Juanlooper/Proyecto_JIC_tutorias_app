@@ -178,7 +178,10 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
                          if (_calculandoStats && esTutor)
                            const CircularProgressIndicator()
                          else ...[
-                           _construirMetrica(esTutor ? _promedioEstrellas.toStringAsFixed(1) : '-', 'Estrellas', Icons.star),
+                           if (esTutor && _totalEvaluaciones < 10)
+                             _construirMetrica('-', 'Nuevo', Icons.auto_awesome)
+                           else
+                             _construirMetrica(esTutor ? _promedioEstrellas.toStringAsFixed(1) : '-', 'Estrellas', Icons.star),
                            _construirMetrica(esTutor ? _totalEvaluaciones.toString() : '0', 'Reseñas', Icons.reviews),
                            _construirMetrica(esTutor ? _totalTutoriasDictadas.toString() : '0', 'Tutorías', Icons.history_edu),
                          ]
