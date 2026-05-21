@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Importación necesaria para el Stream
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 
@@ -36,7 +37,8 @@ class TutoriasApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // 1. Manejo de Identidad (Iniciamos la sesión automáticamente si ya existía)
+        // 1. Manejo de Identidad
+        // Mantenemos tu inicialización por si cargas datos extra de Firestore al abrir la app.
         ChangeNotifierProvider(
           create: (_) => AutenticacionProvider()..inicializarSesionAlAbrirApp(),
         ),
@@ -54,22 +56,30 @@ class TutoriasApp extends StatelessWidget {
         // ¡Aquí inyectamos el Tema Global de Vecta!
         theme: AppTheme.lightTheme,
 
-        home: Consumer<AutenticacionProvider>(
-          builder: (context, auth, _) {
-            // Pantalla de carga MIENTRAS verifica la sesión al abrir la app.
-            if (auth.estaInicializando) {
+        // Reemplazamos el Consumer por StreamBuilder escuchando directamente a Firebase
+        home: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            // 1er Estado: Verificando la sesión en Firebase (carga limpia)
+            if (snapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
               );
             }
 
-            // Si hay usuario, vamos al Dashboard. Si no, al Login.
-            return auth.usuarioActual != null
-                ? const EnrutadorRolesView()
-                : const LoginView();
+            // 2do Estado: Firebase confirma que hay una sesión válida activa
+            if (snapshot.hasData && snapshot.data != null) {
+              return const EnrutadorRolesView();
+            }
+
+            // 3er Estado: No hay usuario logueado, sesión expirada o error
+            return const LoginView();
           },
         ),
       ),
     );
   }
 }
+
