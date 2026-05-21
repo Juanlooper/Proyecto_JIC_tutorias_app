@@ -1,0 +1,290 @@
+import 'package:flutter/material.dart';
+import 'package:tutorias_jic_v2/core/theme/app_theme.dart';
+import 'package:tutorias_jic_v2/views/auth/login_view.dart';
+import 'package:tutorias_jic_v2/views/auth/registro_view.dart';
+import 'package:tutorias_jic_v2/views/view/ayuda_screen.dart';
+import 'package:tutorias_jic_v2/views/view/soporte_screen.dart';
+
+class LandingScreen extends StatelessWidget {
+  const LandingScreen({super.key});
+
+  // Métodos de Navegación centralizados para auditoría
+  void _irALogin(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginView()),
+    );
+  }
+
+  void _irARegistro(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const RegistroView()),
+    );
+  }
+
+  void _irAAyuda(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AyudaScreen()),
+    );
+  }
+
+  void _irASoporte(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SoporteScreen()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Lógica de Responsividad: Determina si el layout debe ser móvil o desktop
+        bool esMovil = constraints.maxWidth < 800;
+
+        return Scaffold(
+          body: SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: esMovil ? 24.0 : 60.0,
+                vertical: 30,
+              ),
+              child: Column(
+                children: [
+                  // --- HEADER ---
+                  _buildHeader(context, esMovil),
+
+                  const SizedBox(height: 80),
+
+                  // --- CUERPO PRINCIPAL ---
+                  esMovil
+                      ? _buildMobileHero(context)
+                      : _buildDesktopHero(context),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Header: Gestión de Identidad y Soporte
+  Widget _buildHeader(BuildContext context, bool esMovil) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Image.asset(
+              'assets/images/logo_vecta.png',
+              height: 45,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.functions,
+                size: 45,
+                color: AppTheme.primarioVerde,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'VECTA',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            TextButton(
+              onPressed: () => _irAAyuda(context),
+              child: Text(
+                'Ayuda',
+                style: TextStyle(fontSize: esMovil ? 14 : 16),
+              ),
+            ),
+            const SizedBox(width: 15),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primarioVerde,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              onPressed: () => _irASoporte(context),
+              child: const Text(
+                'Soporte',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Layout Desktop: Distribución horizontal de elementos
+  Widget _buildDesktopHero(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTextosInformativos(false),
+              const SizedBox(height: 40),
+              _buildBotonesPrincipales(context, false),
+            ],
+          ),
+        ),
+        const SizedBox(width: 60),
+        Expanded(child: _buildIlustracion(context)),
+      ],
+    );
+  }
+
+  // Layout Móvil: Distribución vertical para optimizar espacio
+  Widget _buildMobileHero(BuildContext context) {
+    return Column(
+      children: [
+        _buildTextosInformativos(true),
+        const SizedBox(height: 40),
+        _buildBotonesPrincipales(context, true),
+        const SizedBox(height: 40),
+        _buildIlustracion(context),
+      ],
+    );
+  }
+
+  // Componente de Texto: Ajusta el tamaño según el dispositivo
+  Widget _buildTextosInformativos(bool esMovil) {
+    return Column(
+      crossAxisAlignment: esMovil
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
+      children: [
+        // --- LOGO GIGANTE VECTA ---
+        Image.asset(
+          'assets/images/logo_vecta.png',
+          height: esMovil ? 100 : 150,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => Icon(
+            Icons.functions,
+            size: esMovil ? 100 : 150,
+            color: AppTheme.primarioVerde,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Reserva fácil\ntu tutoría',
+          textAlign: esMovil ? TextAlign.center : TextAlign.left,
+          style: TextStyle(
+            fontSize: esMovil ? 36 : 60,
+            fontWeight: FontWeight.bold,
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Conéctate con tutores calificados de la UTP y asegura tu éxito académico. Todo listo a un solo clic.',
+          textAlign: esMovil ? TextAlign.center : TextAlign.left,
+          style: TextStyle(
+            fontSize: esMovil ? 16 : 18,
+            color: AppTheme.textoOscuro.withValues(alpha: 0.8),
+            height: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Componente de Botones: Usa Wrap para prevenir desbordamientos en móviles pequeños
+  Widget _buildBotonesPrincipales(BuildContext context, bool esMovil) {
+    return Wrap(
+      spacing: 20,
+      runSpacing: 20,
+      alignment: esMovil ? WrapAlignment.center : WrapAlignment.start,
+      children: [
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primarioVerde,
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+          ),
+          onPressed: () => _irARegistro(context),
+          child: const Text(
+            'Crear cuenta',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppTheme.primarioAzul,
+            side: const BorderSide(color: AppTheme.primarioAzul, width: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+          ),
+          onPressed: () => _irALogin(context),
+          child: const Text(
+            'Iniciar sesión',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Ilustración principal
+  Widget _buildIlustracion(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primarioVerde.withValues(alpha: 0.1),
+            AppTheme.primarioAzul.withValues(alpha: 0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.textoOscuro.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+        border: Border.all(color: AppTheme.grisTexto.withValues(alpha: 0.1)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        // Restricción de altura (MediaQuery al 35%) para evitar desbordamientos en dispositivos pequeños.
+        child: Image.asset(
+          'assets/images/Ilustracion_principal.png',
+          fit: BoxFit.contain,
+          width: double.infinity,
+          height: MediaQuery.of(context).size.height * 0.35,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(
+              Icons.image_not_supported,
+              size: 100,
+              color: Colors.grey,
+            );
+          },
+        ),
+      ),
+    );
+  }
+}

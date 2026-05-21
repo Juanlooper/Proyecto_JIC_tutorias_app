@@ -7,20 +7,20 @@ import '../../models/tutoria_model.dart';
 import '../../core/utils/moderacion_servicio.dart';
 import '../../services/firebase_storage_servicio.dart';
 
-class SugerirTutoriaView extends StatefulWidget {
-  final String? tutorDestino;
-  const SugerirTutoriaView({super.key, this.tutorDestino});
+class CrearClasePropiaView extends StatefulWidget {
+  const CrearClasePropiaView({super.key});
 
   @override
-  State<SugerirTutoriaView> createState() => _SugerirTutoriaViewState();
+  State<CrearClasePropiaView> createState() => _CrearClasePropiaViewState();
 }
 
-class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
+class _CrearClasePropiaViewState extends State<CrearClasePropiaView> {
   final _formKey = GlobalKey<FormState>();
 
   // Controladores de texto para capturar los datos
   final TextEditingController _materiaController = TextEditingController();
   final TextEditingController _motivosController = TextEditingController();
+  final TextEditingController _cupoController = TextEditingController(text: '1');
 
   DateTime? _fechaSeleccionada;
   TimeOfDay? _horaSeleccionada;
@@ -52,6 +52,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
   void dispose() {
     _materiaController.dispose();
     _motivosController.dispose();
+    _cupoController.dispose();
     super.dispose();
   }
 
@@ -158,28 +159,34 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
         ? _materiaController.text.trim()
         : _materiaSeleccionada;
 
-    // Creamos el cascarón de la sugerencia (la id la inyectará el Provider o Firebase)
-    bool esDirecta = widget.tutorDestino != null;
+    int cupoParseado = int.tryParse(_cupoController.text.trim()) ?? 1;
 
+    // Creamos el cascarón de la sugerencia
     TutoriaModel sugerenciaCruda = TutoriaModel(
       identificadorDeTutoria: '',
       materiaOAsignatura: materiaFinal,
       temaEspecifico: _motivosController.text.trim(),
-      carrera: 'General / No Especificada', // Ajustable según necesidad futuura
-      identificadorDelTutor: widget.tutorDestino ?? '', // CRÍTICO: Regla fundamental de la bolsa o directa
-      listaDeEstudiantesInscritos: [], // El provider ingresará el UID propio
+      carrera: 'General / No Especificada',
+      identificadorDelTutor: uidLocal, // El tutor es quien la crea
+      listaDeEstudiantesInscritos: [], 
       modalidadDeClase: _modalidadSeleccionada,
-      estadoDeLaSolicitud: esDirecta ? 'sugerida_directa' : 'solicitada',
+      estadoDeLaSolicitud: 'aceptada', // Ya nace aceptada (o abierta si es grupal y tiene cupo > 1)
       fechaHoraSugerida: fechaHoraFinal,
-      cupoMaximo: 1, // El tutor determinará el cupo al aceptarla
+      cupoMaximo: cupoParseado,
       duracionMinutos: 60,
-      esGrupal: false,
+      esGrupal: cupoParseado > 1,
       enlaces_adjuntos: enlacesOpcionales,
       nombres_adjuntos: nombresOpcionales,
     );
 
     final provider = Provider.of<TutoriasProvider>(context, listen: false);
-    bool exito = await provider.crearSolicitudHuerfana(sugerenciaCruda);
+    
+    // Si la clase es grupal, la convertimos a abierta para que los estudiantes puedan inscribirse
+    if (cupoParseado > 1) {
+      sugerenciaCruda = sugerenciaCruda.copyWith(estadoDeLaSolicitud: 'abierta');
+    }
+
+    bool exito = await provider.tutorCreaClase(sugerenciaCruda);
 
     setState(() {
       _estaCargando = false;
@@ -189,8 +196,8 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
 
     if (exito) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(esDirecta ? "✅ Sugerencia directa enviada." : "✅ Solicitud enviada a la bolsa exitosamente."),
+        const SnackBar(
+          content: Text("✅ Clase creada y publicada exitosamente."),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
         ),
@@ -218,7 +225,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
         iconTheme: const IconThemeData(),
         centerTitle: true,
         title: const Text(
-          "Sugerir Tutoría",
+          "Publicar Clase Propia",
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 22),
         ),
       ),
@@ -241,21 +248,18 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                       color: const Color(0xFF6C63FF).withValues(alpha: 0.3),
                     ),
                   ),
-                  child: Row(
+                  child: const Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.lightbulb_outline_rounded,
                         color: Color(0xFF6C63FF),
                         size: 36,
                       ),
-                      const SizedBox(width: 16),
+                      SizedBox(width: 16),
                       Expanded(
                         child: Text(
-                          widget.tutorDestino != null
-                              ? "Estás sugiriendo una clase directa a un tutor específico. Él podrá aceptarla o rechazarla."
-                              : "¿No encuentras lo que buscas?\nSugiere un tema y dejaremos que la bolsa busque un profesor por ti.",
+                          "Publica una tutoría donde tú serás el tutor. Estará disponible para que los estudiantes se inscriban.",
                           style: TextStyle(
-                            
                             fontWeight: FontWeight.w500,
                             fontSize: 14,
                           ),
@@ -272,6 +276,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                   initialValue: _materiaSeleccionada,
                   isExpanded: true,
                   decoration: _estiloCajaFluida(
+                    context,
                     hint: "",
                     icono: Icons.book_rounded,
                   ),
@@ -302,6 +307,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                     controller: _materiaController,
                     textCapitalization: TextCapitalization.words,
                     decoration: _estiloCajaFluida(
+                      context,
                       hint: "Escribe el nombre de la materia...",
                       icono: Icons.edit_rounded,
                     ),
@@ -319,6 +325,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                 DropdownButtonFormField<String>(
                   initialValue: _modalidadSeleccionada,
                   decoration: _estiloCajaFluida(
+                    context,
                     hint: "",
                     icono: Icons.location_on_outlined,
                   ),
@@ -352,7 +359,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                                 vertical: 18,
                                 horizontal: 16,
                               ),
-                              decoration: _decoracionSimuladaCaja(),
+                              decoration: _decoracionSimuladaCaja(context),
                               child: Row(
                                 children: [
                                   const Icon(
@@ -369,7 +376,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                                       style: TextStyle(
                                         color: _fechaSeleccionada == null
                                             ? Colors.grey[500]
-                                            : Colors.black87,
+                                            : Theme.of(context).textTheme.bodyMedium?.color,
                                         fontSize: 15,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -395,7 +402,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                                 vertical: 18,
                                 horizontal: 16,
                               ),
-                              decoration: _decoracionSimuladaCaja(),
+                              decoration: _decoracionSimuladaCaja(context),
                               child: Row(
                                 children: [
                                   const Icon(
@@ -412,7 +419,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                                       style: TextStyle(
                                         color: _horaSeleccionada == null
                                             ? Colors.grey[500]
-                                            : Colors.black87,
+                                            : Theme.of(context).textTheme.bodyMedium?.color,
                                         fontSize: 15,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -429,6 +436,26 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                 ),
                 const SizedBox(height: 24),
 
+                // Campo: Cupo Máximo
+                _construirLabel("Cupo Máximo de Estudiantes"),
+                TextFormField(
+                  controller: _cupoController,
+                  keyboardType: TextInputType.number,
+                  decoration: _estiloCajaFluida(
+                    context,
+                    hint: "Ej. 1 para clase privada, 5 para grupal",
+                    icono: Icons.group_rounded,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return "Ingrese el cupo.";
+                    final n = int.tryParse(value);
+                    if (n == null || n < 1) return "Cupo inválido.";
+                    if (n > 50) return "El cupo máximo permitido es 50.";
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+
                 // Campo: Motivos / Tema Específico
                 _construirLabel("¿Qué tema específico necesitas repasar?"),
                 TextFormField(
@@ -436,6 +463,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                   maxLines: 4,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: _estiloCajaFluida(
+                    context,
                     hint:
                         "Ej. Necesito comprender la regla de la cadena para el parcial del viernes...",
                   ),
@@ -460,7 +488,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                   Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),
-                    decoration: _decoracionSimuladaCaja(),
+                    decoration: _decoracionSimuladaCaja(context),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: _archivosSubidosNombre.map((nombre) => 
@@ -506,7 +534,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                       : const Icon(Icons.upload_file),
                   label: Text(_estaSubiendoArchivos ? "Subiendo..." : "Adjuntar Archivos (Máx 3)"),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.surface,
                     foregroundColor: const Color(0xFF6C63FF),
                     elevation: 0,
                     side: const BorderSide(color: Color(0xFF6C63FF)),
@@ -541,7 +569,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                           ),
                         )
                       : const Text(
-                          "Sugerir Tutoría a la Bolsa",
+                          "Publicar mi Clase",
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -570,12 +598,13 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
     );
   }
 
-  InputDecoration _estiloCajaFluida({required String hint, IconData? icono}) {
+  InputDecoration _estiloCajaFluida(BuildContext context, {required String hint, IconData? icono}) {
+    final bool esModoOscuro = Theme.of(context).brightness == Brightness.dark;
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+      hintStyle: TextStyle(color: esModoOscuro ? Colors.white54 : Colors.grey[400], fontSize: 15),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: Theme.of(context).colorScheme.surface,
       prefixIcon: icono != null
           ? Icon(icono, color: const Color(0xFF6C63FF), size: 22)
           : null,
@@ -606,7 +635,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
     );
   }
 
-  BoxDecoration _decoracionSimuladaCaja() {
+  BoxDecoration _decoracionSimuladaCaja(BuildContext context) {
     return BoxDecoration(
       color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(16),

@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/autenticacion_provider.dart';
 import '../../models/usuario_model.dart';
 import '../auth/login_view.dart';
+import '../../core/utils/moderacion_servicio.dart';
 
 class PerfilView extends StatefulWidget {
   const PerfilView({super.key});
@@ -59,6 +60,17 @@ class _PerfilViewState extends State<PerfilView> {
               onPressed: () async {
                 if (llaveFormulario.currentState!.validate()) {
                   final String nuevoValor = controladorCampo.text.trim();
+                  if (ModeracionServicio.contieneLenguajeToxico(nuevoValor)) {
+                    if (contextDialogo.mounted) {
+                      ScaffoldMessenger.of(contextDialogo).showSnackBar(
+                        const SnackBar(
+                          content: Text('Lenguaje inapropiado u ofensivo detectado. Por favor, sé respetuoso.'),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    }
+                    return;
+                  }
                   if (nuevoValor != valorPrevio) {
                     await _actualizarCampoEnFirestore(
                       context,
@@ -75,7 +87,7 @@ class _PerfilViewState extends State<PerfilView> {
         );
       },
     );
-    
+
     // HCI Defensive: Limpiar la memoria del controlador para evitar escapes de memoria
     controladorCampo.dispose();
   }
@@ -189,7 +201,6 @@ class _PerfilViewState extends State<PerfilView> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final motorAutenticacion = context.watch<AutenticacionProvider>();
@@ -201,17 +212,16 @@ class _PerfilViewState extends State<PerfilView> {
 
     // Adaptación a la UI solicitada en el Mockup 5
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Mi Perfil', style: TextStyle(color: Colors.black87)),
-        backgroundColor: Colors.transparent,
+        title: const Text('Mi Perfil', style: TextStyle()),
+
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        iconTheme: const IconThemeData(),
         actions: [
-           IconButton(
-             icon: const Icon(Icons.logout, color: Colors.redAccent),
-             onPressed: () => _procesoDeCierreDeSesion(context),
-           )
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
+            onPressed: () => _procesoDeCierreDeSesion(context),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -225,7 +235,11 @@ class _PerfilViewState extends State<PerfilView> {
                 CircleAvatar(
                   radius: 50,
                   backgroundColor: Colors.grey.shade400,
-                  child: const Icon(Icons.person, size: 70, color: Colors.white),
+                  child: const Icon(
+                    Icons.person,
+                    size: 70,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -242,7 +256,10 @@ class _PerfilViewState extends State<PerfilView> {
                       ),
                       const SizedBox(height: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade300,
                           borderRadius: BorderRadius.circular(20),
@@ -258,41 +275,76 @@ class _PerfilViewState extends State<PerfilView> {
                       ),
                       const SizedBox(height: 12),
                       InkWell(
-                        onTap: () => _mostrarDialogoDeEdicion(context, 'Carrera', elUsuarioActual.carrera ?? '', 'Ingresa tu carrera (Ej. Ing. Sistemas)', 'carrera'),
+                        onTap: () => _mostrarDialogoDeEdicion(
+                          context,
+                          'Carrera',
+                          elUsuarioActual.carrera ?? '',
+                          'Ingresa tu carrera (Ej. Ing. Sistemas)',
+                          'carrera',
+                        ),
                         borderRadius: BorderRadius.circular(4),
                         child: Row(
                           children: [
-                            const Icon(Icons.school, size: 24, color: Colors.teal),
+                            const Icon(
+                              Icons.school,
+                              size: 24,
+                              color: Colors.teal,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                elUsuarioActual.carrera?.isNotEmpty == true 
-                                  ? elUsuarioActual.carrera! 
-                                  : 'Editar Carrera...',
-                               style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                                elUsuarioActual.carrera?.isNotEmpty == true
+                                    ? elUsuarioActual.carrera!
+                                    : 'Editar Carrera...',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blueGrey,
+                                ),
                               ),
                             ),
-                            const Icon(Icons.edit, size: 14, color: Colors.teal),
+                            const Icon(
+                              Icons.edit,
+                              size: 14,
+                              color: Colors.teal,
+                            ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 8),
                       InkWell(
-                        onTap: () => _mostrarDialogoDeEdicion(context, 'Facultad', elUsuarioActual.facultad ?? '', 'Ingresa tu facultad (Ej. FISC)', 'facultad'),
+                        onTap: () => _mostrarDialogoDeEdicion(
+                          context,
+                          'Facultad',
+                          elUsuarioActual.facultad ?? '',
+                          'Ingresa tu facultad (Ej. FISC)',
+                          'facultad',
+                        ),
                         borderRadius: BorderRadius.circular(4),
                         child: Row(
                           children: [
-                            const Icon(Icons.account_balance, size: 20, color: Colors.teal),
+                            const Icon(
+                              Icons.account_balance,
+                              size: 20,
+                              color: Colors.teal,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                elUsuarioActual.facultad?.isNotEmpty == true 
-                                  ? elUsuarioActual.facultad! 
-                                  : 'Editar Facultad...',
-                               style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey, fontSize: 13),
+                                elUsuarioActual.facultad?.isNotEmpty == true
+                                    ? elUsuarioActual.facultad!
+                                    : 'Editar Facultad...',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blueGrey,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
-                            const Icon(Icons.edit, size: 14, color: Colors.teal),
+                            const Icon(
+                              Icons.edit,
+                              size: 14,
+                              color: Colors.teal,
+                            ),
                           ],
                         ),
                       ),
@@ -302,13 +354,16 @@ class _PerfilViewState extends State<PerfilView> {
               ],
             ),
             const SizedBox(height: 24),
-            
+
             // Sección Emails y Cédula (Mockup inferior del avatar)
             Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.teal.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(
+                    color: Colors.teal,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: const Icon(Icons.email, color: Colors.teal),
                 ),
                 const SizedBox(width: 12),
@@ -316,11 +371,21 @@ class _PerfilViewState extends State<PerfilView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Correo Institucional', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                      Text(elUsuarioActual.correoElectronico, style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 15)),
+                      const Text(
+                        'Correo Institucional',
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
+                      Text(
+                        elUsuarioActual.correoElectronico,
+                        style: const TextStyle(
+                          color: Colors.teal,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
                     ],
                   ),
-                )
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -328,7 +393,10 @@ class _PerfilViewState extends State<PerfilView> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.teal.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(
+                    color: Colors.teal,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: const Icon(Icons.badge, color: Colors.teal),
                 ),
                 const SizedBox(width: 12),
@@ -336,24 +404,40 @@ class _PerfilViewState extends State<PerfilView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Identificador Interno', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                      Text(elUsuarioActual.identificadorUnico.substring(0, 8).toUpperCase(), style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 15)),
+                      const Text(
+                        'Identificador Interno',
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
+                      Text(
+                        elUsuarioActual.identificadorUnico
+                            .substring(0, 8)
+                            .toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.teal,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
                     ],
                   ),
-                )
+                ),
               ],
             ),
-            
+
             const SizedBox(height: 32),
 
             // Card Interactiva de Datos de Contacto (Mockup 5)
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 5))
-                ]
+                  BoxShadow(
+
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
               ),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -363,48 +447,55 @@ class _PerfilViewState extends State<PerfilView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                         const Text('Datos de contacto', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigoAccent)),
-                         Icon(Icons.edit, color: Colors.teal, size: 20),
+                        const Text(
+                          'Datos de contacto',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.indigoAccent,
+                          ),
+                        ),
+                        Icon(Icons.edit, color: Colors.teal, size: 20),
                       ],
                     ),
                     const SizedBox(height: 16),
                     _construirCajaEditaRapida(
-                      context, 
+                      context,
                       'Teléfono personal',
-                      Icons.smartphone, 
+                      Icons.smartphone,
                       elUsuarioActual.telefonoPersonal,
-                      'telefonoPersonal'
+                      'telefonoPersonal',
                     ),
                     const SizedBox(height: 16),
                     _construirCajaEditaRapida(
-                      context, 
+                      context,
                       'Contacto de Emergencia',
-                      Icons.local_hospital_outlined, 
+                      Icons.local_hospital_outlined,
                       elUsuarioActual.contactoEmergenciaNombre,
-                      'contactoEmergenciaNombre'
+                      'contactoEmergenciaNombre',
                     ),
                     const SizedBox(height: 16),
                     _construirCajaEditaRapida(
-                      context, 
+                      context,
                       'Teléfono de Emergencia',
-                      Icons.phone, 
+                      Icons.phone,
                       elUsuarioActual.contactoEmergenciaTelefono,
-                      'contactoEmergenciaTelefono'
+                      'contactoEmergenciaTelefono',
                     ),
                   ],
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 32),
 
             // SECCIÓN DE COMUNIDAD (SÓLO TUTORES)
             if (elUsuarioActual.rolEnElSistema == RolSistema.tutor)
-               _construirSeccionPerfilComunidad(context, elUsuarioActual),
+              _construirSeccionPerfilComunidad(context, elUsuarioActual),
 
             // LÓGICA DE POSTULACIÓN A TUTOR
             if (elUsuarioActual.rolEnElSistema == RolSistema.estudiante)
-               _construirSeccionPostulacion(elUsuarioActual),
+              _construirSeccionPostulacion(elUsuarioActual),
 
             const SizedBox(height: 32),
           ],
@@ -413,14 +504,21 @@ class _PerfilViewState extends State<PerfilView> {
     );
   }
 
-  Widget _construirSeccionPerfilComunidad(BuildContext context, UsuarioModel elUsuarioActual) {
+  Widget _construirSeccionPerfilComunidad(
+    BuildContext context,
+    UsuarioModel elUsuarioActual,
+  ) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 5))
-        ]
+          BoxShadow(
+
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       padding: const EdgeInsets.all(20.0),
       child: Column(
@@ -429,8 +527,15 @@ class _PerfilViewState extends State<PerfilView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-               const Text('Perfil en Comunidad', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal)),
-               const Icon(Icons.people_alt, color: Colors.teal, size: 20),
+              const Text(
+                'Perfil en Comunidad',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal,
+                ),
+              ),
+              const Icon(Icons.people_alt, color: Colors.teal, size: 20),
             ],
           ),
           const SizedBox(height: 8),
@@ -441,12 +546,12 @@ class _PerfilViewState extends State<PerfilView> {
           const SizedBox(height: 16),
           InkWell(
             onTap: () => _mostrarDialogoDeEdicion(
-              context, 
-              'Descripción de Perfil', 
-              elUsuarioActual.descripcionPerfil ?? '', 
-              'Descripción o Metodología', 
-              'descripcionPerfil', 
-              esMultilinea: true
+              context,
+              'Descripción de Perfil',
+              elUsuarioActual.descripcionPerfil ?? '',
+              'Descripción o Metodología',
+              'descripcionPerfil',
+              esMultilinea: true,
             ),
             borderRadius: BorderRadius.circular(8),
             child: Container(
@@ -463,76 +568,123 @@ class _PerfilViewState extends State<PerfilView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Sobre mí', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
+                      const Text(
+                        'Sobre mí',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal,
+                        ),
+                      ),
                       Icon(Icons.edit, color: Colors.teal.shade700, size: 16),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    elUsuarioActual.descripcionPerfil?.isNotEmpty == true 
-                      ? elUsuarioActual.descripcionPerfil! 
-                      : 'Toca aquí para escribir una presentación corta sobre ti y lo que enseñas...',
-                    style: TextStyle(color: elUsuarioActual.descripcionPerfil?.isNotEmpty == true ? Colors.black87 : Colors.teal.shade700, height: 1.5),
-                  )
-                ],
-              ),
-            ),
-          )
-        ],
-      )
-    );
-  }
-
-  Widget _construirCajaEditaRapida(BuildContext context, String etiqueta, IconData icono, String? valorActual, String llaveFirestore) {
-     return Column(
-       crossAxisAlignment: CrossAxisAlignment.start,
-       children: [
-          Text(etiqueta, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-          const SizedBox(height: 4),
-          InkWell(
-            onTap: () => _mostrarDialogoDeEdicion(context, etiqueta, valorActual ?? '', etiqueta, llaveFirestore),
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.indigoAccent.withValues(alpha: 0.3)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(icono, color: Colors.indigoAccent.withValues(alpha: 0.7), size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      valorActual?.isNotEmpty == true ? valorActual! : 'Toca para añadir...',
-                      style: const TextStyle(color: Colors.indigoAccent, fontSize: 14),
+                    elUsuarioActual.descripcionPerfil?.isNotEmpty == true
+                        ? elUsuarioActual.descripcionPerfil!
+                        : 'Toca aquí para escribir una presentación corta sobre ti y lo que enseñas...',
+                    style: TextStyle(
+                      color:
+                          elUsuarioActual.descripcionPerfil?.isNotEmpty == true
+                          ? Colors.black87
+                          : Colors.teal.shade700,
+                      height: 1.5,
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
           ),
-       ],
-     );
+        ],
+      ),
+    );
+  }
+
+  Widget _construirCajaEditaRapida(
+    BuildContext context,
+    String etiqueta,
+    IconData icono,
+    String? valorActual,
+    String llaveFirestore,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          etiqueta,
+          style: const TextStyle(color: Colors.grey, fontSize: 12),
+        ),
+        const SizedBox(height: 4),
+        InkWell(
+          onTap: () => _mostrarDialogoDeEdicion(
+            context,
+            etiqueta,
+            valorActual ?? '',
+            etiqueta,
+            llaveFirestore,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Colors.indigoAccent,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icono,
+                  color: Colors.indigoAccent,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    valorActual?.isNotEmpty == true
+                        ? valorActual!
+                        : 'Toca para añadir...',
+                    style: const TextStyle(
+                      color: Colors.indigoAccent,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _construirSeccionPostulacion(UsuarioModel usuario) {
     if (usuario.estadoSolicitudTutor == 'en_revision') {
       return Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.shade200)),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange.shade200),
+        ),
         child: const Row(
           children: [
             Icon(Icons.access_time_filled, color: Colors.orange),
             SizedBox(width: 12),
-            Expanded(child: Text('Tu postulación está en revisión. Presenta tus créditos al Administrador.', style: TextStyle(color: Colors.deepOrange))),
+            Expanded(
+              child: Text(
+                'Tu postulación está en revisión. Presenta tus créditos al Administrador.',
+                style: TextStyle(color: Colors.deepOrange),
+              ),
+            ),
           ],
         ),
       );
-    } 
+    }
 
     if (usuario.estadoSolicitudTutor == 'aprobado') {
-      return const SizedBox.shrink(); 
+      return const SizedBox.shrink();
     }
 
     return SizedBox(
@@ -541,25 +693,49 @@ class _PerfilViewState extends State<PerfilView> {
         style: FilledButton.styleFrom(
           backgroundColor: Colors.indigo,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         icon: const Icon(Icons.school),
-        label: const Text('Postularme como Tutor', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        label: const Text(
+          'Postularme como Tutor',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         onPressed: () async {
           final confirmacion = await showDialog<bool>(
             context: context,
             builder: (ctx) => AlertDialog(
-              title: const Text('Postulación a Tutor', style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
-              content: const Text('Para ser promovido, preséntate al tribunal administrativo con tus créditos (oficiales o no) para una entrevista rápida.\n\n¿Deseas entrar en la lista de revisión?'),
+              title: const Text(
+                'Postulación a Tutor',
+                style: TextStyle(
+                  color: Colors.teal,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: const Text(
+                'Para ser promovido, preséntate al tribunal administrativo con tus créditos (oficiales o no) para una entrevista rápida.\n\n¿Deseas entrar en la lista de revisión?',
+              ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-                FilledButton(onPressed: () => Navigator.pop(ctx, true), style: FilledButton.styleFrom(backgroundColor: Colors.teal), child: const Text('Entrar en Espera')),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: FilledButton.styleFrom(backgroundColor: Colors.teal),
+                  child: const Text('Entrar en Espera'),
+                ),
               ],
-            )
+            ),
           );
 
           if (confirmacion == true && context.mounted) {
-             await _actualizarCampoEnFirestore(context, 'estado_solicitud_tutor', 'en_revision');
+            await _actualizarCampoEnFirestore(
+              context,
+              'estado_solicitud_tutor',
+              'en_revision',
+            );
           }
         },
       ),

@@ -63,68 +63,83 @@ class _HomeViewState extends State<HomeView> {
 
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('tutorias').where('estadoDeLaSolicitud', isEqualTo: 'pendiente').snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('tutorias')
+                  .where('estadoDeLaSolicitud', isEqualTo: 'pendiente')
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
                 if (snapshot.hasError) {
-                  return const Center(child: Text("Error cargando la cartelera."));
+                  return const Center(
+                    child: Text("Error cargando la cartelera."),
+                  );
                 }
 
                 final universeDocs = snapshot.data?.docs ?? [];
-                final elUsuario = context.read<AutenticacionProvider>().usuarioActual;
+                final elUsuario = context
+                    .read<AutenticacionProvider>()
+                    .usuarioActual;
                 final myUid = elUsuario?.identificadorUnico ?? '';
 
                 final listadoCompleto = universeDocs
-                    .map((doc) => TutoriaModel.fromMap(doc.data() as Map<String, dynamic>))
-                    .where((tutoria) => tutoria.identificadorDelTutor.isNotEmpty && tutoria.identificadorDelTutor != myUid)
+                    .map(
+                      (doc) => TutoriaModel.fromMap(
+                        doc.data() as Map<String, dynamic>,
+                      ),
+                    )
+                    .where(
+                      (tutoria) =>
+                          tutoria.identificadorDelTutor.isNotEmpty &&
+                          tutoria.identificadorDelTutor != myUid,
+                    )
                     .toList();
 
-                  // Lógica de filtrado en memoria local
-                  final listadoFiltrado = _terminoBusqueda.isEmpty
-                      ? listadoCompleto
-                      : listadoCompleto.where((tutoria) {
-                          final concuerdaMateria = tutoria.materiaOAsignatura
-                              .toLowerCase()
-                              .contains(_terminoBusqueda);
-                          final concuerdaTema = tutoria.temaEspecifico
-                              .toLowerCase()
-                              .contains(_terminoBusqueda);
-                          return concuerdaMateria || concuerdaTema;
-                        }).toList();
+                // Lógica de filtrado en memoria local
+                final listadoFiltrado = _terminoBusqueda.isEmpty
+                    ? listadoCompleto
+                    : listadoCompleto.where((tutoria) {
+                        final concuerdaMateria = tutoria.materiaOAsignatura
+                            .toLowerCase()
+                            .contains(_terminoBusqueda);
+                        final concuerdaTema = tutoria.temaEspecifico
+                            .toLowerCase()
+                            .contains(_terminoBusqueda);
+                        return concuerdaMateria || concuerdaTema;
+                      }).toList();
 
-                  if (listadoFiltrado.isEmpty) {
-                    return ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: const [
-                        SizedBox(height: 100),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 24.0),
-                          child: Text(
-                            'No se encontraron tutorías con esos criterios de búsqueda.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-
-                  return ListView.builder(
+                if (listadoFiltrado.isEmpty) {
+                  return ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
-                    ),
-                    itemCount: listadoFiltrado.length,
-                    itemBuilder: (context, indice) {
-                      return _TarjetaDeTutoriaDinamica(
-                        datosTutoria: listadoFiltrado[indice],
-                      );
-                    },
+                    children: const [
+                      SizedBox(height: 100),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 24.0),
+                        child: Text(
+                          'No se encontraron tutorías con esos criterios de búsqueda.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      ),
+                    ],
                   );
+                }
+
+                return ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  itemCount: listadoFiltrado.length,
+                  itemBuilder: (context, indice) {
+                    return _TarjetaDeTutoriaDinamica(
+                      datosTutoria: listadoFiltrado[indice],
+                    );
+                  },
+                );
               },
             ),
           ),
@@ -162,7 +177,9 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
       builder: (contextDialogo) => StatefulBuilder(
         builder: (context, setStateDialog) {
           return AlertDialog(
-            title: Text('Confirmar Reserva: ${datosTutoria.materiaOAsignatura}'),
+            title: Text(
+              'Confirmar Reserva: ${datosTutoria.materiaOAsignatura}',
+            ),
             content: Form(
               key: formKey,
               child: SingleChildScrollView(
@@ -184,7 +201,7 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                       },
                     ),
                     const SizedBox(height: 16),
-                    
+
                     // Zona de subida interactiva
                     Container(
                       width: double.infinity,
@@ -192,13 +209,18 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.blue.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: Colors.blue.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Column(
                         children: [
                           const Text(
                             'Material de Referencia (Opcional)',
-                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           if (estaSubiendoArchivo)
@@ -209,7 +231,15 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                               children: [
                                 Icon(Icons.check_circle, color: Colors.green),
                                 SizedBox(width: 8),
-                                Flexible(child: Text('Archivo adjuntado con éxito.', style: TextStyle(color: Colors.green, fontSize: 12))),
+                                Flexible(
+                                  child: Text(
+                                    'Archivo adjuntado con éxito.',
+                                    style: TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
                               ],
                             )
                           else
@@ -219,32 +249,51 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                                   estaSubiendoArchivo = true;
                                 });
 
-                                // Llamado al servicio inteligente de Firebase Storage
-                                final mapArchivo = await FirebaseStorageServicio().seleccionarYSubirArchivo(
-                                  carpetaDestino: 'tutorias_archivos',
-                                );
+                                try {
+                                  // Llamado al servicio inteligente de Firebase Storage
+                                  final mapArchivo =
+                                      await FirebaseStorageServicio()
+                                          .seleccionarYSubirArchivo(
+                                            carpetaDestino: 'tutorias_archivos',
+                                          );
 
-                                setStateDialog(() {
-                                  estaSubiendoArchivo = false;
-                                  if (mapArchivo != null) {
-                                    archivoSubidoUrl = mapArchivo['url'];
-                                    archivoSubidoNombre = mapArchivo['nombre'];
-                                    enlaceCtrl.text = mapArchivo['url']!; // Lo guardamos invisible
+                                  setStateDialog(() {
+                                    estaSubiendoArchivo = false;
+                                    if (mapArchivo != null) {
+                                      archivoSubidoUrl = mapArchivo['url'];
+                                      archivoSubidoNombre =
+                                          mapArchivo['nombre'];
+                                      enlaceCtrl.text =
+                                          mapArchivo['url']!; // Lo guardamos invisible
+                                    }
+                                  });
+                                } catch (e) {
+                                  setStateDialog(() {
+                                    estaSubiendoArchivo = false;
+                                  });
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Error: $e')),
+                                    );
                                   }
-                                });
-                                
-                                if (mapArchivo == null && context.mounted) {
-                                   ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Operación cancelada o fallida al adjuntar archivo.')),
-                                   );
                                 }
                               },
                               icon: const Icon(Icons.upload_file),
                               label: const Text('Adjuntar PDF o Imagen'),
                             ),
                           const SizedBox(height: 8),
-                          const Text('Puedes subir un examen, taller o temario.', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                          const Text('Formatos: PDF, JPG, PNG, DOCX, PPTX (Máx. 5MB)', style: TextStyle(fontSize: 10, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                          const Text(
+                            'Puedes subir un examen, taller o temario.',
+                            style: TextStyle(fontSize: 11, color: Colors.grey),
+                          ),
+                          const Text(
+                            'Formatos: PDF, JPG, PNG, DOCX, PPTX (Máx. 5MB)',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -254,36 +303,52 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
             ),
             actions: [
               TextButton(
-                onPressed: estaSubiendoArchivo ? null : () => Navigator.pop(contextDialogo, false),
-                child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                onPressed: estaSubiendoArchivo
+                    ? null
+                    : () => Navigator.pop(contextDialogo, false),
+                child: const Text(
+                  'Cancelar',
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
               FilledButton(
-                onPressed: estaSubiendoArchivo ? null : () {
-                  if (formKey.currentState!.validate()) {
-                    Navigator.pop(contextDialogo, true);
-                  }
-                },
+                onPressed: estaSubiendoArchivo
+                    ? null
+                    : () {
+                        if (formKey.currentState!.validate()) {
+                          Navigator.pop(contextDialogo, true);
+                        }
+                      },
                 child: const Text('Confirmar Inscripción'),
               ),
             ],
           );
-        }
+        },
       ),
     );
 
-    if (confirmacion != true || !context.mounted) return;
+    if (confirmacion != true) {
+      if (archivoSubidoUrl != null) {
+        FirebaseStorageServicio().eliminarArchivoFisico(archivoSubidoUrl!);
+      }
+      return;
+    }
 
-      final url = enlaceCtrl.text.trim();
-      final listadoLinks = url.isNotEmpty ? [url] : <String>[];
-      final listadoNombres = archivoSubidoNombre != null ? [archivoSubidoNombre!] : <String>[];
+    if (!context.mounted) return;
 
-      operacionConcretaExitosa = await proveedor.inscribirseEnTutoria(
-        datosTutoria.identificadorDeTutoria,
-        usuario.identificadorUnico,
-        motivoCtrl.text.trim(),
-        listadoLinks,
-        listadoNombres,
-      );
+    final url = enlaceCtrl.text.trim();
+    final listadoLinks = url.isNotEmpty ? [url] : <String>[];
+    final listadoNombres = archivoSubidoNombre != null
+        ? [archivoSubidoNombre!]
+        : <String>[];
+
+    operacionConcretaExitosa = await proveedor.inscribirseEnTutoria(
+      datosTutoria.identificadorDeTutoria,
+      usuario.identificadorUnico,
+      motivoCtrl.text.trim(),
+      listadoLinks,
+      listadoNombres,
+    );
 
     if (!context.mounted) return;
 
@@ -387,7 +452,7 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Tutor: ${datosTutoria.identificadorDelTutor.isEmpty ? "Por asignar" : (datosTutoria.nombre_tutor ?? "Tutor Asignado")}',
-                     style: const TextStyle(color: Colors.grey, fontSize: 13),
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
                   ),
                 ),
               ],
@@ -400,7 +465,7 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Lugar: ${datosTutoria.lugar ?? "Por definir"}',
-                     style: const TextStyle(color: Colors.grey, fontSize: 13),
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
                   ),
                 ),
               ],
@@ -413,7 +478,7 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Contacto: ${datosTutoria.contacto_tutor ?? "Contacto pendiente"}',
-                     style: const TextStyle(color: Colors.grey, fontSize: 13),
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
                   ),
                 ),
               ],
@@ -434,8 +499,12 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: Builder(
                 builder: (context) {
-                  final bool yaInscrito = datosTutoria.listaDeEstudiantesInscritos.contains(elUsuario.identificadorUnico);
-                  final bool estaLleno = datosTutoria.listaDeEstudiantesInscritos.length >= datosTutoria.cupoMaximo;
+                  final bool yaInscrito = datosTutoria
+                      .listaDeEstudiantesInscritos
+                      .contains(elUsuario.identificadorUnico);
+                  final bool estaLleno =
+                      datosTutoria.listaDeEstudiantesInscritos.length >=
+                      datosTutoria.cupoMaximo;
 
                   final bool bloquearEstudiante = (yaInscrito || estaLleno);
 
@@ -444,8 +513,8 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                         ? null
                         : () => _ejecutarAccion(context, elUsuario),
                     style: FilledButton.styleFrom(
-                      backgroundColor: yaInscrito 
-                          ? Colors.grey 
+                      backgroundColor: yaInscrito
+                          ? Colors.grey
                           : Theme.of(context).colorScheme.secondary,
                     ),
                     child: Text(yaInscrito ? 'Suscrito' : 'Reservar'),

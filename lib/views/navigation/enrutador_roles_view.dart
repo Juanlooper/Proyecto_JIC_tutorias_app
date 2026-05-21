@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-
 import '../../providers/autenticacion_provider.dart';
 import 'main_navigation_view.dart';
 import '../widgets/tutorial_vecta_widget.dart';
@@ -19,7 +18,6 @@ class EnrutadorRolesView extends StatefulWidget {
 }
 
 class _EnrutadorRolesViewState extends State<EnrutadorRolesView> {
-  
   @override
   void initState() {
     super.initState();
@@ -31,18 +29,19 @@ class _EnrutadorRolesViewState extends State<EnrutadorRolesView> {
   Future<void> _verificarYMostrarTutorial() async {
     final prefs = await SharedPreferences.getInstance();
     final bool visto = prefs.getBool('tutorial_visto') ?? false;
-    
+
     if (!visto && mounted) {
       await prefs.setBool('tutorial_visto', true);
-      
+
       final auth = context.read<AutenticacionProvider>();
       final usuario = auth.usuarioActual;
       if (usuario != null && mounted) {
         await showModalBottomSheet(
           context: context,
           isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => TutorialVectaWidget(rol: usuario.rolEnElSistema),
+
+          builder: (context) =>
+              TutorialVectaWidget(rol: usuario.rolEnElSistema),
         );
       }
     }
@@ -55,7 +54,9 @@ class _EnrutadorRolesViewState extends State<EnrutadorRolesView> {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         final auth = context.watch<AutenticacionProvider>();
@@ -63,7 +64,9 @@ class _EnrutadorRolesViewState extends State<EnrutadorRolesView> {
 
         // Si Firebase dice que sí, pero el provider aún no ha bajado los datos, seguimos esperando
         if (snapshot.hasData && usuario == null) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         // Flujo normal de distribución
@@ -76,5 +79,4 @@ class _EnrutadorRolesViewState extends State<EnrutadorRolesView> {
       },
     );
   }
-
 }

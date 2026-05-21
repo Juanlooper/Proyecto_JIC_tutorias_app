@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Importación necesaria para el Stream
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
+import 'providers/tema_provider.dart';
 
 // Importación del ADN visual
 import 'core/theme/app_theme.dart';
@@ -14,13 +15,21 @@ import 'providers/tutorias_provider.dart';
 import 'providers/admin_provider.dart';
 
 // Vistas principales (Con la ruta corregida a la carpeta auth)
-import 'views/auth/login_view.dart';
-import 'views/navigation/enrutador_roles_view.dart';
+import 'views/view/landing_screen.dart';
+import 'views/navigation/main_navigation_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Activación de Firebase App Check para evitar bots y ataques a la DB.
+  await FirebaseAppCheck.instance.activate(
+    providerAndroid: AndroidPlayIntegrityProvider(), // Producción Android
+    providerWeb: ReCaptchaV3Provider(
+      '6LdyttEsAAAAABqlMu_KYIZOUgG0AfSUjoI5inkx',
+    ), // reCAPTCHA v3 invisible (Web)
+  );
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -42,44 +51,30 @@ class TutoriasApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => AutenticacionProvider()..inicializarSesionAlAbrirApp(),
         ),
-
-        // 2. Manejo de Tutorías
         ChangeNotifierProvider(create: (_) => TutoriasProvider()),
-
-        // 3. Panel Administrativo para métricas
         ChangeNotifierProvider(create: (_) => AdminProvider()),
+        // 4. Inyección del manejador de Tema
+        ChangeNotifierProvider(create: (_) => TemaProvider()),
       ],
-      child: MaterialApp(
-        title: 'Vecta Tutorías',
-        debugShowCheckedModeBanner: false,
-
-        // ¡Aquí inyectamos el Tema Global de Vecta!
-        theme: AppTheme.lightTheme,
-
-        // Reemplazamos el Consumer por StreamBuilder escuchando directamente a Firebase
-        home: StreamBuilder<User?>(
-          stream: FirebaseAuth.instance.authStateChanges(),
-          builder: (context, snapshot) {
-            // 1er Estado: Verificando la sesión en Firebase (carga limpia)
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-
-            // 2do Estado: Firebase confirma que hay una sesión válida activa
-            if (snapshot.hasData && snapshot.data != null) {
-              return const EnrutadorRolesView();
-            }
-
-            // 3er Estado: No hay usuario logueado, sesión expirada o error
-            return const LoginView();
-          },
-        ),
+      child: Consumer2<TemaProvider, AutenticacionProvider>(
+        builder: (context, proveedorDeTema, authProv, hijo) {
+          return MaterialApp(
+            title: 'Vecta Tutorías',
+            debugShowCheckedModeBanner: false,
+            // Aquí evaluamos el estado lógico para decidir qué tema inyectar
+            theme: proveedorDeTema.esModoOscuro
+                ? AppTheme.darkTheme
+                : AppTheme.lightTheme,
+            home: authProv.estaInicializando
+                ? const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  )
+                : (authProv.usuarioActual != null
+                      ? const MainNavigationView()
+                      : const LandingScreen()),
+          );
+        },
       ),
     );
   }
 }
-

@@ -125,6 +125,7 @@ class TutoriasProvider extends ChangeNotifier {
         estadoDeLaSolicitud: 'solicitada', // Distinguir de 'pendiente'
         listaDeEstudiantesInscritos: [], // El estudiante NO inicia inscrito (Regla de negocio nueva)
         estudiantesApoyando: apoyadoresIniciales,
+        fecha_creacion_solicitud: DateTime.now(), // SLA Timestamp
       );
 
       Map<String, dynamic> datosNube = solicitudProcesada.toMap();
@@ -133,12 +134,227 @@ class TutoriasProvider extends ChangeNotifier {
       // 2. Transmitir el documento a la colección en Firebase
       await collectionRef.doc(docId).set(datosNube);
 
+      // Notificar a TODOS los tutores registrados que hay una nueva sugerencia en la bolsa
+      final tutoresSnapshot = await FirebaseFirestore.instance.collection('usuarios')
+          .where('rolEnElSistema', isEqualTo: 'tutor').get();
+      final uidsTutores = tutoresSnapshot.docs.map((d) => d.id).toList();
+      await _notificarMultiples(
+        uids: uidsTutores,
+        titulo: 'Nueva Sugerencia en la Bolsa 📋',
+        mensaje: 'Un estudiante ha sugerido una clase de ${sugerencia.materiaOAsignatura}. ¡Revisa la bolsa de solicitudes!',
+        tipo: 'info',
+      );
+
       await cargarListadoDeTutoriasPendientes();
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return true;
     } catch (e) { debugPrint(e.toString());
       _mensajeDeErrorDelSistema = e.toString().contains("Exception: ") ? e.toString().split("Exception: ").last : "Error al procesar la solicitud huérfana en la nube.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Sistema de "Sugerencia Directa".
+  /// Permite al estudiante sugerir una tutoría directamente a un tutor específico.
+  Future<bool> crearSugerenciaDirecta(TutoriaModel sugerencia, String idTutor) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final uidEstudiante = FirebaseAuth.instance.currentUser?.uid;
+      if (uidEstudiante == null) {
+        throw Exception("Sesión inactiva. Vuelve a ingresar para solicitar una clase.");
+      }
+
+      List<String> apoyadoresIniciales = [uidEstudiante];
+      final collectionRef = FirebaseFirestore.instance.collection('tutorias');
+      String docId = sugerencia.identificadorDeTutoria.isEmpty 
+          ? collectionRef.doc().id 
+          : sugerencia.identificadorDeTutoria;
+
+      TutoriaModel solicitudProcesada = sugerencia.copyWith(
+        identificadorDeTutoria: docId,
+        identificadorDelTutor: idTutor, // Tutor asignado
+        estadoDeLaSolicitud: 'sugerida_directa', // Nuevo estado
+        listaDeEstudiantesInscritos: [], 
+        estudiantesApoyando: apoyadoresIniciales,
+        fecha_creacion_solicitud: DateTime.now(),
+      );
+
+      Map<String, dynamic> datosNube = solicitudProcesada.toMap();
+      datosNube['creador'] = uidEstudiante;
+
+      await collectionRef.doc(docId).set(datosNube);
+
+      // Notificar SOLO al tutor asignado
+      await _crearNotificacion(
+        usuarioId: idTutor,
+        titulo: 'Nueva Sugerencia Directa 🎯',
+        mensaje: 'Un estudiante te ha sugerido directamente dar una clase de ${sugerencia.materiaOAsignatura}.',
+        tipo: 'info',
+      );
+
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) { 
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "Error al procesar la sugerencia directa.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Permite al tutor rechazar una sugerencia directa.
+  Future<bool> rechazarSugerenciaDirecta(String idTutoria, String razon) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final docRef = FirebaseFirestore.instance.collection('tutorias').doc(idTutoria);
+      final docSnapshot = await docRef.get();
+      if (!docSnapshot.exists) throw Exception("Tutoría no encontrada.");
+      final data = docSnapshot.data()!;
+
+      await docRef.update({
+        'estadoDeLaSolicitud': 'rechazada_directa',
+        'justificacion_cancelacion': razon,
+      });
+
+      final creador = data['creador'] ?? '';
+      if (creador.isNotEmpty) {
+        await _crearNotificacion(
+          usuarioId: creador,
+          titulo: 'Sugerencia Rechazada ❌',
+          mensaje: 'El tutor no pudo aceptar tu sugerencia de ${data['materiaOAsignatura']}. Motivo: $razon',
+          tipo: 'alerta_amarilla',
+        );
+      }
+
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "Error al rechazar la sugerencia.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Permite al tutor aceptar una sugerencia directa.
+  Future<bool> aceptarSugerenciaDirecta(String idTutoria) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final docRef = FirebaseFirestore.instance.collection('tutorias').doc(idTutoria);
+      final docSnapshot = await docRef.get();
+      if (!docSnapshot.exists) throw Exception("Tutoría no encontrada.");
+      
+      final data = docSnapshot.data()!;
+      // Si la tutoría era grupal y tiene cupo > 1, el estado es abierta. Sino, aceptada.
+      String nuevoEstado = 'aceptada';
+      int cupoMaximo = data['cupoMaximo'] ?? 1;
+      bool esGrupal = data['esGrupal'] ?? false;
+      if (esGrupal && cupoMaximo > 1) {
+        nuevoEstado = 'abierta';
+      }
+
+      await docRef.update({
+        'estadoDeLaSolicitud': nuevoEstado,
+        'fecha_aceptacion_solicitud': DateTime.now(),
+      });
+
+      final creador = data['creador'] ?? '';
+      if (creador.isNotEmpty) {
+        await _crearNotificacion(
+          usuarioId: creador,
+          titulo: '¡Sugerencia Aceptada! 🎉',
+          mensaje: 'El tutor ha aceptado tu sugerencia de ${data['materiaOAsignatura']}.',
+          tipo: 'info',
+        );
+      }
+
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "Error al aceptar la sugerencia.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+  
+  /// Permite convertir una sugerencia rechazada a la bolsa pública.
+  Future<bool> republicarSugerenciaEnBolsa(String idTutoria) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final docRef = FirebaseFirestore.instance.collection('tutorias').doc(idTutoria);
+      
+      await docRef.update({
+        'estadoDeLaSolicitud': 'solicitada',
+        'identificadorDelTutor': '', // Lo liberamos
+        'justificacion_cancelacion': null, // Borramos justificación
+      });
+
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "Error al republicar.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Permite a un tutor crear y publicar su propia clase.
+  Future<bool> tutorCreaClase(TutoriaModel claseNueva) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final uidTutor = FirebaseAuth.instance.currentUser?.uid;
+      if (uidTutor == null) throw Exception("Sesión inactiva.");
+
+      final collectionRef = FirebaseFirestore.instance.collection('tutorias');
+      String docId = claseNueva.identificadorDeTutoria.isEmpty 
+          ? collectionRef.doc().id 
+          : claseNueva.identificadorDeTutoria;
+
+      TutoriaModel claseProcesada = claseNueva.copyWith(
+        identificadorDeTutoria: docId,
+        identificadorDelTutor: uidTutor,
+        estadoDeLaSolicitud: 'aceptada', // Ya nace aceptada por el propio tutor
+        fecha_aceptacion_solicitud: DateTime.now(),
+        fecha_creacion_solicitud: DateTime.now(),
+      );
+
+      await collectionRef.doc(docId).set(claseProcesada.toMap());
+
+      await cargarListadoDeTutoriasPendientes();
+      await cargarTutoriasSuscritasDelUsuario(uidTutor);
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "Error al crear tu clase.";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return false;
@@ -196,7 +412,7 @@ class TutoriasProvider extends ChangeNotifier {
   }
 
   /// Permite a un estudiante darse de baja (retirar su apoyo/inscripción) de una tutoría, de manera rápida y eficiente sin mutar arrays locales manualmente.
-  Future<bool> abandonarTutoria(String tutoriaId) async {
+  Future<bool> abandonarTutoria(String tutoriaId, {String? excusa}) async {
     _iluminarSenalIndicadoraDeEspera();
     _purgarCasillasDeAdvertencias();
 
@@ -204,7 +420,6 @@ class TutoriasProvider extends ChangeNotifier {
       final uidUsuarioActual = FirebaseAuth.instance.currentUser?.uid;
       if (uidUsuarioActual == null) throw Exception("Debes iniciar sesión para realizar esta acción.");
 
-      // Como abandonarTutoria se usaba también para retirar el apoyo, necesitamos saber si era una sugerencia
       final docSnapshot = await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).get();
       if (!docSnapshot.exists) throw Exception("Tutoría no encontrada.");
       
@@ -219,6 +434,37 @@ class TutoriasProvider extends ChangeNotifier {
         });
       }
 
+      // Si hay una excusa por cancelación tardía, la reportamos al tribunal
+      if (excusa != null && excusa.trim().isNotEmpty) {
+        await FirebaseFirestore.instance.collection('reportes_tribunal').add({
+          'alumnoId': uidUsuarioActual,
+          'tutoriaId': tutoriaId,
+          'materia': data['materiaOAsignatura'] ?? 'Desconocida',
+          'fechaTutoria': data['fechaHoraSugerida'] ?? '',
+          'excusa': excusa.trim(),
+          'fechaReporte': DateTime.now().toIso8601String(),
+          'estado': 'pendiente', // pendiente, perdonado, penalizado
+        });
+
+        // Notificar a los administradores sobre el nuevo caso en el tribunal
+        await notificarAdministradores(
+          'Nueva Excusa en Tribunal ⚖️',
+          'Un estudiante canceló tardíamente la clase de ${data['materiaOAsignatura'] ?? 'una materia'} y ha enviado una justificación.',
+        );
+      }
+
+      // Notificar al tutor que un estudiante abandonó
+      final tutorId = data['identificadorDelTutor'] ?? '';
+      final materia = data['materiaOAsignatura'] ?? 'una clase';
+      if (tutorId.isNotEmpty) {
+        await _crearNotificacion(
+          usuarioId: tutorId,
+          titulo: 'Estudiante se retiró 🚪',
+          mensaje: 'Un estudiante ha abandonado tu clase de $materia.',
+          tipo: 'alerta_amarilla',
+        );
+      }
+
       await cargarListadoDeTutoriasPendientes();
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
@@ -231,6 +477,69 @@ class TutoriasProvider extends ChangeNotifier {
     }
   }
 
+
+  /// Permite al tutor cancelar la tutoría (ya sea por fuerza mayor u otro motivo).
+  /// Esto marca el estado de la solicitud como 'cancelada'.
+  Future<bool> cancelarTutoriaComoTutor(String tutoriaId, String motivoCancelacion) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final uidUsuarioActual = FirebaseAuth.instance.currentUser?.uid;
+      if (uidUsuarioActual == null) throw Exception("Debes iniciar sesión.");
+
+      // Obtenemos la tutoría para saber quiénes están inscritos
+      final docSnapshot = await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).get();
+      if (!docSnapshot.exists) throw Exception("Tutoría no encontrada.");
+      final data = docSnapshot.data()!;
+
+      await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).update({
+        'estadoDeLaSolicitud': 'cancelada',
+        'motivoDeCancelacion': motivoCancelacion,
+      });
+
+      // Reportarlo silenciosamente a quejas como cancelación de tutor para trackeo del admin
+      await FirebaseFirestore.instance.collection('quejas').add({
+        'tutorId': uidUsuarioActual,
+        'tutoriaId': tutoriaId,
+        'fechaRegistro': DateTime.now().toIso8601String(),
+        'justificacion': motivoCancelacion,
+      });
+
+      // Crear notificaciones para los estudiantes afectados
+      final Set<String> afectados = {};
+      final List<dynamic> inscritos = data['listaDeEstudiantesInscritos'] ?? [];
+      final List<dynamic> apoyando = data['estudiantesApoyando'] ?? [];
+      
+      for (var uid in inscritos) { afectados.add(uid.toString()); }
+      for (var uid in apoyando) { afectados.add(uid.toString()); }
+
+      final nombreMateria = data['materiaOAsignatura'] ?? 'Una clase';
+      final fechaDeCancelacion = DateTime.now().toIso8601String();
+
+      for (var uidAlumno in afectados) {
+        await FirebaseFirestore.instance.collection('notificaciones').add({
+          'usuarioId': uidAlumno,
+          'titulo': 'Tutoría Cancelada',
+          'mensaje': 'El tutor ha cancelado la clase de $nombreMateria. Motivo: $motivoCancelacion',
+          'fecha': fechaDeCancelacion,
+          'leida': false,
+          'tipo': 'alerta_roja',
+        });
+      }
+
+      await cargarListadoDeTutoriasPendientes();
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "Hubo un error al intentar cancelar la tutoría.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
 
   /// Implementación transaccional para inscribirse en tutorías, añadiendo los motivos, links y nombres de archivos.
   Future<bool> inscribirseEnTutoria(String tutoriaId, String uid, String textoMotivo, List<String> listaLinks, List<String> listaNombres) async {
@@ -278,6 +587,34 @@ class TutoriasProvider extends ChangeNotifier {
           'nombres_adjuntos': nombresAdjuntos,
         });
       });
+
+      // Notificar al tutor que un estudiante se inscribió
+      final tutoriaDoc = await docRef.get();
+      if (tutoriaDoc.exists) {
+        final tutoriaData = tutoriaDoc.data()!;
+        final tutorId = tutoriaData['identificadorDelTutor'] ?? '';
+        final materia = tutoriaData['materiaOAsignatura'] ?? 'una clase';
+        final inscritosActuales = (tutoriaData['listaDeEstudiantesInscritos'] as List?)?.length ?? 0;
+        final cupoMax = tutoriaData['cupoMaximo'] ?? 1;
+        if (tutorId.isNotEmpty) {
+          await _crearNotificacion(
+            usuarioId: tutorId,
+            titulo: 'Nuevo Estudiante Inscrito 📝',
+            mensaje: 'Un estudiante se ha inscrito en tu clase de $materia ($inscritosActuales/$cupoMax cupos).',
+            tipo: 'info',
+          );
+        }
+        // Si el cupo está lleno, notificar a los que estaban apoyando
+        if (inscritosActuales >= cupoMax) {
+          final apoyando = List<String>.from(tutoriaData['estudiantesApoyando'] ?? []);
+          await _notificarMultiples(
+            uids: apoyando,
+            titulo: 'Cupo Lleno ⚠️',
+            mensaje: 'La clase de $materia ha alcanzado su cupo máximo.',
+            tipo: 'alerta_amarilla',
+          );
+        }
+      }
 
       await cargarListadoDeTutoriasPendientes();
       return true;
@@ -432,9 +769,40 @@ class TutoriasProvider extends ChangeNotifier {
     _mensajeDeErrorDelSistema = '';
   }
 
-  /// Método de asistencia de alumnos (Fase 2.1).
-  /// Modifica registro de asistencia y penaliza (strike) a infractores de ausentismo.
-  Future<bool> registrarAsistenciaClase(String tutoriaId, Map<String, bool> asistenciaAlumnos) async {
+  /// Helper interno para crear notificaciones in-app (campanita).
+  Future<void> _crearNotificacion({
+    required String usuarioId,
+    required String titulo,
+    required String mensaje,
+    String tipo = 'info',
+  }) async {
+    try {
+      await FirebaseFirestore.instance.collection('notificaciones').add({
+        'usuarioId': usuarioId,
+        'titulo': titulo,
+        'mensaje': mensaje,
+        'fecha': DateTime.now().toIso8601String(),
+        'leida': false,
+        'tipo': tipo,
+      });
+    } catch (_) {}
+  }
+
+  /// Envía notificación a múltiples usuarios a la vez.
+  Future<void> _notificarMultiples({
+    required List<String> uids,
+    required String titulo,
+    required String mensaje,
+    String tipo = 'info',
+  }) async {
+    for (var uid in uids) {
+      await _crearNotificacion(usuarioId: uid, titulo: titulo, mensaje: mensaje, tipo: tipo);
+    }
+  }
+
+  /// Método combinado: Toma de Asistencia y Expediente Clínico Académico (Módulo 3).
+  /// Penaliza a los alumnos faltistas y añade feedback formativo a los que sí asistieron.
+  Future<bool> registrarAsistenciaClase(String tutoriaId, Map<String, Map<String, dynamic>> asistenciasYFeedback) async {
     _iluminarSenalIndicadoraDeEspera();
     _purgarCasillasDeAdvertencias();
 
@@ -454,24 +822,86 @@ class TutoriasProvider extends ChangeNotifier {
         }
       }
 
+      final tutorId = FirebaseAuth.instance.currentUser?.uid;
+
+      // Extraer solo la asistencia en un mapa plano para guardarlo en la tutoría (Retrocompatibilidad UI)
+      Map<String, bool> asistenciaPlana = {};
+      for (var entry in asistenciasYFeedback.entries) {
+        asistenciaPlana[entry.key] = entry.value['asistio'] as bool? ?? false;
+      }
+
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final tutoriaRef = FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId);
         
         transaction.update(tutoriaRef, {
-          'registro_asistencia': asistenciaAlumnos,
+          'registro_asistencia': asistenciaPlana,
           'estadoDeLaSolicitud': 'finalizada',
         });
 
-        // Iteramos alumnos y penalizamos si tienen false (no asistieron)
-        for (var entry in asistenciaAlumnos.entries) {
-          if (entry.value == false) {
-            final usuarioRef = FirebaseFirestore.instance.collection('usuarios').doc(entry.key);
-            transaction.update(usuarioRef, {
-              'strikes_inasistencia': FieldValue.increment(1),
+        // Iteramos alumnos: penalizamos inasistencias o agregamos receta médica académica
+        for (var entry in asistenciasYFeedback.entries) {
+          final uidAlumno = entry.key;
+          final asistio = entry.value['asistio'] as bool? ?? false;
+          final feedback = entry.value['feedback'] as String? ?? '';
+          
+          final usuarioRef = FirebaseFirestore.instance.collection('usuarios').doc(uidAlumno);
+          
+          if (!asistio) {
+            final usuarioSnapshot = await transaction.get(usuarioRef);
+            if (usuarioSnapshot.exists) {
+              final datosUsuario = usuarioSnapshot.data()!;
+              final strikesActuales = datosUsuario['strikes_inasistencia'] ?? 0;
+              final nuevosStrikes = strikesActuales + 1;
+              
+              Map<String, dynamic> actualizacion = {
+                'strikes_inasistencia': nuevosStrikes,
+              };
+              
+              if (nuevosStrikes >= 3) actualizacion['esta_baneado'] = true;
+              
+              transaction.update(usuarioRef, actualizacion);
+            }
+          } else if (feedback.isNotEmpty) {
+            // Guardar en el Expediente Clínico Académico del alumno
+            final expedienteRef = usuarioRef.collection('expediente_academico').doc();
+            transaction.set(expedienteRef, {
+              'tutoria_id': tutoriaId,
+              'tutor_id': tutorId,
+              'fecha': DateTime.now().toIso8601String(),
+              'receta_academica': feedback,
             });
           }
         }
       });
+
+      // Notificar a los administradores sobre los strikes
+      final uidsPenalizados = asistenciaPlana.entries.where((e) => !e.value).map((e) => e.key).toList();
+      if (uidsPenalizados.isNotEmpty) {
+        final adminsSnapshot = await FirebaseFirestore.instance.collection('usuarios').where('rolEnElSistema', isEqualTo: 'admin').get();
+        final adminUids = adminsSnapshot.docs.map((e) => e.id).toList();
+        for (var alumnoUid in uidsPenalizados) {
+          await _notificarMultiples(
+            uids: adminUids,
+            titulo: 'Alerta Administrativa: Strike',
+            mensaje: 'El alumno $alumnoUid recibió un strike por inasistencia en tutoría de id: $tutoriaId.',
+            tipo: 'alerta_roja',
+          );
+        }
+      }
+      
+      // Notificar a los alumnos asistentes que recibieron feedback clínico
+      final uidsAsistentesConFeedback = asistenciasYFeedback.entries
+          .where((e) => (e.value['asistio'] == true) && (e.value['feedback'] != null && e.value['feedback'].toString().isNotEmpty))
+          .map((e) => e.key).toList();
+          
+      if (uidsAsistentesConFeedback.isNotEmpty) {
+        await _notificarMultiples(
+          uids: uidsAsistentesConFeedback,
+          titulo: 'Nuevo Reporte Académico 📋',
+          mensaje: 'Tu tutor ha dejado recomendaciones personalizadas para tu estudio. Revísalo en tu expediente.',
+          tipo: 'info',
+        );
+      }
 
       // Refrescar y avisar exito
       await cargarListadoDeTutoriasPendientes();
@@ -573,6 +1003,19 @@ class TutoriasProvider extends ChangeNotifier {
         });
       }
 
+      // Notificar a los estudiantes inscritos que la clase fue cancelada
+      if (docActual.exists) {
+        final tutoriaData = docActual.data()!;
+        final inscritosNotif = List<String>.from(tutoriaData['listaDeEstudiantesInscritos'] ?? []);
+        final materiaNotif = tutoriaData['materiaOAsignatura'] ?? 'una clase';
+        await _notificarMultiples(
+          uids: inscritosNotif,
+          titulo: 'Tutoría Cancelada ❌',
+          mensaje: 'El tutor canceló la clase de $materiaNotif. Motivo: $justificacion',
+          tipo: 'alerta_roja',
+        );
+      }
+
       await cargarListadoDeTutoriasPendientes();
       if (FirebaseAuth.instance.currentUser != null) {
         await cargarTutoriasSuscritasDelUsuario(FirebaseAuth.instance.currentUser!.uid);
@@ -631,10 +1074,25 @@ class TutoriasProvider extends ChangeNotifier {
            estadoDeLaSolicitud: 'pendiente', // Permanece pendiente para que los estudiantes se puedan inscribir
            esGrupal: true,
            cupoMaximo: 10,
+           fecha_aceptacion_solicitud: DateTime.now(), // SLA Timestamp
         );
         
         transaction.update(docRef, modeloAEnviar.toMap());
       });
+
+      // Notificar a los estudiantes que apoyaron la sugerencia: ¡un tutor la aceptó!
+      final docActualizado = await docRef.get();
+      if (docActualizado.exists) {
+        final dataActualizada = docActualizado.data()!;
+        final apoyando = List<String>.from(dataActualizada['estudiantesApoyando'] ?? []);
+        final materia = dataActualizada['materiaOAsignatura'] ?? 'una clase';
+        await _notificarMultiples(
+          uids: apoyando,
+          titulo: '¡Tu sugerencia fue aceptada! 🎉',
+          mensaje: 'Un tutor ha aceptado impartir la clase de $materia. Inscríbete oficialmente desde la Cartelera para reservar tu cupo.',
+          tipo: 'alerta_verde',
+        );
+      }
 
       await cargarListadoDeTutoriasPendientes();
       await cargarTutoriasSuscritasDelUsuario(uidTutor);
@@ -649,13 +1107,43 @@ class TutoriasProvider extends ChangeNotifier {
       return false;
     }
   }
+  bool _contienePalabrasProhibidas(String texto) {
+    if (texto.isEmpty) return false;
+    final prohibidas = [
+      'mierda', 'estupido', 'estúpido', 'idiota', 'imbecil', 'imbécil', 
+      'puta', 'puto', 'cabron', 'cabrón', 'pendejo', 'pendeja', 'verga',
+      'zorra', 'maricon', 'maricón', 'maldito', 'maldita'
+    ];
+    final textoNormalizado = texto.toLowerCase();
+    for (var palabra in prohibidas) {
+      // Usamos regex simple para evitar falsos positivos si la palabra está dentro de otra?
+      // Por simplicidad, un contains() bastará para este prototipo.
+      if (textoNormalizado.contains(palabra)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Envía la evaluación de una tutoría, previniendo dobles envíos mediante operaciones atómicas 
   /// y almacenando retroalimentación de calidad nativamente dentro del perfil del tutor.
-  Future<bool> enviarEvaluacionTutoria(String tutoriaId, String tutorId, double estrellas, String comentario) async {
+  Future<bool> enviarEvaluacionTutoria(
+      String tutoriaId, 
+      String tutorId, 
+      double puntualidad, 
+      double dominio, 
+      double empatia, 
+      List<String> etiquetas, 
+      String comentarioPrivado,
+      String comentarioPublico) async {
     _iluminarSenalIndicadoraDeEspera();
     _purgarCasillasDeAdvertencias();
 
     try {
+      if (_contienePalabrasProhibidas(comentarioPublico)) {
+        throw Exception("El comentario público contiene palabras no permitidas. Mantén el respeto en la comunidad.");
+      }
+
       final uidAlumno = FirebaseAuth.instance.currentUser?.uid;
       if (uidAlumno == null) throw Exception("Sesión inactiva. Vuelve a ingresar.");
 
@@ -671,22 +1159,119 @@ class TutoriasProvider extends ChangeNotifier {
         });
 
         // Transacción 2: Anotamos la evaluación como una micro-pieza atómica en la subcolección del Tutor
+        // Guardamos promedio como compatibilidad para la UI antigua si hay partes que aún lo usan.
+        double promedio = (puntualidad + dominio + empatia) / 3;
+        
         transaction.set(docTutorEval, {
-          'estrellas': estrellas,
-          'comentario': comentario,
+          'estrellas': promedio, // Retrocompatibilidad
+          'dim_puntualidad': puntualidad,
+          'dim_dominio': dominio,
+          'dim_empatia': empatia,
+          'etiquetas': etiquetas,
+          'comentario_admin': comentarioPrivado,
+          'comentario_publico': comentarioPublico,
           'fecha': DateTime.now().toIso8601String(),
           'uid_alumno': uidAlumno,
           'tutoria_id': tutoriaId,
         });
       });
 
+      // Notificar al tutor que recibió una nueva evaluación (sin revelar el comentario privado)
+      double promedioMostrar = (puntualidad + dominio + empatia) / 3;
+      await _crearNotificacion(
+        usuarioId: tutorId,
+        titulo: 'Nueva Evaluación Recibida ⭐',
+        mensaje: 'Un estudiante te ha evaluado. Promedio: ${promedioMostrar.toStringAsFixed(1)} estrellas.',
+        tipo: 'info',
+      );
+
+      // Notificar a los administradores sobre la reseña
+      final adminsSnapshot = await db.collection('usuarios').where('rolEnElSistema', isEqualTo: 'admin').get();
+      final adminUids = adminsSnapshot.docs.map((e) => e.id).toList();
+      await _notificarMultiples(
+        uids: adminUids,
+        titulo: 'Alerta Administrativa: Nueva Reseña',
+        mensaje: 'Tutor: $tutorId | Calificación: ${promedioMostrar.toStringAsFixed(1)} | Comentario Privado: ${comentarioPrivado.isEmpty ? "N/A" : comentarioPrivado}',
+        tipo: promedioMostrar <= 2.5 ? 'alerta_roja' : 'info',
+      );
+
       _apagarSenalIndicadoraDeEspera();
       // Delegamos la reactividad 100% al StreamBuilder. No invocamos notifyListeners() extra ni recargamos listas locales manualmente.
       return true;
     } catch (e) { debugPrint(e.toString());
-      _mensajeDeErrorDelSistema = "Fallo en la matriz de red intentando asentar la calificación.";
+      _mensajeDeErrorDelSistema = "Fallo en la matriz de red intentando asentar la calificación: ${e.toString()}";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners(); // Se necesita para mostrar el error localmente
+      return false;
+    }
+  }
+
+  /// Elimina un comentario público de una evaluación por considerarse inapropiado (Solo Admin)
+  Future<bool> eliminarComentarioPublico(String tutorId, String evaluacionId) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+    try {
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(tutorId)
+          .collection('evaluaciones')
+          .doc(evaluacionId)
+          .update({'comentario_publico': '[Eliminado por Moderación]'});
+          
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "No se pudo eliminar el comentario.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Permite al tutor evaluar a un estudiante. (Uso interno/administrativo).
+  Future<bool> enviarEvaluacionEstudiante(String tutoriaId, String estudianteId, double estrellas, String comentario) async {
+    _iluminarSenalIndicadoraDeEspera();
+    _purgarCasillasDeAdvertencias();
+
+    try {
+      final uidTutor = FirebaseAuth.instance.currentUser?.uid;
+      if (uidTutor == null) throw Exception("Sesión inactiva. Vuelve a ingresar.");
+
+      final db = FirebaseFirestore.instance;
+      final docTutoria = db.collection('tutorias').doc(tutoriaId);
+      final docEval = db.collection('evaluaciones_estudiantes').doc();
+
+      await db.runTransaction((transaction) async {
+        transaction.update(docTutoria, {
+          'alumnosEvaluadosPorTutor': FieldValue.arrayUnion([estudianteId])
+        });
+
+        transaction.set(docEval, {
+          'tutorId': uidTutor,
+          'estudianteId': estudianteId,
+          'tutoriaId': tutoriaId,
+          'estrellas': estrellas,
+          'comentario': comentario,
+          'fecha': DateTime.now().toIso8601String(),
+        });
+      });
+
+      // Notificar a los administradores para seguimiento
+      await notificarAdministradores(
+        'Evaluación a Estudiante',
+        'Tutor calificó al alumno $estudianteId con ${estrellas.toStringAsFixed(0)} estrellas. ${comentario.isNotEmpty ? 'Comentario: $comentario' : ''}',
+        tipo: estrellas <= 2 ? 'alerta_roja' : 'info',
+      );
+
+      _apagarSenalIndicadoraDeEspera();
+      return true;
+    } catch (e) {
+      debugPrint(e.toString());
+      _mensajeDeErrorDelSistema = "Error al enviar la evaluación del estudiante.";
+      _apagarSenalIndicadoraDeEspera();
+      notifyListeners();
       return false;
     }
   }
@@ -744,5 +1329,27 @@ class TutoriasProvider extends ChangeNotifier {
       return false;
     }
   }
-}
+  /// Envía una notificación a todos los administradores del sistema.
+  Future<void> notificarAdministradores(String titulo, String mensaje, {String tipo = 'alerta_admin'}) async {
+    try {
+      final adminsSnapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .where('rolEnElSistema', isEqualTo: 'admin')
+          .get();
 
+      final fechaIso = DateTime.now().toIso8601String();
+      for (var doc in adminsSnapshot.docs) {
+        await FirebaseFirestore.instance.collection('notificaciones').add({
+          'usuarioId': doc.id,
+          'titulo': titulo,
+          'mensaje': mensaje,
+          'fecha': fechaIso,
+          'leida': false,
+          'tipo': tipo,
+        });
+      }
+    } catch (e) {
+      debugPrint('Error al notificar administradores: $e');
+    }
+  }
+}

@@ -38,11 +38,18 @@ exports.notificarCambioEstadoTutoria = functions.firestore
         // Lógica para Tutoría Aceptada (Desde la bolsa de sugerencias)
         else if (estadoDespues === 'aceptada') {
             titulo = '¡Tutoría Aceptada! 🎉';
-            mensaje = `Un tutor acaba de aceptar impartir tu sugerencia de ${tutoria.materiaOAsignatura || 'clase'}.`;
+            mensaje = `Un tutor acaba de aceptar impartir tu sugerencia de ${tutoria.materiaOAsignatura || 'clase'}. ¡Inscríbete oficialmente desde la Cartelera para reservar tu cupo!`;
             
             // Notificamos a los estudiantes que estaban en la lista de espera/sugerencia
-            uidsAnotificar = [...(tutoria.listaDeEstudiantesInscritos || [])];
-        } 
+            uidsAnotificar = [...(tutoria.listaDeEstudiantesInscritos || []), ...(tutoria.estudiantesApoyando || [])];
+        }
+        // Lógica para Sugerencia tomada por un tutor (pasa de 'solicitada' a 'pendiente')
+        else if (estadoAntes === 'solicitada' && estadoDespues === 'pendiente') {
+            titulo = '¡Tu sugerencia fue aceptada! 🎉';
+            mensaje = `Un tutor ha aceptado impartir la clase de ${tutoria.materiaOAsignatura || 'una materia'}. Inscríbete oficialmente desde la Cartelera para reservar tu cupo.`;
+            
+            uidsAnotificar = [...(tutoria.estudiantesApoyando || [])];
+        }
         // Si es otro estado (ej. en_curso, finalizada), no mandamos push notification de momento
         else {
             return null;
@@ -95,6 +102,50 @@ exports.notificarCambioEstadoTutoria = functions.firestore
             
         } catch (error) {
             console.error('Error masivo al intentar enviar notificaciones push:', error);
+        }
+
+        return null;
+    });
+
+/**
+ * Función que se dispara cada vez que se crea un documento en la colección 'notificaciones'.
+ * Se encarga de enviar una notificación push (FCM) al dispositivo del usuario.
+ */
+exports.enviarNotificacionPush = functions.firestore
+    .document('notificaciones/{notificacionId}')
+    .onCreate(async (snap, context) => {
+        const data = snap.data();
+        if (!data || !data.usuarioId) return null;
+
+        const uid = data.usuarioId;
+        const titulo = data.titulo || 'Nueva Notificación';
+        const mensaje = data.mensaje || 'Tienes una nueva notificación en Vecta.';
+
+        try {
+            const userDoc = await admin.firestore().collection('usuarios').doc(uid).get();
+            if (!userDoc.exists) {
+                console.log(`Usuario ${uid} no encontrado.`);
+                return null;
+            }
+
+            const token = userDoc.data().token_dispositivo;
+            if (!token) {
+                console.log(`El usuario ${uid} no tiene token de dispositivo.`);
+                return null;
+            }
+
+            const payload = {
+                notification: {
+                    title: titulo,
+                    body: mensaje,
+                },
+                token: token
+            };
+
+            const respuesta = await admin.messaging().send(payload);
+            console.log(`Notificación push enviada exitosamente a ${uid}:`, respuesta);
+        } catch (error) {
+            console.error(`Error enviando notificación push a ${uid}:`, error);
         }
 
         return null;

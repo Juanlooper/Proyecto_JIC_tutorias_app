@@ -5,20 +5,30 @@ import '../../core/theme/app_theme.dart';
 class BuzonPostulacionesView extends StatelessWidget {
   const BuzonPostulacionesView({super.key});
 
-  Future<void> _actualizarEstadoPostulacion(BuildContext context, String docId, String nombre, bool aprobado) async {
+  Future<void> _actualizarEstadoPostulacion(
+    BuildContext context,
+    String docId,
+    String nombre,
+    bool aprobado,
+  ) async {
     try {
       final actualizacion = aprobado
           ? {'rolEnElSistema': 'tutor', 'estado_solicitud_tutor': 'aprobado'}
           : {'estado_solicitud_tutor': 'ninguna'};
 
-      await FirebaseFirestore.instance.collection('usuarios').doc(docId).update(actualizacion);
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(docId)
+          .update(actualizacion);
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(aprobado
-                ? 'Solicitud aprobada. $nombre ahora es un Tutor Oficial.'
-                : 'Solicitud rechazada. $nombre podrá intentar nuevamente.'),
+            content: Text(
+              aprobado
+                  ? 'Solicitud aprobada. $nombre ahora es un Tutor Oficial.'
+                  : 'Solicitud rechazada. $nombre podrá intentar nuevamente.',
+            ),
             backgroundColor: aprobado ? AppTheme.primarioVerde : Colors.orange,
           ),
         );
@@ -38,7 +48,6 @@ class BuzonPostulacionesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.fondoClaro,
       appBar: AppBar(
         title: const Text('Postulaciones de Tutores'),
         backgroundColor: Colors.blueAccent.shade700,
@@ -55,7 +64,9 @@ class BuzonPostulacionesView extends StatelessWidget {
           }
 
           if (snapshot.hasError) {
-            return const Center(child: Text('Error al conectar con el servidor.'));
+            return const Center(
+              child: Text('Error al conectar con el servidor.'),
+            );
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -67,10 +78,17 @@ class BuzonPostulacionesView extends StatelessWidget {
                   const SizedBox(height: 16),
                   const Text(
                     'No hay postulaciones nuevas',
-                    style: TextStyle(fontSize: 18, color: Colors.grey, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  const Text('El buzón de solicitudes para tutores está vacío.', style: TextStyle(color: Colors.grey)),
+                  const Text(
+                    'El buzón de solicitudes para tutores está vacío.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ],
               ),
             );
@@ -106,7 +124,10 @@ class BuzonPostulacionesView extends StatelessWidget {
                           CircleAvatar(
                             radius: 24,
                             backgroundColor: Colors.blue.shade50,
-                            child: const Icon(Icons.school, color: Colors.blueAccent),
+                            child: const Icon(
+                              Icons.school,
+                              color: Colors.blueAccent,
+                            ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -115,17 +136,32 @@ class BuzonPostulacionesView extends StatelessWidget {
                               children: [
                                 Text(
                                   nombre,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(correo, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                                Text(
+                                  correo,
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 14,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 16),
-                      const Text('Antecedentes:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black54)),
+                      const Text(
+                        'Antecedentes:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       Text('• Facultad: $facultad'),
                       Text('• Carrera: $carrera'),
@@ -137,9 +173,16 @@ class BuzonPostulacionesView extends StatelessWidget {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.red,
                                 side: const BorderSide(color: Colors.red),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                               ),
-                              onPressed: () => _actualizarEstadoPostulacion(context, doc.id, nombre, false),
+                              onPressed: () => _actualizarEstadoPostulacion(
+                                context,
+                                doc.id,
+                                nombre,
+                                false,
+                              ),
                               icon: const Icon(Icons.close),
                               label: const Text('Rechazar'),
                             ),
@@ -149,15 +192,22 @@ class BuzonPostulacionesView extends StatelessWidget {
                             child: FilledButton.icon(
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppTheme.primarioVerde,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                               ),
-                              onPressed: () => _actualizarEstadoPostulacion(context, doc.id, nombre, true),
+                              onPressed: () => _actualizarEstadoPostulacion(
+                                context,
+                                doc.id,
+                                nombre,
+                                true,
+                              ),
                               icon: const Icon(Icons.check),
                               label: const Text('Aprobar'),
                             ),
                           ),
                         ],
-                      )
+                      ),
                     ],
                   ),
                 ),

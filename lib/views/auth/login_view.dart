@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/autenticacion_provider.dart';
 import '../navigation/enrutador_roles_view.dart';
 import 'registro_view.dart';
+import 'package:tutorias_jic_v2/views/view/landing_screen.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -121,7 +122,7 @@ class _LoginViewState extends State<LoginView> {
     final authProvider = context.watch<AutenticacionProvider>();
 
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 24.0),
       child: Center(
         child: SingleChildScrollView(
@@ -129,17 +130,6 @@ class _LoginViewState extends State<LoginView> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Flecha Superior Izquierda (mock)
-              const Align(
-                alignment: Alignment.topLeft,
-                child: Icon(
-                  Icons.arrow_back,
-                  color: AppTheme.primarioVerde,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(height: 24),
-
               // Logo Circular
               Container(
                 padding: const EdgeInsets.all(8),
@@ -149,7 +139,7 @@ class _LoginViewState extends State<LoginView> {
                 ),
                 child: CircleAvatar(
                   radius: 50,
-                  backgroundColor: Colors.transparent,
+
                   backgroundImage: const AssetImage(
                     'assets/images/logo_vecta.png',
                   ),
@@ -348,15 +338,9 @@ class _LoginViewState extends State<LoginView> {
       margin: const EdgeInsets.only(bottom: 24),
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 15,
-            offset: Offset(0, 8),
-          ),
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 15, offset: Offset(0, 8))],
       ),
       child: Column(
         children: [
@@ -375,11 +359,7 @@ class _LoginViewState extends State<LoginView> {
           Text(
             subtitulo,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.black87,
-              fontSize: 13,
-              height: 1.4,
-            ),
+            style: const TextStyle(fontSize: 13, height: 1.4),
           ),
         ],
       ),
@@ -441,6 +421,19 @@ class _LoginViewState extends State<LoginView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppTheme.primarioVerde),
+          onPressed: () {
+            // Se usa pushReplacement para evitar que la pantalla de login permanezca en la pila de navegación.
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const LandingScreen()),
+            );
+          },
+        ),
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           // Si la pantalla es ancha (Web/Escritorio)
