@@ -107,14 +107,13 @@ class AutenticacionProvider extends ChangeNotifier {
     // Si mensajeDeError es null, el inicio de sesión fue exitoso en Firebase
     if (mensajeDeError == null) {
       // Validación estricta de Email Verificado:
-      // COMENTADO TEMPORALMENTE: Debido a bloqueos persistentes de Outlook/UTP con el nuevo dominio
-      // if (FirebaseAuth.instance.currentUser != null && !FirebaseAuth.instance.currentUser!.emailVerified) {
-      //   String mensajeRetenido = "Debes verificar tu correo para poder entrar. Revisa tu bandeja de entrada o SPAM.";
-      //   await salirDeLaSesionActual(); 
-      //   _mensajeDeError = mensajeRetenido;
-      //   notifyListeners();
-      //   return false;
-      // }
+      if (FirebaseAuth.instance.currentUser != null && !FirebaseAuth.instance.currentUser!.emailVerified) {
+        String mensajeRetenido = "Debes verificar tu correo para poder entrar. Revisa tu bandeja de entrada o SPAM.";
+        await salirDeLaSesionActual(); 
+        _mensajeDeError = mensajeRetenido;
+        notifyListeners();
+        return false;
+      }
 
       // Éxito. Acudimos al baúl de base de datos a traer todo su expediente formal de la JIC.
       _usuarioActual = await _servicioIntegradoDeAutenticacion
