@@ -37,6 +37,12 @@ class AdminProvider extends ChangeNotifier {
   List<MapEntry<String, int>> materiasCuelloDeBotella = []; // top materias solicitadas
   double indiceDesercionGlobal = 0.0; // % de false en asistencia
   List<Map<String, dynamic>> heavyUsers = []; // uid, horas, nombre
+  
+  // Demografía Estudiantil
+  Map<String, int> estudiantesPorFacultad = {};
+  Map<String, int> estudiantesPorCarrera = {};
+  Map<String, int> estudiantesPorAno = {};
+  List<Map<String, dynamic>> todosLosEstudiantesConHoras = []; // Lista completa
 
   /// Carga todas las estadísticas necesarias para el Dashboard.
   /// Implementa filtros específicos en el servidor para ahorrar datos.
@@ -249,18 +255,44 @@ class AdminProvider extends ChangeNotifier {
       final usuariosSnapshot = await _baseDeDatosOperativa.collection('usuarios').get();
       
       heavyUsers.clear();
+      todosLosEstudiantesConHoras.clear();
+      estudiantesPorFacultad.clear();
+      estudiantesPorCarrera.clear();
+      estudiantesPorAno.clear();
+
       for (var u in usuariosSnapshot.docs) {
         final d = u.data();
-        // Heavy Users
+        // Recolección Demográfica y Horas
         if (d['rolEnElSistema'] == 'estudiante') {
           double horas = horasPorEstudiante[u.id] ?? 0.0;
+          
+          final alumnoData = {
+            'uid': u.id,
+            'nombre': d['nombreCompleto'] ?? d['nombre'] ?? 'Anónimo',
+            'horas': horas,
+            'facultad': d['facultad'] ?? 'No especificada',
+            'carrera': d['carrera'] ?? 'No especificada',
+            'anoCursando': d['anoCursando'] ?? 'No especificado',
+          };
+
+          todosLosEstudiantesConHoras.add(alumnoData);
+
           if (horas > 0) {
-            heavyUsers.add({
-              'uid': u.id,
-              'nombre': d['nombreCompleto'] ?? d['nombre'] ?? 'Anónimo',
-              'horas': horas,
-            });
+            heavyUsers.add(alumnoData);
           }
+
+          // Conteo Demográfico
+          String fac = d['facultad']?.toString().trim() ?? 'No especificada';
+          if (fac.isEmpty) fac = 'No especificada';
+          estudiantesPorFacultad[fac] = (estudiantesPorFacultad[fac] ?? 0) + 1;
+
+          String car = d['carrera']?.toString().trim() ?? 'No especificada';
+          if (car.isEmpty) car = 'No especificada';
+          estudiantesPorCarrera[car] = (estudiantesPorCarrera[car] ?? 0) + 1;
+
+          String ano = d['anoCursando']?.toString().trim() ?? 'No especificado';
+          if (ano.isEmpty) ano = 'No especificado';
+          estudiantesPorAno[ano] = (estudiantesPorAno[ano] ?? 0) + 1;
         }
         
         // Estrellas (Revisar subcolección evaluaciones)
@@ -278,6 +310,9 @@ class AdminProvider extends ChangeNotifier {
       // Ordenar Heavy Users desc
       heavyUsers.sort((a, b) => (b['horas'] as double).compareTo(a['horas'] as double));
       if (heavyUsers.length > 5) heavyUsers = heavyUsers.sublist(0, 5); // top 5
+
+      // Ordenar todos los estudiantes desc
+      todosLosEstudiantesConHoras.sort((a, b) => (b['horas'] as double).compareTo(a['horas'] as double));
 
     } catch (error) {
       debugPrint("Error al cargar métricas de admin: $error");

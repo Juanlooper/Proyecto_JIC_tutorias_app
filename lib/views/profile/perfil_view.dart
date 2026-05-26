@@ -7,6 +7,7 @@ import '../../providers/autenticacion_provider.dart';
 import '../../models/usuario_model.dart';
 import '../auth/login_view.dart';
 import '../../core/utils/moderacion_servicio.dart';
+import '../tutor/configurar_horario_view.dart';
 
 class PerfilView extends StatefulWidget {
   const PerfilView({super.key});
@@ -490,8 +491,11 @@ class _PerfilViewState extends State<PerfilView> {
             const SizedBox(height: 32),
 
             // SECCIÓN DE COMUNIDAD (SÓLO TUTORES)
-            if (elUsuarioActual.rolEnElSistema == RolSistema.tutor)
+            if (elUsuarioActual.rolEnElSistema == RolSistema.tutor) ...[
               _construirSeccionPerfilComunidad(context, elUsuarioActual),
+              const SizedBox(height: 24),
+              _construirSeccionHorario(context),
+            ],
 
             // LÓGICA DE POSTULACIÓN A TUTOR
             if (elUsuarioActual.rolEnElSistema == RolSistema.estudiante)
@@ -593,6 +597,68 @@ class _PerfilViewState extends State<PerfilView> {
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _construirSeccionHorario(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            blurRadius: 10,
+            offset: Offset(0, 5),
+            color: Colors.black12,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              Text(
+                'Mi Disponibilidad',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
+              ),
+              Icon(Icons.calendar_today, color: Colors.deepPurple, size: 20),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Define en qué horarios estás disponible para que los estudiantes puedan reservar clases contigo automáticamente.',
+            style: TextStyle(fontSize: 13, color: Colors.grey, height: 1.4),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ConfigurarHorarioView(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.edit_calendar),
+            label: const Text('Configurar Horario de Tutorías'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
             ),
           ),
         ],

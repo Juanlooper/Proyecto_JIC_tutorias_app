@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/tutoria_model.dart';
 import '../services/base_de_datos_servicio.dart';
 import '../services/firebase_storage_servicio.dart';
+import '../services/notificaciones_servicio.dart';
+import '../services/tribunal_servicio.dart';
 
 /// Proveedor de Estado Operativo para las Tutorías.
 /// Actúa como una enorme "Pizarra Organizativa". Descarga el listado de las clases 
@@ -14,6 +16,8 @@ class TutoriasProvider extends ChangeNotifier {
   
   /// Motor que sirve y sabe exactamente cómo dialogar peticiones eficientes contra Firestore.
   final BaseDeDatosServicio _motorBasesDeDatosGenuino = BaseDeDatosServicio();
+  final NotificacionesServicio _notificacionesSvc = NotificacionesServicio();
+  final TribunalServicio _tribunalSvc = TribunalServicio();
 
   /// El "Tablero Comunitario de la App". Contiene las materias que buscan un maestro de inmediato ('pendiente').
   List<TutoriaModel> _tutoriasPendientesGenerales = [];
@@ -31,12 +35,16 @@ class TutoriasProvider extends ChangeNotifier {
   /// Contenedor estandarizado en donde depositaremos las razones descriptivas por el cual algo natural del flujo falló.
   String _mensajeDeErrorDelSistema = '';
 
+  /// Contenedor estandarizado para mensajes de éxito específicos.
+  String _mensajeDeExitoDelSistema = '';
+
   // Getters. Dan permiso a la Interfaz Gráfica para admirar el contenido actual de las listas y variables,
   // con la restricción de que es de "solo-lectura" salvaguardando así la lógica íntegra del backend.
   List<TutoriaModel> get tutoriasPendientesGenerales => _tutoriasPendientesGenerales.where((tutoria) => !_idsOcultosPorTutor.contains(tutoria.identificadorDeTutoria)).toList();
   List<TutoriaModel> get tutoriasSuscritasDelUsuario => _tutoriasSuscritasDelUsuario;
   bool get estaCargandoPeticionEnNube => _estaCargandoPeticionEnNube;
   String get mensajeDeErrorDelSistema => _mensajeDeErrorDelSistema;
+  String get mensajeDeExitoDelSistema => _mensajeDeExitoDelSistema;
 
   /// Requerimiento para Maiky: Calcula automáticamente el flujo de horas impartidas.
   /// No usa tildes. Recorre todas las tutorías dadas y computa el delta entre hora Inicio y Fin.
@@ -429,9 +437,43 @@ class TutoriasProvider extends ChangeNotifier {
           'estudiantesApoyando': FieldValue.arrayRemove([uidUsuarioActual])
         });
       } else {
-        await FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId).update({
-          'listaDeEstudiantesInscritos': FieldValue.arrayRemove([uidUsuarioActual])
+        String? promovidoUid;
+        await FirebaseFirestore.instance.runTransaction((transaction) async {
+          final docRef = FirebaseFirestore.instance.collection('tutorias').doc(tutoriaId);
+          final docSnap = await transaction.get(docRef);
+          if (!docSnap.exists) throw "Tutoría no encontrada.";
+          
+          final docData = docSnap.data()!;
+          List<dynamic> inscritos = List.from(docData['listaDeEstudiantesInscritos'] ?? []);
+          List<dynamic> espera = List.from(docData['listaDeEspera'] ?? []);
+          
+          if (espera.contains(uidUsuarioActual)) {
+             espera.remove(uidUsuarioActual);
+             transaction.update(docRef, {'listaDeEspera': espera});
+          } else if (inscritos.contains(uidUsuarioActual)) {
+             inscritos.remove(uidUsuarioActual);
+             
+             if (espera.isNotEmpty) {
+                promovidoUid = espera.removeAt(0).toString();
+                inscritos.add(promovidoUid);
+             }
+             
+             transaction.update(docRef, {
+                'listaDeEstudiantesInscritos': inscritos,
+                'listaDeEspera': espera,
+             });
+          }
         });
+        
+        if (promovidoUid != null) {
+          final materia = data['materiaOAsignatura'] ?? 'una clase';
+          await _crearNotificacion(
+            usuarioId: promovidoUid!,
+            titulo: '¡Cupo Liberado! 🎉',
+            mensaje: 'Se ha liberado un cupo y has sido inscrito automáticamente en la clase de $materia.',
+            tipo: 'info',
+          );
+        }
       }
 
       // Si hay una excusa por cancelación tardía, la reportamos al tribunal
@@ -557,18 +599,24 @@ class TutoriasProvider extends ChangeNotifier {
         
         final data = docSnapshot.data()!;
         List<dynamic> inscritos = data['listaDeEstudiantesInscritos'] ?? [];
+        List<dynamic> listaEspera = data['listaDeEspera'] ?? [];
         int cupoMaximo = data['cupoMaximo'] ?? 1;
-
-        if (inscritos.length >= cupoMaximo) {
-          throw "El cupo para esta tutoría está lleno.";
-        }
 
         if (inscritos.contains(uid)) {
           throw "Ya te encuentras inscrito en esta clase.";
         }
 
-        // Se resta capacidad mediante adición a la lista de estudiantes
-        inscritos.add(uid);
+        if (listaEspera.contains(uid)) {
+          throw "Ya te encuentras en la lista de espera para esta clase.";
+        }
+
+        bool aListaDeEspera = false;
+        if (inscritos.length >= cupoMaximo) {
+          aListaDeEspera = true;
+          listaEspera.add(uid);
+        } else {
+          inscritos.add(uid);
+        }
 
         // Actualizamos los campos de motivos y adjuntos
         Map<String, dynamic> motivos = data['motivos_alumnos'] ?? {};
@@ -580,12 +628,23 @@ class TutoriasProvider extends ChangeNotifier {
         Map<String, dynamic> nombresAdjuntos = data['nombres_adjuntos'] ?? {};
         nombresAdjuntos[uid] = listaNombres;
 
-        transaction.update(docRef, {
-          'listaDeEstudiantesInscritos': inscritos,
-          'motivos_alumnos': motivos,
-          'enlaces_adjuntos': enlaces,
-          'nombres_adjuntos': nombresAdjuntos,
-        });
+        if (aListaDeEspera) {
+          transaction.update(docRef, {
+            'listaDeEspera': listaEspera,
+            'motivos_alumnos': motivos,
+            'enlaces_adjuntos': enlaces,
+            'nombres_adjuntos': nombresAdjuntos,
+          });
+          _mensajeDeExitoDelSistema = "Cupo lleno. Te has unido a la lista de espera.";
+        } else {
+          transaction.update(docRef, {
+            'listaDeEstudiantesInscritos': inscritos,
+            'motivos_alumnos': motivos,
+            'enlaces_adjuntos': enlaces,
+            'nombres_adjuntos': nombresAdjuntos,
+          });
+          _mensajeDeExitoDelSistema = "Acción procesada con éxito.";
+        }
       });
 
       // Notificar al tutor que un estudiante se inscribió
@@ -599,8 +658,10 @@ class TutoriasProvider extends ChangeNotifier {
         if (tutorId.isNotEmpty) {
           await _crearNotificacion(
             usuarioId: tutorId,
-            titulo: 'Nuevo Estudiante Inscrito 📝',
-            mensaje: 'Un estudiante se ha inscrito en tu clase de $materia ($inscritosActuales/$cupoMax cupos).',
+            titulo: inscritosActuales >= cupoMax ? 'Nuevo Estudiante en Lista de Espera 📝' : 'Nuevo Estudiante Inscrito 📝',
+            mensaje: inscritosActuales >= cupoMax 
+                ? 'Un estudiante se ha unido a la lista de espera de $materia.' 
+                : 'Un estudiante se ha inscrito en tu clase de $materia ($inscritosActuales/$cupoMax cupos).',
             tipo: 'info',
           );
         }
@@ -767,6 +828,7 @@ class TutoriasProvider extends ChangeNotifier {
 
   void _purgarCasillasDeAdvertencias() {
     _mensajeDeErrorDelSistema = '';
+    _mensajeDeExitoDelSistema = '';
   }
 
   /// Helper interno para crear notificaciones in-app (campanita).
@@ -776,16 +838,7 @@ class TutoriasProvider extends ChangeNotifier {
     required String mensaje,
     String tipo = 'info',
   }) async {
-    try {
-      await FirebaseFirestore.instance.collection('notificaciones').add({
-        'usuarioId': usuarioId,
-        'titulo': titulo,
-        'mensaje': mensaje,
-        'fecha': DateTime.now().toIso8601String(),
-        'leida': false,
-        'tipo': tipo,
-      });
-    } catch (_) {}
+    await _notificacionesSvc.crearNotificacion(usuarioId: usuarioId, titulo: titulo, mensaje: mensaje, tipo: tipo);
   }
 
   /// Envía notificación a múltiples usuarios a la vez.
@@ -795,9 +848,7 @@ class TutoriasProvider extends ChangeNotifier {
     required String mensaje,
     String tipo = 'info',
   }) async {
-    for (var uid in uids) {
-      await _crearNotificacion(usuarioId: uid, titulo: titulo, mensaje: mensaje, tipo: tipo);
-    }
+    await _notificacionesSvc.notificarMultiples(uids: uids, titulo: titulo, mensaje: mensaje, tipo: tipo);
   }
 
   /// Método combinado: Toma de Asistencia y Expediente Clínico Académico (Módulo 3).
@@ -994,13 +1045,16 @@ class TutoriasProvider extends ChangeNotifier {
 
       // Lógica de Auditoría Automática
       if (horasRestantes < 12) {
-        await FirebaseFirestore.instance.collection('quejas').add({
-          'tutorId': tutorId,
-          'tutoriaId': tutoriaId,
-          'fechaQueja': DateTime.now().toIso8601String(),
-          'motivo_sistema': 'Cancelación tardía (Menos de 12h)',
-          'justificacion_brindada': justificacion,
-        });
+        String materia = (docActual.exists) 
+            ? (docActual.data()!['materiaOAsignatura'] ?? 'una clase') 
+            : 'una clase';
+            
+        await _tribunalSvc.reportarCancelacionTardia(
+          tutorId: tutorId, 
+          tutoriaId: tutoriaId, 
+          materia: materia, 
+          justificacion: justificacion
+        );
       }
 
       // Notificar a los estudiantes inscritos que la clase fue cancelada
@@ -1068,28 +1122,34 @@ class TutoriasProvider extends ChangeNotifier {
            throw Exception("Esta tutoría ya fue aceptada por otro tutor.");
         }
         
+        final List<String> apoyandoOriginales = List<String>.from(data['estudiantesApoyando'] ?? []);
+        // Aseguramos que la lista no exceda el cupo máximo de 10
+        final List<String> apoyandoAInscribir = apoyandoOriginales.take(10).toList();
+
         // Inyectamos validaciones finales antes de subir
         TutoriaModel modeloAEnviar = modeloDefinitivo.copyWith(
            identificadorDelTutor: uidTutor,
-           estadoDeLaSolicitud: 'pendiente', // Permanece pendiente para que los estudiantes se puedan inscribir
+           estadoDeLaSolicitud: 'abierta', // Queda abierta si aún hay cupo, o llena
            esGrupal: true,
            cupoMaximo: 10,
            fecha_aceptacion_solicitud: DateTime.now(), // SLA Timestamp
+           listaDeEstudiantesInscritos: apoyandoAInscribir, // AUTO-INSCRIPCIÓN
+           estudiantesApoyando: [], // Se limpia porque ya pasaron a inscritos
         );
         
         transaction.update(docRef, modeloAEnviar.toMap());
       });
 
-      // Notificar a los estudiantes que apoyaron la sugerencia: ¡un tutor la aceptó!
+      // Notificar a los estudiantes que fueron automáticamente inscritos: ¡un tutor la aceptó!
       final docActualizado = await docRef.get();
       if (docActualizado.exists) {
         final dataActualizada = docActualizado.data()!;
-        final apoyando = List<String>.from(dataActualizada['estudiantesApoyando'] ?? []);
+        final inscritos = List<String>.from(dataActualizada['listaDeEstudiantesInscritos'] ?? []);
         final materia = dataActualizada['materiaOAsignatura'] ?? 'una clase';
         await _notificarMultiples(
-          uids: apoyando,
-          titulo: '¡Tu sugerencia fue aceptada! 🎉',
-          mensaje: 'Un tutor ha aceptado impartir la clase de $materia. Inscríbete oficialmente desde la Cartelera para reservar tu cupo.',
+          uids: inscritos,
+          titulo: '¡Tu sugerencia fue aceptada y tienes Cupo! 🎉',
+          mensaje: 'Un tutor ha aceptado impartir la clase de $materia. Has sido automáticamente inscrito.',
           tipo: 'alerta_verde',
         );
       }
@@ -1159,7 +1219,6 @@ class TutoriasProvider extends ChangeNotifier {
         });
 
         // Transacción 2: Anotamos la evaluación como una micro-pieza atómica en la subcolección del Tutor
-        // Guardamos promedio como compatibilidad para la UI antigua si hay partes que aún lo usan.
         double promedio = (puntualidad + dominio + empatia) / 3;
         
         transaction.set(docTutorEval, {
@@ -1174,6 +1233,29 @@ class TutoriasProvider extends ChangeNotifier {
           'uid_alumno': uidAlumno,
           'tutoria_id': tutoriaId,
         });
+
+        // Transacción 3: Sistema de Gamificación (Puntos VECTA)
+        final docTutorRef = db.collection('usuarios').doc(tutorId);
+        final snapshotTutor = await transaction.get(docTutorRef);
+        if (snapshotTutor.exists) {
+          final dataTutor = snapshotTutor.data()!;
+          int puntosActuales = dataTutor['puntos_vecta'] ?? 0;
+          List<dynamic> insignias = List.from(dataTutor['insignias_tutor'] ?? []);
+          
+          int puntosGanados = promedio >= 4.5 ? 15 : (promedio >= 3.5 ? 10 : 5);
+          int nuevoTotal = puntosActuales + puntosGanados;
+
+          if (nuevoTotal >= 100 && !insignias.contains('Tutor Maestro 🎓')) {
+            insignias.add('Tutor Maestro 🎓');
+          } else if (nuevoTotal >= 50 && !insignias.contains('Tutor Destacado ⭐')) {
+            insignias.add('Tutor Destacado ⭐');
+          }
+
+          transaction.update(docTutorRef, {
+            'puntos_vecta': nuevoTotal,
+            'insignias_tutor': insignias,
+          });
+        }
       });
 
       // Notificar al tutor que recibió una nueva evaluación (sin revelar el comentario privado)
@@ -1276,28 +1358,55 @@ class TutoriasProvider extends ChangeNotifier {
     }
   }
 
-  /// Permite a un tutor crear una clase fija propia, desde cero.
+  /// Permite a un tutor crear una clase fija propia, desde cero. Incluye filtro anti-spam.
   Future<bool> crearClaseFijaTutor(TutoriaModel claseFija) async {
     _iluminarSenalIndicadoraDeEspera();
     _purgarCasillasDeAdvertencias();
     try {
+      final uidTutor = FirebaseAuth.instance.currentUser?.uid;
+      if (uidTutor == null) throw "Tutor no autenticado";
+
+      // Filtro anti-spam (Max 3 clases por día)
+      final hoy = DateTime.now();
+      final inicioDeHoy = DateTime(hoy.year, hoy.month, hoy.day).toIso8601String();
+
+      final snapshotSpam = await FirebaseFirestore.instance
+          .collection('tutorias')
+          .where('identificadorDelTutor', isEqualTo: uidTutor)
+          .where('fecha_creacion_solicitud', isGreaterThanOrEqualTo: inicioDeHoy)
+          .get();
+
+      if (snapshotSpam.docs.length >= 3) {
+        _mensajeDeErrorDelSistema = "Límite anti-spam: Máximo 3 clases por día.";
+        _apagarSenalIndicadoraDeEspera();
+        notifyListeners();
+        return false;
+      }
+
       final collectionRef = FirebaseFirestore.instance.collection('tutorias');
       String docId = collectionRef.doc().id;
       TutoriaModel aGuardar = claseFija.copyWith(
         identificadorDeTutoria: docId,
         estadoDeLaSolicitud: 'pendiente',
-        cupoMaximo: claseFija.cupoMaximo < 10 ? 10 : claseFija.cupoMaximo,
+        cupoMaximo: 10,
       );
-      await collectionRef.doc(docId).set(aGuardar.toMap());
-      await cargarListadoDeTutoriasPendientes();
-      final uidTutor = FirebaseAuth.instance.currentUser?.uid;
-      if (uidTutor != null) {
-        await cargarTutoriasSuscritasDelUsuario(uidTutor);
+      
+      // Si aGuardar no tiene fecha de creación, la garantizamos (para que el query spam funcione)
+      Map<String, dynamic> mapaGuardar = aGuardar.toMap();
+      if (mapaGuardar['fecha_creacion_solicitud'] == null) {
+        mapaGuardar['fecha_creacion_solicitud'] = hoy.toIso8601String();
       }
+
+      await collectionRef.doc(docId).set(mapaGuardar);
+      await cargarListadoDeTutoriasPendientes();
+      
+      await cargarTutoriasSuscritasDelUsuario(uidTutor);
+      
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
       return true;
-    } catch (e) { debugPrint(e.toString());
+    } catch (e) { 
+      debugPrint(e.toString());
       _mensajeDeErrorDelSistema = "Error al crear la clase fija.";
       _apagarSenalIndicadoraDeEspera();
       notifyListeners();
@@ -1331,25 +1440,6 @@ class TutoriasProvider extends ChangeNotifier {
   }
   /// Envía una notificación a todos los administradores del sistema.
   Future<void> notificarAdministradores(String titulo, String mensaje, {String tipo = 'alerta_admin'}) async {
-    try {
-      final adminsSnapshot = await FirebaseFirestore.instance
-          .collection('usuarios')
-          .where('rolEnElSistema', isEqualTo: 'admin')
-          .get();
-
-      final fechaIso = DateTime.now().toIso8601String();
-      for (var doc in adminsSnapshot.docs) {
-        await FirebaseFirestore.instance.collection('notificaciones').add({
-          'usuarioId': doc.id,
-          'titulo': titulo,
-          'mensaje': mensaje,
-          'fecha': fechaIso,
-          'leida': false,
-          'tipo': tipo,
-        });
-      }
-    } catch (e) {
-      debugPrint('Error al notificar administradores: $e');
-    }
+    await _notificacionesSvc.notificarAdministradores(titulo, mensaje, tipo: tipo);
   }
 }

@@ -49,6 +49,16 @@ class UsuarioModel {
   final String? contactoEmergenciaTelefono;
   final String? anoCursando;
 
+  /// Puntos acumulados por dictar clases o recibir buenas calificaciones
+  final int puntosVecta;
+
+  /// Lista de rutas de imágenes o nombres de insignias obtenidas por el tutor
+  final List<String> insigniasTutor;
+
+  /// Mapa que guarda la disponibilidad del tutor. La llave es el día ('Lunes', 'Martes', etc.)
+  /// y el valor es la lista de horas ('08:00', '10:00').
+  final Map<String, List<String>>? horarioDisponibilidad;
+
   /// Función constructora que inicializa o "crea" la representación del usuario cuando ya tenemos su información.
   UsuarioModel({
     required this.identificadorUnico,
@@ -66,6 +76,9 @@ class UsuarioModel {
     this.contactoEmergenciaNombre,
     this.contactoEmergenciaTelefono,
     this.anoCursando,
+    this.puntosVecta = 0,
+    this.insigniasTutor = const [],
+    this.horarioDisponibilidad,
   });
 
   /// Convierte la información del objeto de usuario actual a un formato de lista de parejas (Mapa/Diccionario).
@@ -87,6 +100,9 @@ class UsuarioModel {
       'contactoEmergenciaNombre': contactoEmergenciaNombre,
       'contactoEmergenciaTelefono': contactoEmergenciaTelefono,
       'anoCursando': anoCursando,
+      'puntos_vecta': puntosVecta,
+      'insignias_tutor': insigniasTutor,
+      'horarioDisponibilidad': horarioDisponibilidad,
     };
   }
 
@@ -105,6 +121,9 @@ class UsuarioModel {
         estaBaneado: false,
         estadoSolicitudTutor: 'ninguna',
         descripcionPerfil: null,
+        puntosVecta: 0,
+        insigniasTutor: [],
+        horarioDisponibilidad: {},
       );
     }
 
@@ -134,6 +153,15 @@ class UsuarioModel {
       contactoEmergenciaNombre: mapaDeDatos['contactoEmergenciaNombre'],
       contactoEmergenciaTelefono: mapaDeDatos['contactoEmergenciaTelefono'],
       anoCursando: mapaDeDatos['anoCursando'],
+      puntosVecta: mapaDeDatos['puntos_vecta'] ?? 0,
+      insigniasTutor: mapaDeDatos['insignias_tutor'] != null 
+          ? List<String>.from(mapaDeDatos['insignias_tutor'])
+          : [],
+      horarioDisponibilidad: mapaDeDatos['horarioDisponibilidad'] != null
+          ? (mapaDeDatos['horarioDisponibilidad'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<String>.from(v)),
+            )
+          : null,
     );
   }
 
@@ -160,6 +188,9 @@ class UsuarioModel {
     String? contactoEmergenciaNombre,
     String? contactoEmergenciaTelefono,
     String? anoCursando,
+    int? puntosVecta,
+    List<String>? insigniasTutor,
+    Map<String, List<String>>? horarioDisponibilidad,
   }) {
     return UsuarioModel(
       identificadorUnico: identificadorUnico ?? this.identificadorUnico,
@@ -177,6 +208,9 @@ class UsuarioModel {
       contactoEmergenciaNombre: contactoEmergenciaNombre ?? this.contactoEmergenciaNombre,
       contactoEmergenciaTelefono: contactoEmergenciaTelefono ?? this.contactoEmergenciaTelefono,
       anoCursando: anoCursando ?? this.anoCursando,
+      puntosVecta: puntosVecta ?? this.puntosVecta,
+      insigniasTutor: insigniasTutor ?? this.insigniasTutor,
+      horarioDisponibilidad: horarioDisponibilidad ?? this.horarioDisponibilidad,
     );
   }
 }

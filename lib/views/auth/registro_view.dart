@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/autenticacion_provider.dart';
 import '../../core/utils/moderacion_servicio.dart';
+import '../widgets/overlay_loader.dart';
 
 class VectaColors {
   // principal
@@ -126,6 +127,21 @@ class _RegistroViewState extends State<RegistroView> {
   bool _emailEsValido = false;
   bool _aceptaTerminos = false;
   bool _obscureText = true;
+
+  // Estado del Checklist de Contraseña
+  bool _reqLongitud = false;
+  bool _reqMayuscula = false;
+  bool _reqNumero = false;
+  bool _reqEspecial = false;
+
+  void _validarContrasenaEnTiempoReal(String val) {
+    setState(() {
+      _reqLongitud = val.length >= 8;
+      _reqMayuscula = val.contains(RegExp(r'[A-Z]'));
+      _reqNumero = val.contains(RegExp(r'[0-9]'));
+      _reqEspecial = val.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+    });
+  }
 
   @override
   void dispose() {
@@ -269,6 +285,7 @@ class _RegistroViewState extends State<RegistroView> {
     String claveLimpa = _passwordController.text.trim();
 
     final motorDeIdentidad = context.read<AutenticacionProvider>();
+    OverlayLoader.mostrar(context, mensaje: "Creando cuenta de Vecta...");
 
     bool exitoRegistrando = await motorDeIdentidad.registrarseEnElSistemaGlobal(
       correoEscrito: correoLimpio,
@@ -289,22 +306,39 @@ class _RegistroViewState extends State<RegistroView> {
     );
 
     if (exitoRegistrando && mounted) {
-      await motorDeIdentidad.dispararVerificacionDeCorreo();
+      bool correoEnviado = await motorDeIdentidad.dispararVerificacionDeCorreo();
       await motorDeIdentidad.salirDeLaSesionActual();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Cuenta creada. Por favor verifica tu correo (revisa la carpeta de spam o correo no deseado) antes de iniciar sesión.',
+        if (correoEnviado) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Cuenta creada. Por favor verifica tu correo (revisa la carpeta de spam o correo no deseado) antes de iniciar sesión.',
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 8),
             ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 8),
-          ),
-        );
-        Navigator.pop(context);
+          );
+          Navigator.pop(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Cuenta creada pero el correo falló: ${motorDeIdentidad.mensajeDeError}'),
+              backgroundColor: VectaColors.errorRed,
+              duration: const Duration(seconds: 8),
+            ),
+          );
+          Navigator.pop(context);
+        }
       }
-    } else if (mounted) {
+    } 
+    
+    if (mounted) {
+      OverlayLoader.ocultar(context);
+    }
+    
+    if (!exitoRegistrando && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(motorDeIdentidad.mensajeDeError),
@@ -600,6 +634,7 @@ class _RegistroViewState extends State<RegistroView> {
                       TextField(
                         controller: _passwordController,
                         obscureText: _obscureText,
+                        onChanged: _validarContrasenaEnTiempoReal,
                         decoration: InputDecoration(
                           hintText: 'Contraseña (min. 8 caracteres, Mayús, #, Especial)',
                           hintStyle: const TextStyle(color: VectaColors.softBlue),
@@ -647,6 +682,18 @@ class _RegistroViewState extends State<RegistroView> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 10),
+                      // Checklist Visual Dinámico (HCI: Prevención de Errores)
+                      if (_passwordController.text.isNotEmpty)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _construirFilaChecklist(_reqLongitud, "Mínimo 8 caracteres"),
+                            _construirFilaChecklist(_reqMayuscula, "Al menos una mayúscula"),
+                            _construirFilaChecklist(_reqNumero, "Al menos un número"),
+                            _construirFilaChecklist(_reqEspecial, "Un carácter especial (!@#\$%^&*)"),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -814,6 +861,30 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _construirFilaChecklist(bool cumplido, String texto) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4.0),
+      child: Row(
+        children: [
+          Icon(
+            cumplido ? Icons.check_circle : Icons.radio_button_unchecked,
+            color: cumplido ? VectaColors.primaryGreen : VectaColors.softBlue,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            texto,
+            style: TextStyle(
+              color: cumplido ? VectaColors.primaryGreen : VectaColors.softBlue,
+              fontSize: 13,
+              fontWeight: cumplido ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
       ),
     );
   }

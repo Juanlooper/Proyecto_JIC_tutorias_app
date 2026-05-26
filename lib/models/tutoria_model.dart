@@ -95,6 +95,9 @@ class TutoriaModel {
   /// Lista de UID de estudiantes que apoyan la sugerencia comunitaria
   final List<String> estudiantesApoyando;
 
+  /// Lista de estudiantes que están esperando un cupo si alguien cancela.
+  final List<String> listaDeEspera;
+
   /// Creador original de la solicitud (si era una tutoría sugerida)
   final String? creador;
 
@@ -133,6 +136,7 @@ class TutoriaModel {
     this.alumnosQueYaEvaluaron = const [],
     this.alumnosEvaluadosPorTutor = const [],
     this.estudiantesApoyando = const [],
+    this.listaDeEspera = const [],
     this.creador,
     this.fecha_creacion_solicitud,
     this.fecha_aceptacion_solicitud,
@@ -169,6 +173,7 @@ class TutoriaModel {
       'alumnosQueYaEvaluaron': alumnosQueYaEvaluaron,
       'alumnosEvaluadosPorTutor': alumnosEvaluadosPorTutor,
       'estudiantesApoyando': estudiantesApoyando,
+      'listaDeEspera': listaDeEspera,
       'creador': creador,
       'fecha_creacion_solicitud': fecha_creacion_solicitud?.toIso8601String(),
       'fecha_aceptacion_solicitud': fecha_aceptacion_solicitud?.toIso8601String(),
@@ -195,6 +200,7 @@ class TutoriaModel {
         alumnosQueYaEvaluaron: [],
         alumnosEvaluadosPorTutor: [],
         estudiantesApoyando: [],
+        listaDeEspera: [],
         creador: null,
         fecha_creacion_solicitud: null,
         fecha_aceptacion_solicitud: null,
@@ -275,6 +281,9 @@ class TutoriaModel {
       estudiantesApoyando: mapaDeDatos['estudiantesApoyando'] != null
           ? List<String>.from(mapaDeDatos['estudiantesApoyando'])
           : [],
+      listaDeEspera: mapaDeDatos['listaDeEspera'] != null
+          ? List<String>.from(mapaDeDatos['listaDeEspera'])
+          : [],
       creador: mapaDeDatos['creador'],
       fecha_creacion_solicitud: mapaDeDatos['fecha_creacion_solicitud'] != null ? DateTime.tryParse(mapaDeDatos['fecha_creacion_solicitud']) : null,
       fecha_aceptacion_solicitud: mapaDeDatos['fecha_aceptacion_solicitud'] != null ? DateTime.tryParse(mapaDeDatos['fecha_aceptacion_solicitud']) : null,
@@ -309,6 +318,7 @@ class TutoriaModel {
     List<String>? alumnosQueYaEvaluaron,
     List<String>? alumnosEvaluadosPorTutor,
     List<String>? estudiantesApoyando,
+    List<String>? listaDeEspera,
     String? creador,
     DateTime? fecha_creacion_solicitud,
     DateTime? fecha_aceptacion_solicitud,
@@ -340,6 +350,7 @@ class TutoriaModel {
       alumnosQueYaEvaluaron: alumnosQueYaEvaluaron ?? this.alumnosQueYaEvaluaron,
       alumnosEvaluadosPorTutor: alumnosEvaluadosPorTutor ?? this.alumnosEvaluadosPorTutor,
       estudiantesApoyando: estudiantesApoyando ?? this.estudiantesApoyando,
+      listaDeEspera: listaDeEspera ?? this.listaDeEspera,
       creador: creador ?? this.creador,
       fecha_creacion_solicitud: fecha_creacion_solicitud ?? this.fecha_creacion_solicitud,
       fecha_aceptacion_solicitud: fecha_aceptacion_solicitud ?? this.fecha_aceptacion_solicitud,

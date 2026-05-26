@@ -6,10 +6,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/autenticacion_provider.dart';
 import '../../providers/tutorias_provider.dart';
 import '../../models/tutoria_model.dart';
+import '../../core/utils/moderacion_servicio.dart';
+import '../../services/pdf_servicio.dart';
 import '../../models/usuario_model.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/utils/moderacion_servicio.dart';
-
+import '../tutorias/chat_tutoria_view.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class MisTutoriasView extends StatefulWidget {
@@ -502,20 +503,22 @@ class _ModuloListaDeTutorias extends StatelessWidget {
   Widget build(BuildContext context) {
     if (loteEspecifico.isEmpty) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.event_busy, size: 64, color: Colors.grey),
-              const SizedBox(height: 16),
-              Text(
-                mensajeVacio,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            ],
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.event_busy, size: 64, color: Colors.grey),
+                const SizedBox(height: 16),
+                Text(
+                  mensajeVacio,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -1091,6 +1094,27 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // Action buttons inside bottom sheet
+                  if (datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' &&
+                      datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1CA887)),
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        Navigator.push(
+                          contextoPadre,
+                          MaterialPageRoute(
+                            builder: (_) => ChatTutoriaView(
+                              tutoriaId: datos.identificadorDeTutoria,
+                              materia: datos.materiaOAsignatura,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.forum),
+                      label: const Text('Ingresar al Micro-Foro (Chat)'),
+                    ),
+                  const SizedBox(height: 8),
+
                   if (!esDictando &&
                       datos.enlaceOReunion != null &&
                       datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' &&
@@ -1112,30 +1136,59 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                             datos.registro_asistencia![uidActual] == false)
                         ? const Center(
                             child: Text(
-                              'No asisiste a esta sesión. Sin evaluación.',
+                              'No asisiste a esta sesión. Sin evaluación ni constancia.',
                               style: TextStyle(
                                 color: Colors.red,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           )
-                        : datos.alumnosQueYaEvaluaron.contains(uidActual)
-                        ? const Center(
-                            child: Text(
-                              'Ya evaluaste esta sesión.',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          )
-                        : FilledButton.icon(
-                            onPressed: () {
-                              Navigator.pop(sheetContext);
-                              _mostrarDialogoDeEvaluacion(contextoPadre);
-                            },
-                            icon: const Icon(Icons.rate_review),
-                            label: const Text('Evaluar Sesión'),
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Botón de Constancia (Solo si la asistencia está explícitamente en true)
+                              if (datos.registro_asistencia != null &&
+                                  datos.registro_asistencia![uidActual] == true)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12.0),
+                                  child: FilledButton.icon(
+                                    style: FilledButton.styleFrom(backgroundColor: Colors.indigo),
+                                    onPressed: () async {
+                                      final proveedorUsuarios = contextoPadre.read<AutenticacionProvider>();
+                                      final tutorSnapshot = await FirebaseFirestore.instance.collection('usuarios').doc(datos.identificadorDelTutor).get();
+                                      String nombreTutor = tutorSnapshot.data()?['nombreCompleto'] ?? 'Tutor';
+                                      
+                                      await PdfServicio.generarCertificadoAsistencia(
+                                        estudiante: proveedorUsuarios.usuarioActual!,
+                                        tutoria: datos,
+                                        tutorNombre: nombreTutor,
+                                      );
+                                    },
+                                    icon: const Icon(Icons.picture_as_pdf),
+                                    label: const Text('Descargar Certificado PDF'),
+                                  ),
+                                ),
+                              
+                              // Botón de Evaluar
+                              datos.alumnosQueYaEvaluaron.contains(uidActual)
+                                  ? const Center(
+                                      child: Text(
+                                        'Ya evaluaste esta sesión.',
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    )
+                                  : FilledButton.icon(
+                                      onPressed: () {
+                                        Navigator.pop(sheetContext);
+                                        _mostrarDialogoDeEvaluacion(contextoPadre);
+                                      },
+                                      icon: const Icon(Icons.rate_review),
+                                      label: const Text('Evaluar Sesión'),
+                                    ),
+                            ],
                           ),
 
                   if (esDictando &&

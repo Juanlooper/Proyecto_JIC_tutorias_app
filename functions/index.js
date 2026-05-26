@@ -34,9 +34,15 @@ exports.notificarCambioEstadoTutoria = functions.firestore
             if (tutoria.identificadorDelTutor) {
                 uidsAnotificar.push(tutoria.identificadorDelTutor);
             }
+
+            // Si era una sugerencia huérfana, notificar a los que la apoyaban
+            if (estadoAntes === 'solicitada' || estadoAntes === 'sugerida_directa') {
+                mensaje = `Lamentablemente ningún tutor pudo tomar tu sugerencia de clase de ${tutoria.materiaOAsignatura || 'una materia'} a tiempo. Ha sido cancelada automáticamente.`;
+                uidsAnotificar.push(...(tutoria.estudiantesApoyando || []));
+            }
         } 
         // Lógica para Tutoría Aceptada (Desde la bolsa de sugerencias)
-        else if (estadoDespues === 'aceptada') {
+        else if (estadoDespues === 'aceptada' || estadoDespues === 'abierta') {
             titulo = '¡Tutoría Aceptada! 🎉';
             mensaje = `Un tutor acaba de aceptar impartir tu sugerencia de ${tutoria.materiaOAsignatura || 'clase'}. ¡Inscríbete oficialmente desde la Cartelera para reservar tu cupo!`;
             
@@ -97,9 +103,6 @@ exports.notificarCambioEstadoTutoria = functions.firestore
         try {
             const respuesta = await admin.messaging().sendEachForMulticast(payload);
             console.log(`Notificaciones enviadas. Éxito: ${respuesta.successCount}, Fallos: ${respuesta.failureCount}`);
-            
-            // (Opcional) Aquí podríamos identificar tokens fallidos (caducados) y borrarlos de la BD
-            
         } catch (error) {
             console.error('Error masivo al intentar enviar notificaciones push:', error);
         }
@@ -150,3 +153,65 @@ exports.enviarNotificacionPush = functions.firestore
 
         return null;
     });
+
+/**
+ * Cron Job: Limpiar clases vencidas
+ * Se ejecuta cada 15 minutos. Si una tutoría pendiente pasó de largo por más de 30 minutos
+ * y no tiene estudiantes inscritos, se marca como 'cancelada' automáticamente.
+ */
+exports.limpiarClasesVencidas = functions.pubsub.schedule('every 15 minutes').onRun(async (context) => {
+    const db = admin.firestore();
+    const ahora = new Date();
+    // Restamos 30 minutos
+    const limiteTiempo = new Date(ahora.getTime() - 30 * 60000);
+
+    try {
+        const snapshot = await db.collection('tutorias')
+            .where('estadoDeLaSolicitud', 'in', ['pendiente', 'solicitada', 'sugerida_directa'])
+            .get();
+
+        if (snapshot.empty) {
+            console.log('No hay tutorías pendientes/solicitadas para limpiar.');
+            return null;
+        }
+
+        const batch = db.batch();
+        let canceladas = 0;
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const inscritos = data.listaDeEstudiantesInscritos || [];
+            
+            if (data.fechaHoraSugerida && typeof data.fechaHoraSugerida.toDate === 'function') {
+                const fechaTutoria = data.fechaHoraSugerida.toDate();
+                
+                if (fechaTutoria < limiteTiempo) {
+                    let debeCancelar = false;
+                    
+                    if (data.estadoDeLaSolicitud === 'pendiente' && inscritos.length === 0) {
+                        debeCancelar = true; // Clase abandonada por alumnos
+                    } else if (data.estadoDeLaSolicitud === 'solicitada' || data.estadoDeLaSolicitud === 'sugerida_directa') {
+                        debeCancelar = true; // Sugerencia ignorada por tutores
+                    }
+                    
+                    if (debeCancelar) {
+                        batch.update(doc.ref, { estadoDeLaSolicitud: 'cancelada' });
+                        canceladas++;
+                    }
+                }
+            }
+        });
+
+        if (canceladas > 0) {
+            await batch.commit();
+            console.log(`Limpieza completada: ${canceladas} tutorías vencidas fueron canceladas.`);
+        } else {
+            console.log('No se encontraron tutorías vencidas que cumplan los criterios.');
+        }
+
+    } catch (error) {
+        console.error('Error limpiando clases vencidas:', error);
+    }
+
+    return null;
+});

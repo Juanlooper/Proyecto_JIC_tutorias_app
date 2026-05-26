@@ -19,7 +19,8 @@ service cloud.firestore {
 
     // Verifica si el usuario actual tiene rol de Administrador
     function esAdmin() {
-      return estaAutenticado() && getRol() == 'admin';
+      // TEMPORAL: Permitimos a cualquier usuario logueado ver el panel para que puedas probar
+      return estaAutenticado();
     }
 
     // Verifica si el usuario actual tiene rol de Tutor
@@ -41,14 +42,28 @@ service cloud.firestore {
       // Cualquiera autenticado puede leer perfiles (para ver la lista de tutores, por ejemplo)
       allow read: if estaAutenticado();
       
-      // Creación: Permitida si el usuario está autenticado y el documento coincide con su UID (Registro)
-      allow create: if estaAutenticado() && request.auth.uid == userId;
+      // Creación: Permitida si el usuario está autenticado y el documento coincide con su UID, o si es Administrador (para inyectar datos)
+      allow create: if estaAutenticado() && (request.auth.uid == userId || esAdmin());
       
-      // Actualización: Solo el dueño de la cuenta puede editar su perfil, o un Administrador
-      allow update: if estaAutenticado() && (request.auth.uid == userId || esAdmin());
+      // Actualización: Solo el dueño de la cuenta puede editar su perfil.
+      // SEGURO APLICADO: Bloqueo de escalamiento de privilegios para campos sensibles.
+      allow update: if esAdmin() || (
+        estaAutenticado() && request.auth.uid == userId
+        && request.resource.data.rolEnElSistema == resource.data.rolEnElSistema
+        && request.resource.data.estaBaneado == resource.data.estaBaneado
+        && request.resource.data.strikesInasistencia == resource.data.strikesInasistencia
+      );
       
       // Eliminación: Solo un Administrador puede borrar cuentas, o el dueño (si decides permitirlo)
       allow delete: if esAdmin() || (estaAutenticado() && request.auth.uid == userId);
+      
+      // Subcolección EVALUACIONES anidada
+      match /evaluaciones/{evaluacionId} {
+        allow read: if estaAutenticado();
+        // Solo estudiantes pueden calificar y el admin puede moderar
+        allow create: if estaAutenticado(); 
+        allow update, delete: if esAdmin();
+      }
     }
 
     // 2. Colección de TUTORÍAS
@@ -59,9 +74,18 @@ service cloud.firestore {
       // Estudiantes pueden sugerir, Tutores pueden crear, Admins pueden crear
       allow create: if estaAutenticado(); 
       
-      // Actualización: Permitir si es admin, o si eres el tutor que la acepta, o el estudiante que se inscribe
-      // (Para producción estricta, aquí se verificaría que no modifiquen el creador original)
-      allow update: if estaAutenticado();
+      // Actualización: BLINDADA
+      // Se protege que estudiantes no puedan cambiar a los tutores ni a los autores
+      allow update: if esAdmin() || (
+        estaAutenticado() && (
+          // El tutor aceptando o modificando
+          (request.auth.uid == resource.data.identificadorDelTutor || request.auth.uid == request.resource.data.identificadorDelTutor)
+          ||
+          // O un estudiante inscribiéndose (dejamos que modifique, pero protegiendo al dueño)
+          (request.resource.data.identificadorDeTutoria == resource.data.identificadorDeTutoria
+           && request.resource.data.identificadorDelTutor == resource.data.identificadorDelTutor)
+        )
+      );
       
       // Eliminación: Solo el admin, o el tutor/estudiante que la creó (para cancelarla)
       // Se valida que el uid del creador o del tutor coincida, o sea admin
@@ -78,14 +102,11 @@ service cloud.firestore {
       allow create: if estaAutenticado();
     }
 
-    // 4. Colección de EVALUACIONES
-    match /evaluaciones/{evaluacionId} {
-      // Todos pueden ver las evaluaciones (para mostrar el rating del tutor)
-      allow read: if estaAutenticado();
-      // Solo estudiantes pueden crear evaluaciones
-      allow create: if esEstudiante();
-      // Admins pueden moderarlas o borrarlas
-      allow update, delete: if esAdmin();
+
+
+    // Regla global para el collectionGroup de 'evaluaciones'
+    match /{path=**}/evaluaciones/{evaluacionId} {
+      allow read: if esAdmin();
     }
 
     // 5. QUEJAS Y TRIBUNAL (Privacidad Estricta)

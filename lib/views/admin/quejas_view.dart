@@ -137,7 +137,7 @@ class _TabResenas extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collectionGroup('evaluaciones').orderBy('fecha', descending: true).snapshots(),
+      stream: FirebaseFirestore.instance.collectionGroup('evaluaciones').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(color: Colors.blue));
@@ -152,6 +152,14 @@ class _TabResenas extends StatelessWidget {
         }
 
         final resenas = snapshot.data!.docs;
+        
+        // Ordenar localmente por fecha descendente
+        resenas.sort((a, b) {
+          final aDatos = a.data() as Map<String, dynamic>;
+          final bDatos = b.data() as Map<String, dynamic>;
+          return (bDatos['fecha'] ?? '').compareTo(aDatos['fecha'] ?? '');
+        });
+
         return ListView.builder(
           padding: const EdgeInsets.all(16),
           itemCount: resenas.length,

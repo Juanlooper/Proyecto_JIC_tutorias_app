@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import '../../models/tutoria_model.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/tutorias_provider.dart';
+import '../tutorias/chat_tutoria_view.dart';
 
 class DetalleClaseView extends StatefulWidget {
   final TutoriaModel tutoria;
@@ -66,7 +66,7 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
 
     if (confirmar == true && mounted) {
       final proveedor = context.read<TutoriasProvider>();
-      
+
       Map<String, Map<String, dynamic>> payload = {};
       for (var uid in widget.tutoria.listaDeEstudiantesInscritos) {
         payload[uid] = {
@@ -74,7 +74,7 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
           'feedback': _feedbackMapa[uid]?.text.trim() ?? '',
         };
       }
-      
+
       final exito = await proveedor.registrarAsistenciaClase(
         widget.tutoria.identificadorDeTutoria,
         payload,
@@ -180,11 +180,17 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
         return StatefulBuilder(
           builder: (context, setStateSB) {
             return AlertDialog(
-              title: const Text("Evaluar Estudiante", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              title: const Text(
+                "Evaluar Estudiante",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text("Califica el desempeño del estudiante. Esta información es de uso administrativo y no será visible para el alumno.", style: TextStyle(fontSize: 13, color: Colors.grey)),
+                  const Text(
+                    "Califica el desempeño del estudiante. Esta información es de uso administrativo y no será visible para el alumno.",
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -215,13 +221,19 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
                 ],
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancelar")),
-                FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Guardar Reporte")),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text("Cancelar"),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text("Guardar Reporte"),
+                ),
               ],
             );
-          }
+          },
         );
-      }
+      },
     );
 
     if (confirmar == true && mounted) {
@@ -235,10 +247,20 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
 
       if (mounted) {
         if (exito) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Evaluación interna enviada con éxito.'), backgroundColor: Colors.green));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Evaluación interna enviada con éxito.'),
+              backgroundColor: Colors.green,
+            ),
+          );
           Navigator.pop(context); // Volver al dashboard para refrescar
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(proveedor.mensajeDeErrorDelSistema), backgroundColor: Colors.red));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(proveedor.mensajeDeErrorDelSistema),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
     }
@@ -427,6 +449,23 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
+                        FilledButton.icon(
+                          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1CA887)),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ChatTutoriaView(
+                                  tutoriaId: tutoria.identificadorDeTutoria,
+                                  materia: tutoria.materiaOAsignatura,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.forum),
+                          label: const Text('Micro-Foro (Chat)'),
+                        ),
+                        const SizedBox(height: 8),
                         if (tutoria.listaDeEstudiantesInscritos.isNotEmpty)
                           FilledButton.icon(
                             style: FilledButton.styleFrom(
@@ -588,36 +627,60 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
                                     ),
                                   ],
                                 )
-                                  else if (tutoria.estadoDeLaSolicitud == 'finalizada' && !tutoria.alumnosEvaluadosPorTutor.contains(uidAlumno))
-                                    TextButton.icon(
-                                      icon: const Icon(Icons.star_rate, size: 16),
-                                      label: const Text('Evaluar Desempeño'),
-                                      onPressed: () => _mostrarDialogoEvaluacion(uidAlumno),
-                                    )
-                                  else if (tutoria.estadoDeLaSolicitud == 'finalizada' && tutoria.alumnosEvaluadosPorTutor.contains(uidAlumno))
-                                    const Text('Evaluado ✅', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
-                              ],
-                            ),
-                            
-                            if (_modoPaseDeLista && presente) ...[
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Expediente Clínico (Receta Académica):',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey),
-                              ),
-                              const SizedBox(height: 6),
-                              TextField(
-                                controller: _feedbackMapa[uidAlumno],
-                                decoration: InputDecoration(
-                                  hintText: 'Opcional. Deja recomendaciones de estudio, temas a reforzar...',
-                                  hintStyle: const TextStyle(fontSize: 12),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                                  filled: true,
-                                  fillColor: Colors.blue.withValues(alpha: 0.05),
+                              else if (tutoria.estadoDeLaSolicitud ==
+                                      'finalizada' &&
+                                  !tutoria.alumnosEvaluadosPorTutor.contains(
+                                    uidAlumno,
+                                  ))
+                                TextButton.icon(
+                                  icon: const Icon(Icons.star_rate, size: 16),
+                                  label: const Text('Evaluar Desempeño'),
+                                  onPressed: () =>
+                                      _mostrarDialogoEvaluacion(uidAlumno),
+                                )
+                              else if (tutoria.estadoDeLaSolicitud ==
+                                      'finalizada' &&
+                                  tutoria.alumnosEvaluadosPorTutor.contains(
+                                    uidAlumno,
+                                  ))
+                                const Text(
+                                  'Evaluado ✅',
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
                                 ),
-                                maxLines: 2,
-                              ),
                             ],
+                          ),
+
+                          if (_modoPaseDeLista && presente) ...[
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Expediente Clínico (Receta Académica):',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: Colors.blueGrey,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: _feedbackMapa[uidAlumno],
+                              decoration: InputDecoration(
+                                hintText:
+                                    'Opcional. Deja recomendaciones de estudio, temas a reforzar...',
+                                hintStyle: const TextStyle(fontSize: 12),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide.none,
+                                ),
+                                filled: true,
+                                fillColor: Colors.blue.withValues(alpha: 0.05),
+                              ),
+                              maxLines: 2,
+                            ),
+                          ],
                           const SizedBox(height: 16),
                           const Text(
                             'Motivo para asistir:',
@@ -752,7 +815,11 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 boxShadow: [
-                  BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -5)),
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 10,
+                    offset: Offset(0, -5),
+                  ),
                 ],
               ),
               child: FilledButton.icon(

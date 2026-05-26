@@ -13,6 +13,9 @@ class MetricasView extends StatefulWidget {
 }
 
 class _MetricasViewState extends State<MetricasView> {
+  String _filtroFacultad = 'Todas';
+  String _filtroCarrera = 'Todas';
+
   @override
   void initState() {
     super.initState();
@@ -24,18 +27,22 @@ class _MetricasViewState extends State<MetricasView> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Métricas y Análisis'),
           backgroundColor: AppTheme.primarioVerde,
           foregroundColor: Colors.white,
+          actions: [
+            // Botones de inyección de datos removidos para producción
+          ],
           bottom: const TabBar(
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white60,
             indicatorColor: Colors.white,
             tabs: [
-              Tab(icon: Icon(Icons.analytics), text: 'Rendimiento y Bienestar'),
+              Tab(icon: Icon(Icons.analytics), text: 'Bienestar'),
+              Tab(icon: Icon(Icons.people), text: 'Demografía'),
               Tab(icon: Icon(Icons.security), text: 'Moderación'),
             ],
           ),
@@ -43,6 +50,7 @@ class _MetricasViewState extends State<MetricasView> {
         body: TabBarView(
           children: [
             _buildDashboard(context),
+            _buildDemografia(context),
             const QuejasView(ocultarAppBar: true),
           ],
         ),
@@ -102,6 +110,283 @@ class _MetricasViewState extends State<MetricasView> {
         color: Color(0xFF1E293B),
       ),
       textAlign: TextAlign.center,
+    );
+  }
+
+  // ==========================================
+  // GRÁFICOS DEMOGRAFÍA (NUEVO)
+  // ==========================================
+
+  Widget _buildDemografia(BuildContext context) {
+    final admin = context.watch<AdminProvider>();
+
+    if (admin.estaCargando) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSeccionHeader('Población Estudiantil'),
+          const SizedBox(height: 16),
+          _buildGraficoPastel('Por Facultad', admin.estudiantesPorFacultad),
+          const SizedBox(height: 24),
+          _buildGraficoPastel('Por Carrera', admin.estudiantesPorCarrera),
+          const SizedBox(height: 24),
+          _buildGraficoPastel('Por Año Cursando', admin.estudiantesPorAno),
+          const SizedBox(height: 32),
+          _buildSeccionHeader('Registro Completo de Horas por Alumno'),
+          const SizedBox(height: 16),
+          _buildFiltrosDemografia(admin),
+          const SizedBox(height: 16),
+          _buildTablaHoras(admin),
+          const SizedBox(height: 48),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGraficoPastel(String titulo, Map<String, int> datos) {
+    if (datos.isEmpty) return const SizedBox.shrink();
+
+    final List<Color> colores = [
+      Colors.blue, Colors.red, Colors.green, Colors.orange, Colors.purple, Colors.teal, Colors.pink
+    ];
+
+    int index = 0;
+    List<PieChartSectionData> sections = [];
+    int total = datos.values.fold(0, (sum, x) => sum + x);
+
+    datos.forEach((key, value) {
+      if (value > 0) {
+        final pct = (value / total) * 100;
+        sections.add(
+          PieChartSectionData(
+            color: colores[index % colores.length],
+            value: value.toDouble(),
+            title: '${pct.toStringAsFixed(1)}%',
+            radius: 50,
+            titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+        );
+        index++;
+      }
+    });
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: PieChart(
+                PieChartData(
+                  sectionsSpace: 2,
+                  centerSpaceRadius: 40,
+                  sections: sections,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              alignment: WrapAlignment.center,
+              children: List.generate(datos.length, (i) {
+                final entry = datos.entries.elementAt(i);
+                if (entry.value == 0) return const SizedBox.shrink();
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(width: 12, height: 12, color: colores[i % colores.length]),
+                    const SizedBox(width: 4),
+                    Text('${entry.key} (${entry.value})', style: const TextStyle(fontSize: 12)),
+                  ],
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Mapeo completo de Facultades y Carreras (Copia desde registro)
+  static const Map<String, List<String>> _facultadesUTP = {
+    'Facultad de Ingeniería de Sistemas Computacionales (FISC)': [
+      'Lic. en Ingeniería de Sistemas y Computación',
+      'Lic. en Ingeniería de Software',
+      'Lic. en Ingeniería de Sistemas de Información',
+      'Lic. en Ingeniería de Sistemas de Información Gerencial',
+      'Lic. en Ciberseguridad',
+      'Lic. en Ciencias de la Computación',
+      'Lic. en Desarrollo de Software',
+      'Lic. en Desarrollo y Gestión de Software',
+      'Lic. en Redes Informáticas',
+      'Técnico en Informática Aplicada a la Educación',
+      'Técnico en Ingeniería con Especialización en Ciberseguridad',
+      'Técnico en Ingeniería con Especialización en Redes Informáticas',
+    ],
+    'Facultad de Ingeniería Civil (FIC)': [
+      'Lic. en Ingeniería Civil',
+      'Lic. en Ingeniería Ambiental',
+      'Lic. en Ingeniería Geomática',
+      'Lic. en Ingeniería Geológica',
+      'Lic. en Ingeniería Marítima Portuaria',
+      'Lic. en Ingeniería en Administración de Proyectos de Construcción',
+      'Lic. en Edificaciones',
+      'Lic. en Topografía',
+      'Lic. en Saneamiento y Ambiente',
+      'Lic. en Dibujo Automatizado',
+      'Lic. en Operaciones Marítimas y Portuarias',
+    ],
+    'Facultad de Ingeniería Eléctrica (FIE)': [
+      'Lic. en Ingeniería Eléctrica',
+      'Lic. en Ingeniería Eléctrica y Electrónica',
+      'Lic. en Ingeniería Electromecánica',
+      'Lic. en Ingeniería Electrónica y Telecomunicaciones',
+      'Lic. en Ingeniería Electrónica Industrial (Carrera Reciente)',
+      'Lic. en Electrónica y Sistemas de Comunicación',
+      'Lic. en Sistemas Eléctricos y Automatización',
+      'Técnico en Ingeniería con Especialización en Sistemas Eléctricos',
+      'Técnico en Ingeniería con Especialización en Electrónica Biomédica',
+      'Técnico en Electromecánica Industrial',
+    ],
+    'Facultad de Ingeniería Industrial (FII)': [
+      'Lic. en Ingeniería Industrial',
+      'Lic. en Ingeniería Mecánica Industrial',
+      'Lic. en Ingeniería Logística y Cadena de Suministro',
+      'Lic. en Ingeniería en Seguridad Industrial e Higiene Ocupacional',
+      'Lic. en Logística y Transporte Multimodal',
+      'Lic. en Mercadeo y Negocios Internacionales',
+      'Lic. en Gestión Administrativa',
+      'Lic. en Gestión de la Producción Industrial',
+      'Técnico en Gestión de Ventas',
+      'Técnico en Recursos Humanos y Gestión de la Productividad',
+    ],
+    'Facultad de Ingeniería Mecánica (FIM)': [
+      'Lic. en Ingeniería Mecánica',
+      'Lic. en Ingeniería Aeronáutica',
+      'Lic. en Ingeniería Naval',
+      'Lic. en Ingeniería de Energía y Ambiente',
+      'Lic. en Ingeniería de Mantenimiento',
+      'Lic. en Administración de Aviación (con opción a vuelo - Piloto)',
+      'Lic. en Mecánica Industrial',
+      'Lic. en Refrigeración y Aire Acondicionado',
+      'Técnico en Ingeniería con Especialización en Mecánica Automotriz',
+    ],
+    'Facultad de Ciencias y Tecnología (FCyT)': [
+      'Lic. en Ingeniería de Alimentos',
+      'Lic. en Ingeniería Forestal',
+      'Lic. en Ingeniería Química (Carrera Reciente)',
+      'Lic. en Comunicación Ejecutiva Bilingüe',
+      'Técnico en Comunicación Ejecutiva Bilingüe',
+    ],
+  };
+
+  Widget _buildFiltrosDemografia(AdminProvider admin) {
+    // Extraer facultades base del mapa + dinámicas que existan
+    final facultades = {'Todas'};
+    facultades.addAll(_facultadesUTP.keys);
+
+    final carreras = {'Todas'};
+    if (_filtroFacultad != 'Todas' && _facultadesUTP.containsKey(_filtroFacultad)) {
+      carreras.addAll(_facultadesUTP[_filtroFacultad]!);
+    }
+    
+    // Añadir dinámicamente las que estén en la DB por si acaso
+    for (var e in admin.todosLosEstudiantesConHoras) {
+      String fac = e['facultad']?.toString().trim() ?? '';
+      if (fac.isNotEmpty && fac != 'No especificada') facultades.add(fac);
+      
+      if (_filtroFacultad == 'Todas' || e['facultad'] == _filtroFacultad) {
+        String car = e['carrera']?.toString().trim() ?? '';
+        if (car.isNotEmpty && car != 'No especificada') carreras.add(car);
+      }
+    }
+
+    // Asegurarse de que el filtro actual es válido
+    if (!facultades.contains(_filtroFacultad)) _filtroFacultad = 'Todas';
+    if (!carreras.contains(_filtroCarrera)) _filtroCarrera = 'Todas';
+
+    return Row(
+      children: [
+        Expanded(
+          child: InputDecorator(
+            decoration: const InputDecoration(labelText: 'Facultad', border: OutlineInputBorder()),
+            child: DropdownButton<String>(
+              isExpanded: true,
+              underline: const SizedBox(),
+              value: facultades.contains(_filtroFacultad) ? _filtroFacultad : 'Todas',
+              items: facultades.map((f) => DropdownMenuItem(value: f, child: Text(f, overflow: TextOverflow.ellipsis))).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() { _filtroFacultad = val; _filtroCarrera = 'Todas'; });
+              },
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: InputDecorator(
+            decoration: const InputDecoration(labelText: 'Carrera', border: OutlineInputBorder()),
+            child: DropdownButton<String>(
+              isExpanded: true,
+              underline: const SizedBox(),
+              value: carreras.contains(_filtroCarrera) ? _filtroCarrera : 'Todas',
+              items: carreras.map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() { _filtroCarrera = val; });
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTablaHoras(AdminProvider admin) {
+    var listaFiltrada = admin.todosLosEstudiantesConHoras.where((e) {
+      bool cumpleFac = _filtroFacultad == 'Todas' || e['facultad'] == _filtroFacultad;
+      bool cumpleCarrera = _filtroCarrera == 'Todas' || e['carrera'] == _filtroCarrera;
+      return cumpleFac && cumpleCarrera;
+    }).toList();
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            columnSpacing: 20,
+            headingRowColor: WidgetStateProperty.all(Colors.grey.shade200),
+            columns: const [
+              DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('Facultad', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('Carrera', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('Año', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('Horas Totales', style: TextStyle(fontWeight: FontWeight.bold))),
+            ],
+            rows: listaFiltrada.map((e) {
+              return DataRow(cells: [
+                DataCell(Text(e['nombre'])),
+                DataCell(Text(e['facultad'])),
+                DataCell(Text(e['carrera'])),
+                DataCell(Text(e['anoCursando'])),
+                DataCell(Text('${(e['horas'] as double).toStringAsFixed(1)} hrs', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))),
+              ]);
+            }).toList(),
+          ),
+        ),
+      ),
     );
   }
 

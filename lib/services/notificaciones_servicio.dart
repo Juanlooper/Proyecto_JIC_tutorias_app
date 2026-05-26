@@ -57,4 +57,60 @@ class NotificacionesServicio {
       }
     }
   }
+  /// Crea una notificación individual para un usuario.
+  Future<void> crearNotificacion({
+    required String usuarioId,
+    required String titulo,
+    required String mensaje,
+    String tipo = 'info',
+  }) async {
+    try {
+      await FirebaseFirestore.instance.collection('notificaciones').add({
+        'usuarioId': usuarioId,
+        'titulo': titulo,
+        'mensaje': mensaje,
+        'fecha': DateTime.now().toIso8601String(),
+        'leida': false,
+        'tipo': tipo,
+      });
+    } catch (e) {
+      debugPrint("Error creando notificación individual: $e");
+    }
+  }
+
+  /// Envía notificaciones de forma masiva a un grupo de usuarios.
+  Future<void> notificarMultiples({
+    required List<String> uids,
+    required String titulo,
+    required String mensaje,
+    String tipo = 'info',
+  }) async {
+    for (var uid in uids) {
+      await crearNotificacion(usuarioId: uid, titulo: titulo, mensaje: mensaje, tipo: tipo);
+    }
+  }
+
+  /// Notifica inmediatamente a todo el staff de administradores del sistema.
+  Future<void> notificarAdministradores(String titulo, String mensaje, {String tipo = 'alerta_admin'}) async {
+    try {
+      final adminsSnapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .where('rolEnElSistema', isEqualTo: 'admin')
+          .get();
+
+      final fechaIso = DateTime.now().toIso8601String();
+      for (var doc in adminsSnapshot.docs) {
+        await FirebaseFirestore.instance.collection('notificaciones').add({
+          'usuarioId': doc.id,
+          'titulo': titulo,
+          'mensaje': mensaje,
+          'fecha': fechaIso,
+          'leida': false,
+          'tipo': tipo,
+        });
+      }
+    } catch (e) {
+      debugPrint('Error al notificar administradores: $e');
+    }
+  }
 }

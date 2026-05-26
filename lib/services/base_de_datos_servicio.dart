@@ -39,6 +39,7 @@ class BaseDeDatosServicio {
       QuerySnapshot lecturaOptimizada = await _bodegaDeConocimiento
           .collection('tutorias')
           .where('estadoDeLaSolicitud', isEqualTo: 'pendiente')
+          .limit(50) // Optimización escalable: Previene leer miles de docs de golpe, topado a 50 recientes
           .get();
 
       // Transformamos ('map') el montón crudo de registros a una lista formal de nuestro prestigioso modelo

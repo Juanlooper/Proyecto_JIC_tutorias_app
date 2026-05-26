@@ -107,13 +107,14 @@ class AutenticacionProvider extends ChangeNotifier {
     // Si mensajeDeError es null, el inicio de sesión fue exitoso en Firebase
     if (mensajeDeError == null) {
       // Validación estricta de Email Verificado:
-      if (FirebaseAuth.instance.currentUser != null && !FirebaseAuth.instance.currentUser!.emailVerified) {
-        String mensajeRetenido = "Debes verificar tu correo para poder entrar. Revisa tu bandeja de entrada o SPAM.";
-        await salirDeLaSesionActual(); 
-        _mensajeDeError = mensajeRetenido;
-        notifyListeners();
-        return false;
-      }
+      // COMENTADO TEMPORALMENTE: Debido a bloqueos persistentes de Outlook/UTP con el nuevo dominio
+      // if (FirebaseAuth.instance.currentUser != null && !FirebaseAuth.instance.currentUser!.emailVerified) {
+      //   String mensajeRetenido = "Debes verificar tu correo para poder entrar. Revisa tu bandeja de entrada o SPAM.";
+      //   await salirDeLaSesionActual(); 
+      //   _mensajeDeError = mensajeRetenido;
+      //   notifyListeners();
+      //   return false;
+      // }
 
       // Éxito. Acudimos al baúl de base de datos a traer todo su expediente formal de la JIC.
       _usuarioActual = await _servicioIntegradoDeAutenticacion
@@ -203,19 +204,23 @@ class AutenticacionProvider extends ChangeNotifier {
   /// con acceso legitimo a esa bandeja de entrada.
   /// UX para Alejandra: Mientras el correo viaja por los servidores de Google, el indicador
   /// _estaCargando se activa para que la interfaz muestre un spinner y bloquee el boton de reenvio.
-  Future<void> dispararVerificacionDeCorreo() async {
+  Future<bool> dispararVerificacionDeCorreo() async {
     _activarIndicadorDeCargaEnPantalla();
     _limpiarCualquierTextoDefectuosoAnterior();
 
     String verificacionEnviada = await _servicioIntegradoDeAutenticacion
         .enviarVerificacionDeCorreo();
 
+    _desactivarIndicadorDeCargaEnPantalla();
+    
     if (verificacionEnviada != "Verificacion Enviada") {
       _mensajeDeError = verificacionEnviada;
+      notifyListeners();
+      return false;
     }
 
-    _desactivarIndicadorDeCargaEnPantalla();
     notifyListeners();
+    return true;
   }
 
   /// Problema de negocio que resuelve: Ofrece a los estudiantes una salida segura cuando

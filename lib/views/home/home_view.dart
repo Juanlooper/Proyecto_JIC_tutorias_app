@@ -19,6 +19,10 @@ class _HomeViewState extends State<HomeView> {
   final TextEditingController _controladorBusqueda = TextEditingController();
   String _terminoBusqueda = '';
 
+  final List<String> _filtrosRapidos = [
+    'Cálculo', 'Física', 'Programación', 'Química', 'Dibujo', 'Lógica'
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -60,6 +64,39 @@ class _HomeViewState extends State<HomeView> {
               ),
             ),
           ),
+
+          // Filtros Rápidos (Chips)
+          SizedBox(
+            height: 50,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _filtrosRapidos.length,
+              itemBuilder: (context, index) {
+                final filtro = _filtrosRapidos[index];
+                final estaSeleccionado = _controladorBusqueda.text.toLowerCase().trim() == filtro.toLowerCase();
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: FilterChip(
+                    label: Text(filtro),
+                    selected: estaSeleccionado,
+                    selectedColor: const Color(0xFF1CA887).withValues(alpha: 0.2),
+                    checkmarkColor: const Color(0xFF1CA887),
+                    onSelected: (bool selected) {
+                      setState(() {
+                        if (selected) {
+                          _controladorBusqueda.text = filtro;
+                        } else {
+                          _controladorBusqueda.clear();
+                        }
+                      });
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
 
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
@@ -358,9 +395,12 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
         SnackBar(content: Text(fallaMotivo), backgroundColor: Colors.redAccent),
       );
     } else {
+      final msjExito = proveedor.mensajeDeExitoDelSistema.isNotEmpty 
+          ? proveedor.mensajeDeExitoDelSistema 
+          : 'Acción procesada con éxito.';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Acción procesada con éxito.'),
+        SnackBar(
+          content: Text(msjExito),
           backgroundColor: Colors.green,
         ),
       );
@@ -374,12 +414,31 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
 
     if (elUsuario == null) return const SizedBox.shrink();
 
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 12.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: const Color(0xFF1CA887).withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {}, // Activa el efecto Ripple
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -524,6 +583,8 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
             ),
           ],
         ),
+      ),
+      ),
       ),
     );
   }
