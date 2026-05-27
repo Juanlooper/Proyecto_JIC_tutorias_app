@@ -544,16 +544,15 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
           },
         ),
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const CrearClasePropiaView()),
-            );
-          },
-          backgroundColor: AppTheme.primarioVerde,
+          heroTag: 'fab_dashboard_tutor',
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CrearClasePropiaView()),
+          ),
+          icon: const Icon(Icons.add_circle_outline),
+          label: const Text("Nueva Clase"),
+          backgroundColor: AppTheme.primarioAzul,
           foregroundColor: Colors.white,
-          icon: const Icon(Icons.add),
-          label: const Text('Crear Clase'),
         ),
       ),
     );

@@ -19,18 +19,20 @@ service cloud.firestore {
 
     // Verifica si el usuario actual tiene rol de Administrador
     function esAdmin() {
-      // TEMPORAL: Permitimos a cualquier usuario logueado ver el panel para que puedas probar
-      return estaAutenticado();
+      return estaAutenticado() && (
+        (('email' in request.auth.token) && request.auth.token.email == 'admin@tutorias-jic.com') 
+        || getRol() == 'admin' || getRol() == 'RolSistema.admin'
+      );
     }
 
     // Verifica si el usuario actual tiene rol de Tutor
     function esTutor() {
-      return estaAutenticado() && getRol() == 'tutor';
+      return estaAutenticado() && (getRol() == 'tutor' || getRol() == 'RolSistema.tutor');
     }
     
     // Verifica si el usuario actual tiene rol de Estudiante
     function esEstudiante() {
-      return estaAutenticado() && getRol() == 'estudiante';
+      return estaAutenticado() && (getRol() == 'estudiante' || getRol() == 'RolSistema.estudiante');
     }
 
     // ---------------------------------------------------------
@@ -50,9 +52,12 @@ service cloud.firestore {
       allow update: if esAdmin() || (
         estaAutenticado() && request.auth.uid == userId
         && request.resource.data.rolEnElSistema == resource.data.rolEnElSistema
-        && request.resource.data.estaBaneado == resource.data.estaBaneado
-        && request.resource.data.strikesInasistencia == resource.data.strikesInasistencia
-      );
+        && request.resource.data.esta_baneado == resource.data.esta_baneado
+        && request.resource.data.strikes_inasistencia == resource.data.strikes_inasistencia
+      ) || esTutor() // Permitimos a los tutores asignar strikes en la asistencia
+      || (
+        estaAutenticado() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['puntos_vecta', 'insignias_tutor'])
+      ); // Permitimos a los alumnos dar puntos e insignias de gamificación al evaluar
       
       // Eliminación: Solo un Administrador puede borrar cuentas, o el dueño (si decides permitirlo)
       allow delete: if esAdmin() || (estaAutenticado() && request.auth.uid == userId);
@@ -62,6 +67,13 @@ service cloud.firestore {
         allow read: if estaAutenticado();
         // Solo estudiantes pueden calificar y el admin puede moderar
         allow create: if estaAutenticado(); 
+        allow update, delete: if esAdmin();
+      }
+
+      // Subcolección EXPEDIENTE ACADÉMICO anidada
+      match /expediente_academico/{expedienteId} {
+        allow read: if estaAutenticado() && (request.auth.uid == userId || esAdmin() || esTutor());
+        allow create: if esTutor() || esAdmin();
         allow update, delete: if esAdmin();
       }
     }
@@ -93,10 +105,10 @@ service cloud.firestore {
                     (estaAutenticado() && (resource.data.creador == request.auth.uid || resource.data.identificadorDelTutor == request.auth.uid));
     }
 
-    // 3. Colección de NOTIFICACIONES (Bloqueada al UID del usuario)
+    // 3. Colección de NOTIFICACIONES (Bloqueada al UID del usuario o Admin)
     match /notificaciones/{notificacionId} {
-      // Lectura y borrado estrictamente limitados al dueño de la notificación
-      allow read, update, delete: if estaAutenticado() && resource.data.usuarioId == request.auth.uid;
+      // Lectura y borrado permitidos al admin y al dueño de la notificación
+      allow read, update, delete: if esAdmin() || (estaAutenticado() && resource.data.usuarioId == request.auth.uid);
       
       // Cualquier usuario autenticado puede generar una notificación (Ej: Un estudiante le envía a un tutor)
       allow create: if estaAutenticado();

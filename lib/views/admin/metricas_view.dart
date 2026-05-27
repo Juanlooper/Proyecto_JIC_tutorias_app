@@ -4,6 +4,9 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/admin_provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'quejas_view.dart';
+import '../widgets/overlay_loader.dart';
+import '../../services/exportacion_excel_servicio.dart';
+import '../../services/reporte_pdf_servicio.dart';
 
 class MetricasView extends StatefulWidget {
   const MetricasView({super.key});
@@ -34,7 +37,48 @@ class _MetricasViewState extends State<MetricasView> {
           backgroundColor: AppTheme.primarioVerde,
           foregroundColor: Colors.white,
           actions: [
-            // Botones de inyección de datos removidos para producción
+            PopupMenuButton<String>(
+              onSelected: (value) async {
+                final admin = context.read<AdminProvider>();
+                if (value == 'pdf') {
+                  OverlayLoader.mostrar(context, mensaje: "Generando reporte PDF...");
+                  try {
+                    await ReportePdfServicio.generarPdf(admin);
+                  } catch (e) {
+                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                  }
+                  if (context.mounted) OverlayLoader.ocultar(context);
+                } else if (value == 'excel') {
+                  OverlayLoader.mostrar(context, mensaje: "Exportando tabla a Excel...");
+                  try {
+                    await ExportacionExcelServicio.exportarDatosGlobales(admin);
+                  } catch (e) {
+                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                  }
+                  if (context.mounted) OverlayLoader.ocultar(context);
+                }
+              },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'pdf',
+                  child: ListTile(
+                    leading: Icon(Icons.picture_as_pdf, color: Colors.red),
+                    title: Text('Exportar Todo a PDF'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'excel',
+                  child: ListTile(
+                    leading: Icon(Icons.table_chart, color: Colors.green),
+                    title: Text('Exportar Tabla a Excel (CSV)'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+              icon: const Icon(Icons.download),
+              tooltip: 'Opciones de Exportación',
+            ),
           ],
           bottom: const TabBar(
             labelColor: Colors.white,

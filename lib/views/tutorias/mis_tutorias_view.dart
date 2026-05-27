@@ -73,6 +73,7 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
                 return Row(
                   children: [
                     IconButton(
+                      tooltip: 'Ver mes anterior',
                       icon: const Icon(
                         Icons.chevron_left,
                         color: AppTheme.primarioAzul,
@@ -89,7 +90,7 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
                         isScrollable: true,
                         tabAlignment: TabAlignment.center,
                         labelColor: AppTheme.primarioAzul,
-                        unselectedLabelColor: Colors.grey,
+                        unselectedLabelColor: AppTheme.grisTexto,
                         indicatorColor: AppTheme.primarioAzul,
                         tabs: [
                           Tab(
@@ -102,6 +103,7 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
                       ),
                     ),
                     IconButton(
+                      tooltip: 'Ver mes siguiente',
                       icon: const Icon(
                         Icons.chevron_right,
                         color: AppTheme.primarioAzul,
@@ -254,6 +256,7 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
             authProv.usuarioActual?.rolEnElSistema.toString() ==
                 "RolSistema.tutor"
             ? FloatingActionButton.extended(
+                heroTag: 'fab_mis_tutorias',
                 onPressed: () => _mostrarDialogoCrearClaseFija(context, uid),
                 icon: const Icon(Icons.add),
                 label: const Text('Crear Clase Fija'),
@@ -416,7 +419,7 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
               onPressed: () => Navigator.pop(ctx, false),
               child: const Text(
                 "Cancelar",
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: AppTheme.grisTexto),
               ),
             ),
             FilledButton(
@@ -510,12 +513,12 @@ class _ModuloListaDeTutorias extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.event_busy, size: 64, color: Colors.grey),
+                const Icon(Icons.event_busy, size: 64, color: AppTheme.grisTexto),
                 const SizedBox(height: 16),
                 Text(
                   mensajeVacio,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+                  style: const TextStyle(fontSize: 16, color: AppTheme.grisTexto),
                 ),
               ],
             ),
@@ -1036,8 +1039,7 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
         );
       },
     );
-    ctrlComentario.dispose();
-    ctrlComentarioPublico.dispose();
+    // Se remueven los dispose() para evitar la aserción de _dependents.isEmpty
   }
 
   void _abrirDetallesTutoria(BuildContext contextoPadre, bool esDictando) {

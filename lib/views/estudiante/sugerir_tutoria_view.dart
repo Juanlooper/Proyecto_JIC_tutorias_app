@@ -132,33 +132,39 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
         }
 
         // 2. Obtener clases que ya estén ocupadas en esa fecha exacta
-        final inicioDia = DateTime(_fechaSeleccionada!.year, _fechaSeleccionada!.month, _fechaSeleccionada!.day);
-        final finDia = inicioDia.add(const Duration(days: 1));
-
+        // Se hace la consulta principal simple (solo por tutor) para evitar la necesidad de 
+        // crear índices compuestos manuales en Firestore (FAILED_PRECONDITION).
         final tutoriasSnapshot = await FirebaseFirestore.instance
             .collection('tutorias')
             .where('identificadorDelTutor', isEqualTo: widget.tutorDestino)
-            .where('estadoDeLaSolicitud', whereIn: ['aceptada', 'pendiente'])
-            .where('fechaHoraSugerida', isGreaterThanOrEqualTo: inicioDia)
-            .where('fechaHoraSugerida', isLessThan: finDia)
             .get();
 
+        final inicioDia = DateTime(_fechaSeleccionada!.year, _fechaSeleccionada!.month, _fechaSeleccionada!.day);
+        final finDia = inicioDia.add(const Duration(days: 1));
+
         for (var doc in tutoriasSnapshot.docs) {
-          final fechaClase = (doc['fechaHoraSugerida'] as Timestamp).toDate();
-          final String horaString = '${fechaClase.hour.toString().padLeft(2, '0')}:00';
-          horasOcupadas.add(horaString);
+          final data = doc.data();
+          final estado = data['estadoDeLaSolicitud'] as String?;
+          if (estado == 'aceptada' || estado == 'pendiente') {
+            final fechaClase = (data['fechaHoraSugerida'] as Timestamp).toDate();
+            // Filtro de fecha local
+            if (fechaClase.isAfter(inicioDia.subtract(const Duration(seconds: 1))) && fechaClase.isBefore(finDia)) {
+              final String horaString = '${fechaClase.hour.toString().padLeft(2, '0')}:00';
+              horasOcupadas.add(horaString);
+            }
+          }
         }
       } else {
         // Si no es un tutor en específico, mostramos todas las horas desde las 07:00 a 21:00
         horasDisponiblesDelTutor = List.generate(15, (index) => '${(index + 7).toString().padLeft(2, '0')}:00');
       }
     } catch (e) {
-      // Error de red
+      // Error de red o base de datos
       OverlayLoader.ocultar(context);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Error al consultar disponibilidad."),
+          SnackBar(
+            content: Text("Error al consultar disponibilidad: ${e.toString()}"),
             backgroundColor: Colors.redAccent,
           ),
         );

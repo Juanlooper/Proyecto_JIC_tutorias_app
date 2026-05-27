@@ -433,9 +433,29 @@ El código original, el branding actual, y la base de datos de los primeros prot
 
 ---
 
-> **Versión del Proyecto:** 1.4.0 (Security Hardening & Production Ready)  
+> **Versión del Proyecto:** 1.5.0 (Dominio Personalizado & Filtros Demográficos)  
 
-### Registro de Actualizaciones (Changelog v1.4.0)
+### Registro de Actualizaciones (Changelog v1.5.0)
+
+#### 🚀 1. Funcionalidades Premium y Experiencia de Usuario (UI/UX)
+- **Creación Proactiva de Clases:** Transición del modelo pasivo al proactivo. Ahora los tutores pueden crear sus propias "Clases Fijas", permitiendo a los estudiantes inscribirse libremente hasta llenar el cupo.
+- **Chat en Tiempo Real:** Las tutorías ahora tienen una sala de chat integrada. Detecta automáticamente enlaces web (Zoom, Google Meet) haciéndolos clicables.
+- **UI Libre de Errores (Zero Overflow):** Limpieza profunda de errores de desbordamiento (franjas amarillas/negras) envolviendo vistas complejas como el Calendario y el Chat en contenedores deslizables (`ScrollViews`).
+- **Generación de PDFs:** Capacidad para que la aplicación construya certificados y reportes descargables en formato PDF utilizando las fuentes y branding oficiales.
+
+#### 🧠 2. El Cerebro Analítico (Dashboard Administrativo Completo)
+- **Filtros Demográficos Dinámicos:** Panel de métricas donde los filtros (Facultad/Carrera) operan al instante y en memoria caché sin consumir lecturas de internet extra.
+- **Rastreo Integral:** Implementación de cálculo de **Tasa de Cancelación Tardía** (penalización), **Mapeo de Demografía** (conteo de alumnos por año y facultad), cálculo de **Horas de Vida** (tiempo invertido por usuario) y barrido de **Calificaciones Globales** (distribución de 1 a 5 estrellas).
+- **Gestor de Cuellos de Botella:** Identificación de las materias más solicitadas y control centralizado de quejas.
+
+#### 🛡️ 3. Infraestructura y Seguridad en la Nube
+- **Dominio Propio y Correos Corporativos:** Migración hacia `tutoriasjic.me`. Correos de verificación emitidos desde `info@tutoriasjic.me` (DNS validado con SPF, DKIM y CNAME) para evitar la carpeta de Spam en Microsoft 365 / UTP.
+- **Reglas de Firestore Reescritas:** Arquitectura de seguridad endurecida para bloquear usuarios no autorizados, proteger los chats privados y blindar el acceso al panel de administración exclusivo.
+- **Filtros Anti-Spam (Máx 3 Clases/Día):** Algoritmo silencioso que vigila y bloquea preventivamente a cualquier tutor que intente publicar más de 3 clases en un mismo día, evitando inundaciones en la cartelera.
+- **Chat Inteligente a Costo Cero (Autodestrucción):** Solución descentralizada para evitar facturas de servidor. El celular del usuario hace el mantenimiento: al abrir el chat, el cliente rastrea y borra permanentemente todos los mensajes con más de 24 horas de antigüedad.
+- **Erradicación del Motor de Pruebas:** Eliminación física y absoluta del script `mock_data_servicio.dart`. El código base de producción está garantizado 100% libre de código basura o de pruebas.
+
+### Registro de Actualizaciones Histórico (Changelog v1.4.0)
 - **App Check Integrado:** Firebase backend asegurado contra bots, emuladores root y scripts mediante Play Integrity API y reCAPTCHA v3 invisible.
 - **Filtros de Lenguaje y Toxicidad:** Algoritmo en el `ModeracionServicio` integrado en el formulario de registro y en la creación de peticiones para detectar groserías y ofuscaciones de texto (Leetspeak).
 - **Endurecimiento de Credenciales:** Reglas estrictas en el `RegistroView` exigiendo un mínimo de 8 caracteres, mayúsculas, números y símbolos especiales en la creación de contraseñas.
@@ -449,5 +469,5 @@ El código original, el branding actual, y la base de datos de los primeros prot
 - **Formularios Dinámicos:** Integración de un menú desplegable interactivo (`DropdownButtonFormField`) en la vista de Sugerir Tutoría para estandarizar las materias (Cálculo I, Física I, etc.), con una opción "Otros" que despliega dinámicamente un campo de texto adicional.
 - **Auditoría de Código:** Resolución completa de advertencias del compilador (Linter a 0 errores), incluyendo la sustitución de código obsoleto (`.withOpacity` a `.withValues`) y dependencias huérfanas.
 
-> **Auditoría de Seguridad:** Completada y superada con éxito (Google Cloud Rules Enforced & App Check Verified).  
-> **Última actualización:** Abril 2026
+> **Auditoría de Seguridad:** Completada y superada con éxito (Google Cloud Rules Enforced & DNS Authenticated).  
+> **Última actualización:** Mayo 2026

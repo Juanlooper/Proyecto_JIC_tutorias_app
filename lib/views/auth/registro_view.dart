@@ -205,14 +205,12 @@ class _RegistroViewState extends State<RegistroView> {
       if (val.isEmpty) {
         _errorEmail = 'El correo es obligatorio';
         _emailEsValido = false;
+      } else if (!val.endsWith('@utp.ac.pa')) {
+        _errorEmail = 'Debe ser tu correo institucional (@utp.ac.pa)';
+        _emailEsValido = false;
       } else {
-        // TEMPORAL: Permitir cualquier correo para probar confirmaciones
-        // if (!val.endsWith('@utp.ac.pa')) {
-        //   _errorEmail = 'Debe ser tu correo institucional (@utp.ac.pa)';
-        // } else {
-          _errorEmail = null;
-          _emailEsValido = true;
-        // }
+        _errorEmail = null;
+        _emailEsValido = true;
       }
     });
   }

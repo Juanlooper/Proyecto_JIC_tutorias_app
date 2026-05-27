@@ -89,8 +89,8 @@ class _PerfilViewState extends State<PerfilView> {
       },
     );
 
-    // HCI Defensive: Limpiar la memoria del controlador para evitar escapes de memoria
-    controladorCampo.dispose();
+    // El controlador se liberará con el Garbage Collector al desmontar el AlertDialog
+    // para evitar el error "_dependents.isEmpty is not true" durante la animación de cierre.
   }
 
   /*

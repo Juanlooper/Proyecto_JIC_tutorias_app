@@ -55,6 +55,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '11231825446',
     projectId: 'tutorias-jic',
     authDomain: 'tutorias-jic.firebaseapp.com',
+    databaseURL: 'https://tutorias-jic-default-rtdb.firebaseio.com',
     storageBucket: 'tutorias-jic.firebasestorage.app',
     measurementId: 'G-HVTRC1H41Z',
   );
@@ -64,6 +65,7 @@ class DefaultFirebaseOptions {
     appId: '1:11231825446:android:ef0b155e738dc4fb2fa0e7',
     messagingSenderId: '11231825446',
     projectId: 'tutorias-jic',
+    databaseURL: 'https://tutorias-jic-default-rtdb.firebaseio.com',
     storageBucket: 'tutorias-jic.firebasestorage.app',
   );
 }

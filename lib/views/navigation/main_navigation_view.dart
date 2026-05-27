@@ -12,7 +12,6 @@ import '../home/home_view.dart';
 import '../explore/explorar_view.dart';
 import '../profile/perfil_view.dart';
 import '../tutorias/mis_tutorias_view.dart';
-import '../estudiante/sugerir_tutoria_view.dart';
 import '../estudiante/mis_sugerencias_view.dart';
 import '../notifications/notificaciones_view.dart';
 import '../../providers/tema_provider.dart';
@@ -269,6 +268,7 @@ class _MainNavigationViewState extends State<MainNavigationView> {
                   // de navegación secundaria compitan con la atención de los iconos principales
                   // del menú, así como con el logo y el perfil.
                   IconButton(
+                    tooltip: 'Desplazar pestañas a la izquierda',
                     icon: const Icon(
                       Icons.chevron_left,
                       color: Colors.white,
@@ -303,6 +303,7 @@ class _MainNavigationViewState extends State<MainNavigationView> {
                   // [Icono Flecha Derecha]
                   // Tamaño relativo al 75% (24.0 * 0.75 = 18.0) para mantener la jerarquía visual balanceada.
                   IconButton(
+                    tooltip: 'Desplazar pestañas a la derecha',
                     // Aplicamos opacidad si llegamos al final de la lista de módulos
                     icon: Icon(
                       Icons.chevron_right,
@@ -345,6 +346,7 @@ class _MainNavigationViewState extends State<MainNavigationView> {
                     alignment: Alignment.center,
                     children: [
                       IconButton(
+                        tooltip: 'Ver notificaciones',
                         icon: const Icon(
                           Icons.notifications,
                           color: Colors.white,
@@ -388,6 +390,7 @@ class _MainNavigationViewState extends State<MainNavigationView> {
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: PopupMenuButton<String>(
+                tooltip: 'Opciones de cuenta y perfil',
                 // Icono visual del botón (el mismo que teníamos antes)
                 icon: const CircleAvatar(
                   backgroundColor: Colors.white24,
@@ -422,10 +425,11 @@ class _MainNavigationViewState extends State<MainNavigationView> {
               ].contains(modulosUI[_indiceActual]['titulo'])
           ? null
           : FloatingActionButton.extended(
+              heroTag: 'fab_main_nav',
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const SugerirTutoriaView()),
+                  MaterialPageRoute(builder: (context) => const ExplorarView()),
                 );
               },
               backgroundColor: const Color(0xFF6C63FF),

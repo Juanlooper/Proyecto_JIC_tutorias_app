@@ -1213,6 +1213,10 @@ class TutoriasProvider extends ChangeNotifier {
 
       // Ejecución paralela cruzada bajo una sola validación de red:
       await db.runTransaction((transaction) async {
+        // 🔥 REGLA DE ORO DE FIRESTORE: Todas las LECTURAS (get) deben hacerse ANTES de las ESCRITURAS (set/update/delete)
+        final docTutorRef = db.collection('usuarios').doc(tutorId);
+        final snapshotTutor = await transaction.get(docTutorRef);
+
         // Transacción 1: Marcar al alumno en la matriz para que el UI deshabilite dinámicamente este evento.
         transaction.update(docTutoria, {
           'alumnosQueYaEvaluaron': FieldValue.arrayUnion([uidAlumno])
@@ -1235,8 +1239,6 @@ class TutoriasProvider extends ChangeNotifier {
         });
 
         // Transacción 3: Sistema de Gamificación (Puntos VECTA)
-        final docTutorRef = db.collection('usuarios').doc(tutorId);
-        final snapshotTutor = await transaction.get(docTutorRef);
         if (snapshotTutor.exists) {
           final dataTutor = snapshotTutor.data()!;
           int puntosActuales = dataTutor['puntos_vecta'] ?? 0;
