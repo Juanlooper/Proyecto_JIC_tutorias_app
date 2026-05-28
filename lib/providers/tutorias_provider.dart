@@ -50,14 +50,12 @@ class TutoriasProvider extends ChangeNotifier {
   String get mensajeDeExitoDelSistema => _mensajeDeExitoDelSistema;
 
   /// Requerimiento para Maiky: Calcula automáticamente el flujo de horas impartidas.
-  /// No usa tildes. Recorre todas las tutorías dadas y computa el delta entre hora Inicio y Fin.
+  /// Utiliza el estándar de duración minutos para ser consistente con las métricas globales del admin.
   double get totalHorasDictadas {
     double acumuladoFinal = 0.0;
     for (var claseParticular in _tutoriasSuscritasDelUsuario) {
-      if (claseParticular.estadoDeLaSolicitud == 'finalizada' &&
-          claseParticular.horaInicioReal != null &&
-          claseParticular.horaFinReal != null) {
-        acumuladoFinal += claseParticular.horaFinReal!.difference(claseParticular.horaInicioReal!).inMinutes / 60.0;
+      if (claseParticular.estadoDeLaSolicitud == 'finalizada') {
+        acumuladoFinal += (claseParticular.duracionMinutos ?? 60) / 60.0;
       }
     }
     return acumuladoFinal;

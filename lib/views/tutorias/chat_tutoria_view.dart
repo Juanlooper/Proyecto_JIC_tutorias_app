@@ -37,10 +37,10 @@ class _ChatTutoriaViewState extends State<ChatTutoriaView> {
       texto: texto,
     );
     
-    // Auto-scroll al fondo
+    // Auto-scroll al fondo: al usar reverse: true, la posición 0.0 es el mensaje más reciente
     if (_scrollCtrl.hasClients) {
       _scrollCtrl.animateTo(
-        _scrollCtrl.position.maxScrollExtent + 100,
+        0.0,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
@@ -139,6 +139,14 @@ class _ChatTutoriaViewState extends State<ChatTutoriaView> {
             child: StreamBuilder<List<MensajeChat>>(
               stream: _chatSvc.obtenerMensajesDeTutoria(widget.tutoriaId),
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error al cargar mensajes',
+                      style: TextStyle(color: Colors.red[800]),
+                    ),
+                  );
+                }
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -151,8 +159,9 @@ class _ChatTutoriaViewState extends State<ChatTutoriaView> {
                   );
                 }
 
-                final mensajes = snapshot.data!;
+                final mensajes = snapshot.data!.reversed.toList();
                 return ListView.builder(
+                  reverse: true,
                   controller: _scrollCtrl,
                   padding: const EdgeInsets.all(16),
                   itemCount: mensajes.length,
