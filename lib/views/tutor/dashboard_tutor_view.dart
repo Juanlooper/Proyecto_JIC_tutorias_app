@@ -239,41 +239,6 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
                   ),
                 ),
               ),
-            ] else if (tipo == 3) ...[
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => _mostrarDialogoRechazo(context, tutoria),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: const Text('Rechazar'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final exito = await context.read<TutoriasProvider>().aceptarSugerenciaDirecta(tutoria.identificadorDeTutoria);
-                        if (exito && mounted) {
-                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sugerencia Aceptada'), backgroundColor: Colors.green));
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primarioAzul,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: const Text('Aceptar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
             ] else if (tipo == 1) ...[
               const SizedBox(height: 16),
               SizedBox(
@@ -339,8 +304,6 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
       String msj;
       if (tipo == 0) {
         msj = "No hay solicitudes pendientes en bolsa";
-      } else if (tipo == 3) {
-        msj = "No tienes sugerencias directas";
       } else if (tipo == 1) {
         msj = "No tienes clases agendadas en curso";
       } else {
@@ -364,51 +327,7 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
     );
   }
 
-  void _mostrarDialogoRechazo(BuildContext context, TutoriaModel tutoria) {
-    final TextEditingController txtRazon = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Rechazar Sugerencia"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("Explica brevemente por qué no puedes aceptar esta clase. El estudiante será notificado."),
-            const SizedBox(height: 16),
-            TextField(
-              controller: txtRazon,
-              decoration: const InputDecoration(
-                labelText: "Motivo del rechazo",
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancelar"),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () async {
-              if (txtRazon.text.trim().isEmpty) return;
-              final provider = context.read<TutoriasProvider>();
-              final exito = await provider.rechazarSugerenciaDirecta(tutoria.identificadorDeTutoria, txtRazon.text.trim());
-              if (exito && ctx.mounted) {
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Sugerencia rechazada."), backgroundColor: Colors.orange),
-                );
-              }
-            },
-            child: const Text("Rechazar"),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -420,7 +339,7 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
     }
 
     return DefaultTabController(
-      length: 4,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false, // Quitar retroceso
@@ -449,10 +368,6 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
                           Tab(
                             text: "Bolsa de Solicitudes",
                             icon: Icon(Icons.work_outline),
-                          ),
-                          Tab(
-                            text: "Directas",
-                            icon: Icon(Icons.star),
                           ),
                           Tab(
                             text: "Mis Pendientes",
@@ -516,10 +431,6 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
                 )
                 .toList();
 
-            final sugerenciasDirectas = misTutoriasDictando.where((t) {
-              return t.estadoDeLaSolicitud == 'sugerida_directa';
-            }).toList();
-
             final pendientes = misTutoriasDictando.where((t) {
               return t.estadoDeLaSolicitud != 'finalizada' &&
                   t.estadoDeLaSolicitud != 'cancelada' &&
@@ -536,7 +447,6 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
             return TabBarView(
               children: [
                 _construirTabBolsaEnVivo(),
-                _construirLista(sugerenciasDirectas, 3),
                 _construirLista(pendientes, 1),
                 _construirLista(finalizadas, 2),
               ],

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'providers/tema_provider.dart';
@@ -23,13 +22,13 @@ void main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Activación de Firebase App Check para evitar bots y ataques a la DB.
-  await FirebaseAppCheck.instance.activate(
-    providerAndroid: AndroidPlayIntegrityProvider(), // Producción Android
-    providerWeb: ReCaptchaV3Provider(
-      '6LdyttEsAAAAABqlMu_KYIZOUgG0AfSUjoI5inkx',
-    ), // reCAPTCHA v3 invisible (Web)
-  );
+  // Activación de Firebase App Check temporalmente comentada para evitar errores en web
+  // await FirebaseAppCheck.instance.activate(
+  //   providerAndroid: AndroidPlayIntegrityProvider(), // Producción Android
+  //   providerWeb: ReCaptchaV3Provider(
+  //     '6LdyttEsAAAAABqlMu_KYIZOUgG0AfSUjoI5inkx',
+  //   ), // reCAPTCHA v3 invisible (Web)
+  // );
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
