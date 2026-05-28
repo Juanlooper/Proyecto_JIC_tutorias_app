@@ -527,9 +527,9 @@ class TutoriasProvider extends ChangeNotifier {
       );
 
       // Verificamos lógica de negocio:
-      String nuevoEstadoDerivado = 'Aceptada';
+      String nuevoEstadoDerivado = 'aceptada';
       if (claseObjetivo.esGrupal == true && claseObjetivo.listaDeEstudiantesInscritos.length < claseObjetivo.cupoMaximo) {
-         nuevoEstadoDerivado = 'Abierta';
+         nuevoEstadoDerivado = 'abierta';
       }
 
       // Este llamado debería, idealmente, conectar con un transaccional backend que acepte el estado.

@@ -102,7 +102,7 @@ class _HomeViewState extends State<HomeView> {
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('tutorias')
-                  .where('estadoDeLaSolicitud', isEqualTo: 'pendiente')
+                  .where('estadoDeLaSolicitud', whereIn: ['pendiente', 'Pendiente', 'aceptada', 'Aceptada', 'abierta', 'Abierta'])
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {

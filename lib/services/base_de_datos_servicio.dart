@@ -35,10 +35,9 @@ class BaseDeDatosServicio {
   /// Es clave hacer el filtro .where('pendiente') en Cloud (lado servidor) para jamás exceder cuotas de descargas en Firebase.
   Future<List<TutoriaModel>> obtenerTutoriasPendientes() async {
     try {
-      // La solicitud a Firebase. Retornará únicamente los paquetes alineados con nuestro requerimiento.
       QuerySnapshot lecturaOptimizada = await _bodegaDeConocimiento
           .collection('tutorias')
-          .where('estadoDeLaSolicitud', isEqualTo: 'pendiente')
+          .where('estadoDeLaSolicitud', whereIn: ['pendiente', 'Pendiente', 'aceptada', 'Aceptada', 'abierta', 'Abierta'])
           .limit(50) // Optimización escalable: Previene leer miles de docs de golpe, topado a 50 recientes
           .get();
 
