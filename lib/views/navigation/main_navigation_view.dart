@@ -13,6 +13,7 @@ import '../explore/explorar_view.dart';
 import '../profile/perfil_view.dart';
 import '../tutorias/mis_tutorias_view.dart';
 import '../estudiante/mis_sugerencias_view.dart';
+import '../estudiante/sugerir_tutoria_view.dart';
 import '../notifications/notificaciones_view.dart';
 import '../../providers/tema_provider.dart';
 import '../tutor/dashboard_tutor_view.dart';
@@ -429,7 +430,7 @@ class _MainNavigationViewState extends State<MainNavigationView> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ExplorarView()),
+                  MaterialPageRoute(builder: (context) => const SugerirTutoriaView()),
                 );
               },
               backgroundColor: const Color(0xFF6C63FF),

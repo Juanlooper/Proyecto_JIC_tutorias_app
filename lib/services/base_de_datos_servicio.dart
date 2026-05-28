@@ -35,10 +35,9 @@ class BaseDeDatosServicio {
   /// Es clave hacer el filtro .where('pendiente') en Cloud (lado servidor) para jamás exceder cuotas de descargas en Firebase.
   Future<List<TutoriaModel>> obtenerTutoriasPendientes() async {
     try {
-      // La solicitud a Firebase. Retornará únicamente los paquetes alineados con nuestro requerimiento.
       QuerySnapshot lecturaOptimizada = await _bodegaDeConocimiento
           .collection('tutorias')
-          .where('estadoDeLaSolicitud', isEqualTo: 'pendiente')
+          .where('estadoDeLaSolicitud', whereIn: ['pendiente', 'Pendiente', 'aceptada', 'Aceptada', 'abierta', 'Abierta'])
           .limit(50) // Optimización escalable: Previene leer miles de docs de golpe, topado a 50 recientes
           .get();
 
@@ -97,7 +96,7 @@ class BaseDeDatosServicio {
   }
 
   /// Es el gran comando que pulsa un profesor experto cuando reclama enseñar una de las materias libres.
-  /// Transiciona el negocio inyectándole vida: pasamos a 'aceptada', plantamos el nombre del sensei, y su link Zoom.
+  /// Transiciona el negocio inyectándole vida utilizando Transacciones Atómicas (SRE Architecture).
   Future<String> aceptarTutoria({
     required String identificadorDeTutoriaEspecifica,
     required String maestroHerederoAlMando,
@@ -105,23 +104,40 @@ class BaseDeDatosServicio {
     String? estadoPropuestoOpcional,
   }) async {
     try {
-      // REGLA DE NEGOCIO: Validar que el tutor no tenga otra clase aceptada que se solape en este mismo horario.
-      DocumentSnapshot docDeseada = await _bodegaDeConocimiento
+      final refDocumentoTutoria = _bodegaDeConocimiento
           .collection('tutorias')
-          .doc(identificadorDeTutoriaEspecifica)
-          .get();
-          
-      if (docDeseada.exists) {
-        TutoriaModel tutoriaPorAceptar = TutoriaModel.fromMap(docDeseada.data() as Map<String, dynamic>?);
+          .doc(identificadorDeTutoriaEspecifica);
+
+      // Iniciamos el blindaje atómico contra condiciones de carrera (Race Conditions)
+      await _bodegaDeConocimiento.runTransaction((transaccion) async {
+        // 1. LECTURA OBLIGATORIA: Obtenemos el snapshot bloqueante de la tutoría deseada
+        DocumentSnapshot documentoSnapshot = await transaccion.get(refDocumentoTutoria);
         
-        // REGLA DE NEGOCIO: Prevención de bucles. Un usuario no puede ser tutor y estudiante de la misma sesión simultáneamente.
-        if (tutoriaPorAceptar.listaDeEstudiantesInscritos.contains(maestroHerederoAlMando)) {
-          return "Error: No puedes ser el tutor de tu propia solicitud";
+        // 2. NULL SAFETY: Eliminamos aserciones forzadas y realizamos casting defensivo
+        final datosDeLaTutoria = documentoSnapshot.data() as Map<String, dynamic>?;
+        if (datosDeLaTutoria == null || !documentoSnapshot.exists) {
+          throw Exception("Error crítico: La tutoría ha caducado o no existe en la base de datos.");
         }
 
+        // 3. RECONSTRUCCIÓN HIGIÉNICA: Utilizamos factory method seguro
+        TutoriaModel tutoriaPorAceptar = TutoriaModel.fromMap(datosDeLaTutoria);
+        
+        // 4. CONTROL DE CONCURRENCIA: Rechazo temprano si otro hilo ganó la transacción milisegundos antes
+        if (tutoriaPorAceptar.estadoDeLaSolicitud != 'pendiente' && 
+            tutoriaPorAceptar.estadoDeLaSolicitud != 'solicitada') {
+          throw Exception("La tutoría ya fue reclamada por otro profesor.");
+        }
+
+        // 5. PREVENCIÓN DE BUCLES LÓGICOS: Un usuario no puede auto-enseñarse
+        if (tutoriaPorAceptar.listaDeEstudiantesInscritos.contains(maestroHerederoAlMando)) {
+          throw Exception("Error: No puedes ser el tutor de tu propia solicitud.");
+        }
+
+        // 6. VALIDACIÓN CRUZADA: Evaluar traslape horario extrayendo el modelo interno
         DateTime inicioNueva = tutoriaPorAceptar.fechaHoraSugerida;
         DateTime finNueva = inicioNueva.add(Duration(minutes: tutoriaPorAceptar.duracionMinutos));
 
+        // Procedimiento de chequeo de agenda (Ejecutado perimetralmente para asegurar agenda del tutor)
         QuerySnapshot tutoriasAnteriores = await _bodegaDeConocimiento
             .collection('tutorias')
             .where('identificadorDelTutor', isEqualTo: maestroHerederoAlMando)
@@ -133,36 +149,125 @@ class BaseDeDatosServicio {
           DateTime inicioExistente = tutoriaAceptada.fechaHoraSugerida;
           DateTime finExistente = inicioExistente.add(Duration(minutes: tutoriaAceptada.duracionMinutos));
 
-          // Verificamos si existe un traslape en la línea de tiempo real
           bool hayConflicto = inicioNueva.isBefore(finExistente) && finNueva.isAfter(inicioExistente);
           if (hayConflicto) {
-            return "Error de agenda: Ya tienes una tutoría programada en este horario";
+            throw Exception("Error de agenda: Ya tienes una tutoría programada en este horario.");
           }
         }
-      } else {
-        return "Error crícito: La tutoría ha caducado o no existe en la base de datos.";
-      }
 
-      // Carga útil ultra-liviana. Preparamos el sobre de correo nada más con lo que es imperioso cambiar por ahorro.
-      Map<String, dynamic> parchesLigeros = {
-        'estadoDeLaSolicitud': estadoPropuestoOpcional ?? 'aceptada',
-        'identificadorDelTutor': maestroHerederoAlMando,
-      };
+        // 7. ESCRITURA ATÓMICA: Inyectamos el update solo tras validar todo el muro de excepciones
+        Map<String, dynamic> parchesLigeros = {
+          'estadoDeLaSolicitud': estadoPropuestoOpcional ?? 'aceptada',
+          'identificadorDelTutor': maestroHerederoAlMando,
+        };
 
-      // Si el Tutor adjuntó un link para conectarse o aula física, inyectalo al parche.
-      if (linkOficialParaSesion != null && linkOficialParaSesion.trim().isNotEmpty) {
-        parchesLigeros['enlaceOReunion'] = linkOficialParaSesion;
-      }
+        if (linkOficialParaSesion != null && linkOficialParaSesion.trim().isNotEmpty) {
+          parchesLigeros['enlaceOReunion'] = linkOficialParaSesion;
+        }
 
-      await _bodegaDeConocimiento
-          .collection('tutorias')
-          .doc(identificadorDeTutoriaEspecifica)
-          .update(parchesLigeros);
+        transaccion.update(refDocumentoTutoria, parchesLigeros);
+      });
 
       return "¡Extraordinario! Oficialmente serás el tutor de esta sesión.";
-    } catch (errorAsignacional) {
-      // Fallback seguro si hubo denegaciones de accesos
+    } catch (errorTransaccional) {
+      // 8. INTERRUPCIÓN DEL FLUJO: Capturamos excepciones limpias inyectadas desde el rollback transaccional
+      String mensajeCapturado = errorTransaccional.toString();
+      if (mensajeCapturado.contains("Exception: ")) {
+        return mensajeCapturado.split("Exception: ").last.trim();
+      }
       return "La nube interrumpió el proceso de tu asignación como tutor actual.";
     }
+  }
+
+  /// Permite a un estudiante sumar su apoyo a una solicitud comunitaria.
+  Future<void> agregarApoyoEnComunidad(String tutoriaId, String uidUsuario) async {
+    await _bodegaDeConocimiento.collection('tutorias').doc(tutoriaId).update({
+      'estudiantesApoyando': FieldValue.arrayUnion([uidUsuario])
+    });
+  }
+
+  /// Permite a un estudiante abandonar una tutoría (retirarse de listas).
+  /// Retorna un mapa con el uid del promovido (si hubo) y datos extra.
+  Future<Map<String, dynamic>> retirarseDeTutoria(String tutoriaId, String uidUsuario) async {
+    final docSnapshot = await _bodegaDeConocimiento.collection('tutorias').doc(tutoriaId).get();
+    if (!docSnapshot.exists) throw Exception("Tutoría no encontrada.");
+    
+    final data = docSnapshot.data();
+    if (data == null) throw Exception("Documento vacío o corrupto.");
+
+    if (data['estadoDeLaSolicitud'] == 'solicitada') {
+      await _bodegaDeConocimiento.collection('tutorias').doc(tutoriaId).update({
+        'estudiantesApoyando': FieldValue.arrayRemove([uidUsuario])
+      });
+      return {'promovidoUid': null, 'dataOriginal': data};
+    } else {
+      String? promovidoUid;
+      await _bodegaDeConocimiento.runTransaction((transaction) async {
+        final docRef = _bodegaDeConocimiento.collection('tutorias').doc(tutoriaId);
+        final docSnap = await transaction.get(docRef);
+        if (!docSnap.exists) throw Exception("Tutoría no encontrada.");
+        
+        final docData = docSnap.data();
+        if (docData == null) throw Exception("Documento vacío.");
+
+        List<dynamic> inscritos = List.from(docData['listaDeEstudiantesInscritos'] ?? []);
+        List<dynamic> espera = List.from(docData['listaDeEspera'] ?? []);
+        
+        if (espera.contains(uidUsuario)) {
+           espera.remove(uidUsuario);
+           transaction.update(docRef, {'listaDeEspera': espera});
+        } else if (inscritos.contains(uidUsuario)) {
+           inscritos.remove(uidUsuario);
+           
+           if (espera.isNotEmpty) {
+              promovidoUid = espera.removeAt(0).toString();
+              inscritos.add(promovidoUid);
+           }
+           
+           transaction.update(docRef, {
+              'listaDeEstudiantesInscritos': inscritos,
+              'listaDeEspera': espera,
+           });
+        }
+      });
+      return {'promovidoUid': promovidoUid, 'dataOriginal': data};
+    }
+  }
+
+  /// Registra una excusa de cancelación en el tribunal.
+  Future<void> registrarExcusaEnTribunal(String tutoriaId, String uidUsuario, String materia, String fecha, String excusa) async {
+    await _bodegaDeConocimiento.collection('reportes_tribunal').add({
+      'alumnoId': uidUsuario,
+      'tutoriaId': tutoriaId,
+      'materia': materia,
+      'fechaTutoria': fecha,
+      'excusa': excusa,
+      'fechaReporte': DateTime.now().toIso8601String(),
+      'estado': 'pendiente',
+    });
+  }
+
+  /// Cancela una tutoría como tutor y registra la queja de forma obligatoria.
+  /// Retorna los datos íntegros del documento antes de cancelar, para enviar notificaciones posteriores.
+  Future<Map<String, dynamic>> cancelarTutoriaPorTutor(String tutoriaId, String motivoCancelacion, String uidTutor) async {
+    final docSnapshot = await _bodegaDeConocimiento.collection('tutorias').doc(tutoriaId).get();
+    if (!docSnapshot.exists) throw Exception("Tutoría no encontrada.");
+    
+    final data = docSnapshot.data();
+    if (data == null) throw Exception("Documento vacío.");
+
+    await _bodegaDeConocimiento.collection('tutorias').doc(tutoriaId).update({
+      'estadoDeLaSolicitud': 'cancelada',
+      'motivoDeCancelacion': motivoCancelacion,
+    });
+
+    await _bodegaDeConocimiento.collection('quejas').add({
+      'tutorId': uidTutor,
+      'tutoriaId': tutoriaId,
+      'fechaRegistro': DateTime.now().toIso8601String(),
+      'justificacion': motivoCancelacion,
+    });
+
+    return data;
   }
 }

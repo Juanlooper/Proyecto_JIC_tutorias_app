@@ -6,6 +6,7 @@ import '../../models/tutoria_model.dart';
 import '../../core/utils/moderacion_servicio.dart';
 import '../widgets/overlay_loader.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../models/usuario_model.dart';
 
 class SugerirTutoriaView extends StatefulWidget {
   final String? tutorDestino;
@@ -42,6 +43,46 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
   String _materiaSeleccionada = 'CÁLCULO I';
 
   final bool _estaCargando = false;
+
+  // --- VARIABLES PARA SELECCIÓN OPCIONAL DE TUTOR ---
+  /// Lista que almacenará a los tutores descargados de Firestore.
+  List<UsuarioModel> tutoresDisponiblesRegistrados = [];
+  /// Objeto que contendrá al tutor si el usuario decide seleccionarlo.
+  UsuarioModel? tutorSeleccionadoOpcionalmente;
+
+  @override
+  void initState() {
+    super.initState();
+    // Invocamos la consulta asíncrona solo si no hay un tutor destino predefinido
+    if (widget.tutorDestino == null || widget.tutorDestino!.isEmpty) {
+      cargarListadoDeTutoresDesdeFirestore();
+    }
+  }
+
+  /// Consulta asíncrona a Firestore para listar usuarios con el rol específico.
+  Future<void> cargarListadoDeTutoresDesdeFirestore() async {
+    try {
+      // Realizamos la consulta a la colección usuarios filtrando por el rol 'tutor'
+      final snapshotTutores = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .where('rolEnElSistema', isEqualTo: 'tutor')
+          .get();
+
+      // Mapeamos los documentos utilizando el constructor de fábrica a objetos fuertemente tipados
+      final tutoresExtraidos = snapshotTutores.docs
+          .map((doc) => UsuarioModel.fromMap(doc.data()))
+          .toList();
+
+      // Actualizamos el estado de manera segura para reflejar los datos en la UI (Dropdown)
+      if (mounted) {
+        setState(() {
+          tutoresDisponiblesRegistrados = tutoresExtraidos;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error al cargar tutores: $e");
+    }
+  }
 
   @override
   void dispose() {
@@ -292,14 +333,20 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
         : _materiaSeleccionada;
 
     // Creamos el cascarón de la sugerencia (la id la inyectará el Provider o Firebase)
-    bool esDirecta = widget.tutorDestino != null;
+    // Evaluamos dinámicamente si es una sugerencia directa basándonos en si hay tutor
+    bool esDirecta = widget.tutorDestino != null || tutorSeleccionadoOpcionalmente != null;
+
+    // Evaluamos el identificador del tutor cumpliendo las instrucciones estrictas
+    final String idTutorFinal = (widget.tutorDestino != null && widget.tutorDestino!.isNotEmpty)
+        ? widget.tutorDestino!
+        : tutorSeleccionadoOpcionalmente?.identificadorUnico ?? '';
 
     TutoriaModel sugerenciaCruda = TutoriaModel(
       identificadorDeTutoria: '',
       materiaOAsignatura: materiaFinal,
       temaEspecifico: _motivosController.text.trim(),
-      carrera: 'General / No Especificada', // Ajustable según necesidad futuura
-      identificadorDelTutor: widget.tutorDestino ?? '', // CRÍTICO: Regla fundamental de la bolsa o directa
+      carrera: 'General / No Especificada', // Ajustable según necesidad futura
+      identificadorDelTutor: idTutorFinal, // CRÍTICO: Utiliza el id dinámico evaluado arriba
       listaDeEstudiantesInscritos: [], // El provider ingresará el UID propio
       modalidadDeClase: _modalidadSeleccionada,
       estadoDeLaSolicitud: esDirecta ? 'sugerida_directa' : 'solicitada',
@@ -465,6 +512,45 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                   },
                 ),
                 const SizedBox(height: 24),
+
+                // Campo Inyectado: Asignación Opcional de Tutor
+                if (widget.tutorDestino == null || widget.tutorDestino!.isEmpty) ...[
+                  _construirLabel("Asignar un Tutor específico (Opcional)"),
+                  DropdownButtonFormField<UsuarioModel>(
+                    initialValue: tutorSeleccionadoOpcionalmente,
+                    decoration: _estiloCajaFluida(
+                      hint: "Cualquiera (Bolsa pública)",
+                      icono: Icons.person_search_rounded,
+                    ),
+                    items: [
+                      // Elemento nulo que representa la bolsa abierta (Cualquier tutor)
+                      const DropdownMenuItem<UsuarioModel>(
+                        value: null,
+                        child: Text(
+                          "Cualquier tutor disponible (Recomendado)",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      // Iteramos la lista asíncrona para construir las opciones
+                      ...tutoresDisponiblesRegistrados.map((UsuarioModel tutor) {
+                        return DropdownMenuItem<UsuarioModel>(
+                          value: tutor,
+                          child: Text(
+                            tutor.nombreCompleto,
+                            style: const TextStyle(fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }),
+                    ],
+                    onChanged: (UsuarioModel? seleccionado) {
+                      setState(() {
+                        tutorSeleccionadoOpcionalmente = seleccionado;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                ],
 
                 // Fila: Día y Hora (Widgets Clickables)
                 Row(
