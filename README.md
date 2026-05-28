@@ -433,9 +433,24 @@ El código original, el branding actual, y la base de datos de los primeros prot
 
 ---
 
-> **Versión del Proyecto:** 1.5.0 (Dominio Personalizado & Filtros Demográficos)  
+> **Versión del Proyecto:** 1.6.0 (Refactorización Estructural y SRE)  
 
-### Registro de Actualizaciones (Changelog v1.5.0)
+### Registro de Actualizaciones (Changelog v1.6.0)
+
+#### 🚀 1. Optimización del Flujo de Usuario (UX/Navegación)
+- **Navegación Nativa (Stack):** Se eliminó el reseteo abrupto del `BottomNavigationBar` al momento de sugerir una tutoría. Ahora, el sistema utiliza `Navigator.push` para apilar las vistas, habilitando soporte fluido para gestos de retroceso en iOS y el botón físico 'Atrás' en Android.
+- **Asignación Opcional Dinámica:** El formulario de sugerencias ahora consulta a Firebase asíncronamente para desplegar la lista actualizada de tutores registrados, permitiendo al estudiante etiquetar opcionalmente a un tutor de su preferencia dentro de la solicitud pública.
+- **Transición a Bolsa Pública:** Se descontinuó por completo el sistema aislado de "Sugerencias Directas". Todas las peticiones nacen ahora en un entorno crowdsourced (Bolsa de la Comunidad), democratizando el acceso a las clases.
+
+#### 🧠 2. Ingeniería de Confiabilidad (SRE) y Clean Code
+- **Transacciones Atómicas Obligatorias:** Se reescribieron los métodos críticos (`aceptarTutoria`) utilizando `runTransaction` de Firestore dentro de la capa `BaseDeDatosServicio`. Esto blinda la app contra *Race Conditions* (condiciones de carrera), garantizando que si dos tutores intentan reclamar la misma clase al mismo milisegundo, la base de datos bloquee criptográficamente al segundo.
+- **Prevención de Fugas de Memoria (Memory Leaks):** Se estandarizó el uso del patrón `estaDisposedElProvider` dentro de los *Providers* (como `tutorias_provider.dart`), evitando colapsos de RAM (crashes) ocasionados por llamadas asíncronas tardías a `notifyListeners()` en widgets previamente destruidos.
+- **Delegación de Responsabilidades (SRP):** Limpieza arquitectónica separando estrictamente la lectura/escritura en red (Servicios) de la reactividad de interfaz (Providers).
+
+#### 🛡️ 3. Resiliencia de Bases de Datos
+- **Tolerancia a Case-Sensitivity NoSQL:** Se implementó una ampliación de lectura utilizando el operador `whereIn` inyectando redundancias ortográficas (`['aceptada', 'Aceptada']`) para forzar a Firebase a recuperar documentos antiguos sin requerir pesadas migraciones de datos. Se blindó la higiene a futuro forzando la escritura en estricta minúscula.
+
+### Registro de Actualizaciones Histórico (Changelog v1.5.0)
 
 #### 🚀 1. Funcionalidades Premium y Experiencia de Usuario (UI/UX)
 - **Creación Proactiva de Clases:** Transición del modelo pasivo al proactivo. Ahora los tutores pueden crear sus propias "Clases Fijas", permitiendo a los estudiantes inscribirse libremente hasta llenar el cupo.
