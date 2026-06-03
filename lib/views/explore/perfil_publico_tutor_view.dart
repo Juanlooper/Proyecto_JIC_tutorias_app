@@ -95,6 +95,34 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
     );
   }
 
+  Widget _construirEtiquetasDeEspecialidad() {
+    if (widget.mentor.materiasEspecializadas.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8.0),
+        child: Text(
+          "Este tutor aún no ha seleccionado especialidades",
+          style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 13),
+        ),
+      );
+    }
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      child: Wrap(
+        spacing: 8.0,
+        runSpacing: 4.0,
+        alignment: WrapAlignment.center,
+        children: widget.mentor.materiasEspecializadas.map((mat) {
+          return Chip(
+            label: Text(mat, style: const TextStyle(fontSize: 12, color: Colors.indigoAccent)),
+            backgroundColor: Colors.indigo.shade50,
+            side: BorderSide(color: Colors.indigo.shade200),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final autProvider = context.watch<AutenticacionProvider>();
@@ -199,6 +227,11 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+
+                  if (esTutor) ...[
+                    const SizedBox(height: 12),
+                    _construirEtiquetasDeEspecialidad(),
+                  ],
 
                   const SizedBox(height: 24),
 

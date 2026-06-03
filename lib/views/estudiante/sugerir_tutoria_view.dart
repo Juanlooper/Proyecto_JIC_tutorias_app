@@ -145,11 +145,15 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
     List<String> horasOcupadas = [];
 
     try {
-      if (widget.tutorDestino != null && widget.tutorDestino!.isNotEmpty) {
-        // 1. Obtener el horario del tutor
+      final String idTutorAConsultar = (widget.tutorDestino != null && widget.tutorDestino!.isNotEmpty)
+          ? widget.tutorDestino!
+          : tutorSeleccionadoOpcionalmente?.identificadorUnico ?? '';
+
+      if (idTutorAConsultar.isNotEmpty) {
+        // 1. Obtener el horario del tutor seleccionado
         final tutorDoc = await FirebaseFirestore.instance
             .collection('usuarios')
-            .doc(widget.tutorDestino)
+            .doc(idTutorAConsultar)
             .get();
 
         if (tutorDoc.exists) {
@@ -163,7 +167,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text("El tutor no ofrece tutorías los $diaSugerido."),
+                  content: Text("El tutor seleccionado no ofrece tutorías los $diaSugerido."),
                   backgroundColor: Colors.redAccent,
                 ),
               );
@@ -172,12 +176,10 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
           }
         }
 
-        // 2. Obtener clases que ya estén ocupadas en esa fecha exacta
-        // Se hace la consulta principal simple (solo por tutor) para evitar la necesidad de 
-        // crear índices compuestos manuales en Firestore (FAILED_PRECONDITION).
+        // 2. Obtener clases que ya estén ocupadas en esa fecha exacta para evitar superposiciones
         final tutoriasSnapshot = await FirebaseFirestore.instance
             .collection('tutorias')
-            .where('identificadorDelTutor', isEqualTo: widget.tutorDestino)
+            .where('identificadorDelTutor', isEqualTo: idTutorAConsultar)
             .get();
 
         final inicioDia = DateTime(_fechaSeleccionada!.year, _fechaSeleccionada!.month, _fechaSeleccionada!.day);
@@ -186,7 +188,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
         for (var doc in tutoriasSnapshot.docs) {
           final data = doc.data();
           final estado = data['estadoDeLaSolicitud'] as String?;
-          if (estado == 'aceptada' || estado == 'pendiente') {
+          if (estado == 'aceptada' || estado == 'pendiente' || estado == 'sugerida_directa') {
             final fechaClase = (data['fechaHoraSugerida'] as Timestamp).toDate();
             // Filtro de fecha local
             if (fechaClase.isAfter(inicioDia.subtract(const Duration(seconds: 1))) && fechaClase.isBefore(finDia)) {
