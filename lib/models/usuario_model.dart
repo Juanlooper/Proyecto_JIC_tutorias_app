@@ -59,6 +59,9 @@ class UsuarioModel {
   /// y el valor es la lista de horas ('08:00', '10:00').
   final Map<String, List<String>>? horarioDisponibilidad;
 
+  /// Materias en las que el tutor se especializa y destaca.
+  final List<String> materiasEspecializadas;
+
   /// Función constructora que inicializa o "crea" la representación del usuario cuando ya tenemos su información.
   UsuarioModel({
     required this.identificadorUnico,
@@ -79,6 +82,7 @@ class UsuarioModel {
     this.puntosVecta = 0,
     this.insigniasTutor = const [],
     this.horarioDisponibilidad,
+    this.materiasEspecializadas = const [],
   });
 
   /// Convierte la información del objeto de usuario actual a un formato de lista de parejas (Mapa/Diccionario).
@@ -103,6 +107,7 @@ class UsuarioModel {
       'puntos_vecta': puntosVecta,
       'insignias_tutor': insigniasTutor,
       'horarioDisponibilidad': horarioDisponibilidad,
+      'materiasEspecializadas': materiasEspecializadas,
     };
   }
 
@@ -124,6 +129,7 @@ class UsuarioModel {
         puntosVecta: 0,
         insigniasTutor: [],
         horarioDisponibilidad: {},
+        materiasEspecializadas: [],
       );
     }
 
@@ -162,6 +168,9 @@ class UsuarioModel {
               (k, v) => MapEntry(k, List<String>.from(v)),
             )
           : null,
+      materiasEspecializadas: mapaDeDatos['materiasEspecializadas'] != null
+          ? List<String>.from(mapaDeDatos['materiasEspecializadas'])
+          : [],
     );
   }
 
@@ -191,6 +200,7 @@ class UsuarioModel {
     int? puntosVecta,
     List<String>? insigniasTutor,
     Map<String, List<String>>? horarioDisponibilidad,
+    List<String>? materiasEspecializadas,
   }) {
     return UsuarioModel(
       identificadorUnico: identificadorUnico ?? this.identificadorUnico,
@@ -211,6 +221,7 @@ class UsuarioModel {
       puntosVecta: puntosVecta ?? this.puntosVecta,
       insigniasTutor: insigniasTutor ?? this.insigniasTutor,
       horarioDisponibilidad: horarioDisponibilidad ?? this.horarioDisponibilidad,
+      materiasEspecializadas: materiasEspecializadas ?? this.materiasEspecializadas,
     );
   }
 }

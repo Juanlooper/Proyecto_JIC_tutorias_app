@@ -270,4 +270,17 @@ class BaseDeDatosServicio {
 
     return data;
   }
+
+  /// Actualiza de forma atómica y segura las materias en las que se especializa el tutor.
+  /// Se ejecuta un .update() directo para evitar sobreescribir otros datos del documento.
+  Future<bool> actualizarMateriasEspecializadasDelTutor(String uidTutor, List<String> nuevasMaterias) async {
+    try {
+      await _bodegaDeConocimiento.collection('usuarios').doc(uidTutor).update({
+        'materiasEspecializadas': nuevasMaterias,
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 }

@@ -8,6 +8,7 @@ import '../../models/usuario_model.dart';
 import '../auth/login_view.dart';
 import '../../core/utils/moderacion_servicio.dart';
 import '../tutor/configurar_horario_view.dart';
+import '../../services/base_de_datos_servicio.dart';
 
 class PerfilView extends StatefulWidget {
   const PerfilView({super.key});
@@ -508,6 +509,92 @@ class _PerfilViewState extends State<PerfilView> {
     );
   }
 
+  Future<void> _mostrarDialogoEspecialidades(BuildContext context, UsuarioModel elUsuarioActual) async {
+    final List<String> listaMaestra = [
+      'Cálculo 1', 'Cálculo 2', 'Cálculo 3', 'Ecuaciones Diferenciales',
+      'Matemáticas Superiores Para Ingenieros', 'Física 1', 'Física 2',
+      'Química', 'Dibujo', 'Desarrollo Lógico', 'Programación', 'Estática'
+    ];
+    
+    List<String> especialidadesSeleccionadas = List.from(elUsuarioActual.materiasEspecializadas);
+
+    await showDialog(
+      context: context,
+      builder: (contextDialogo) {
+        return StatefulBuilder(
+          builder: (context, setStateModal) {
+            return AlertDialog(
+              title: const Text('Materias de Especialidad'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Wrap(
+                    spacing: 8.0,
+                    runSpacing: 8.0,
+                    children: listaMaestra.map((materia) {
+                      final bool estaSeleccionada = especialidadesSeleccionadas.contains(materia);
+                      return FilterChip(
+                        label: Text(materia),
+                        selected: estaSeleccionada,
+                        onSelected: (bool seleccion) {
+                          setStateModal(() {
+                            if (seleccion) {
+                              especialidadesSeleccionadas.add(materia);
+                            } else {
+                              especialidadesSeleccionadas.remove(materia);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(contextDialogo),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    Navigator.pop(contextDialogo); // cerramos el diálogo rápido
+                    
+                    // Mostramos indicador
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Guardando especialidades...')),
+                    );
+                    
+                    final bool exito = await BaseDeDatosServicio().actualizarMateriasEspecializadasDelTutor(
+                      elUsuarioActual.identificadorUnico,
+                      especialidadesSeleccionadas,
+                    );
+                    
+                    if (exito) {
+                      // Recargamos sesión local para que UI lo vea
+                      if (!mounted) return;
+                      await context.read<AutenticacionProvider>().inicializarSesionAlAbrirApp();
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Especialidades guardadas exitosamente'), backgroundColor: Colors.green),
+                      );
+                    } else {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Error al guardar. Intenta de nuevo.'), backgroundColor: Colors.red),
+                      );
+                    }
+                  },
+                  child: const Text('Guardar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _construirSeccionPerfilComunidad(
     BuildContext context,
     UsuarioModel elUsuarioActual,
@@ -599,6 +686,34 @@ class _PerfilViewState extends State<PerfilView> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => _mostrarDialogoEspecialidades(context, elUsuarioActual),
+              icon: const Icon(Icons.star),
+              label: const Text('Gestionar Especialidades'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.teal.shade700,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ),
+          if (elUsuarioActual.materiasEspecializadas.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 4.0,
+              children: elUsuarioActual.materiasEspecializadas.map((mat) {
+                return Chip(
+                  label: Text(mat, style: const TextStyle(fontSize: 12, color: Colors.teal)),
+                  backgroundColor: Colors.teal.shade50,
+                  side: BorderSide(color: Colors.teal.shade200),
+                );
+              }).toList(),
+            ),
+          ],
         ],
       ),
     );
