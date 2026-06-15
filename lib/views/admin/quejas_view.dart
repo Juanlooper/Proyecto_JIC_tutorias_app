@@ -13,14 +13,18 @@ class QuejasView extends StatelessWidget {
       child: Scaffold(
         appBar: ocultarAppBar
             ? const TabBar(
-                labelColor: Colors.orange,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: Colors.orange,
-                tabs: [
-                  Tab(text: 'Quejas', icon: Icon(Icons.warning)),
-                  Tab(text: 'Moderación de Reseñas', icon: Icon(Icons.reviews)),
-                ],
-              ) as PreferredSizeWidget
+                    labelColor: Colors.orange,
+                    unselectedLabelColor: Colors.grey,
+                    indicatorColor: Colors.orange,
+                    tabs: [
+                      Tab(text: 'Quejas', icon: Icon(Icons.warning)),
+                      Tab(
+                        text: 'Moderación de Reseñas',
+                        icon: Icon(Icons.reviews),
+                      ),
+                    ],
+                  )
+                  as PreferredSizeWidget
             : AppBar(
                 title: const Text('Panel de Moderación'),
                 backgroundColor: Colors.orange,
@@ -33,12 +37,7 @@ class QuejasView extends StatelessWidget {
                   ],
                 ),
               ),
-        body: const TabBarView(
-          children: [
-            _TabQuejas(),
-            _TabResenas(),
-          ],
-        ),
+        body: const TabBarView(children: [_TabQuejas(), _TabResenas()]),
       ),
     );
   }
@@ -53,14 +52,21 @@ class _TabQuejas extends StatelessWidget {
       stream: FirebaseFirestore.instance.collection('quejas').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Colors.orange));
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.orange),
+          );
         }
         if (snapshot.hasError) {
-          return const Center(child: Text('Error al conectar con la base de datos'));
+          return const Center(
+            child: Text('Error al conectar con la base de datos'),
+          );
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(
-            child: Text('Ninguna queja o cancelación tardía registrada.', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              'Ninguna queja o cancelación tardía registrada.',
+              style: TextStyle(color: Colors.grey),
+            ),
           );
         }
 
@@ -107,19 +113,40 @@ class _TabQuejas extends StatelessWidget {
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
                           onPressed: () {
-                            FirebaseFirestore.instance.collection('quejas').doc(actas[index].id).delete();
+                            FirebaseFirestore.instance
+                                .collection('quejas')
+                                .doc(actas[index].id)
+                                .delete();
                           },
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Text('Tutor ID: $tutorId', style: const TextStyle(fontSize: 13, color: Colors.blueAccent)),
+                    Text(
+                      'Tutor ID: $tutorId',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.blueAccent,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('Clase ID: $tutoriaId', style: const TextStyle(fontSize: 13)),
+                    Text(
+                      'Clase ID: $tutoriaId',
+                      style: const TextStyle(fontSize: 13),
+                    ),
                     const Divider(height: 24),
-                    const Text('Justificación de cancelación:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const Text(
+                      'Justificación de cancelación:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('"$justificacion"', style: const TextStyle(fontStyle: FontStyle.italic)),
+                    Text(
+                      '"$justificacion"',
+                      style: const TextStyle(fontStyle: FontStyle.italic),
+                    ),
                   ],
                 ),
               ),
@@ -137,22 +164,29 @@ class _TabResenas extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collectionGroup('evaluaciones').snapshots(),
+      stream: FirebaseFirestore.instance
+          .collectionGroup('evaluaciones')
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Colors.blue));
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.blue),
+          );
         }
         if (snapshot.hasError) {
           return const Center(child: Text('Error al cargar reseñas'));
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(
-            child: Text('No hay reseñas registradas.', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              'No hay reseñas registradas.',
+              style: TextStyle(color: Colors.grey),
+            ),
           );
         }
 
         final resenas = snapshot.data!.docs;
-        
+
         // Ordenar localmente por fecha descendente
         resenas.sort((a, b) {
           final aDatos = a.data() as Map<String, dynamic>;
@@ -167,12 +201,16 @@ class _TabResenas extends StatelessWidget {
             final doc = resenas[index];
             final datos = doc.data() as Map<String, dynamic>;
             final fechaStr = datos['fecha'] ?? '';
-            final publico = datos['comentario_publico'] ?? datos['comentario'] ?? 'Sin comentario público';
-            final privado = datos['comentario_admin'] ?? 'Sin comentario confidencial';
+            final publico =
+                datos['comentario_publico'] ??
+                datos['comentario'] ??
+                'Sin comentario público';
+            final privado =
+                datos['comentario_admin'] ?? 'Sin comentario confidencial';
             final estrellas = datos['estrellas'] ?? 0;
             final autor = datos['uid_alumno'] ?? 'Anónimo';
             final tutorRefId = doc.reference.parent.parent?.id ?? 'Desconocido';
-            
+
             DateTime? fecha;
             try {
               if (fechaStr.isNotEmpty) fecha = DateTime.parse(fechaStr);
@@ -181,7 +219,9 @@ class _TabResenas extends StatelessWidget {
             return Card(
               elevation: 2,
               margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -191,31 +231,82 @@ class _TabResenas extends StatelessWidget {
                       children: [
                         const Icon(Icons.star, color: Colors.orange),
                         const SizedBox(width: 8),
-                        Text('${estrellas is int ? estrellas.toStringAsFixed(1) : (estrellas as double).toStringAsFixed(1)} Estrellas', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(
+                          '${estrellas is int ? estrellas.toStringAsFixed(1) : (estrellas as double).toStringAsFixed(1)} Estrellas',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
                         const Spacer(),
                         if (fecha != null)
-                          Text('${fecha.day}/${fecha.month}/${fecha.year}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                          Text(
+                            '${fecha.day}/${fecha.month}/${fecha.year}',
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 12,
+                            ),
+                          ),
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
                           tooltip: 'Ocultar Público',
                           onPressed: () {
-                            doc.reference.update({'comentario_publico': '[Eliminado por Moderación]'});
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Comentario público eliminado.'), backgroundColor: Colors.green));
+                            doc.reference.update({
+                              'comentario_publico':
+                                  '[Eliminado por Moderación]',
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Comentario público eliminado.'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
                           },
                         ),
                       ],
                     ),
                     const Divider(),
-                    Text('Tutor Evaluado ID: $tutorRefId', style: const TextStyle(fontSize: 12, color: Colors.blueAccent)),
-                    Text('Autor ID: $autor', style: const TextStyle(fontSize: 12, color: Colors.blueAccent)),
+                    Text(
+                      'Tutor Evaluado ID: $tutorRefId',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.blueAccent,
+                      ),
+                    ),
+                    Text(
+                      'Autor ID: $autor',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.blueAccent,
+                      ),
+                    ),
                     const SizedBox(height: 12),
-                    const Text('Comentario Público:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const Text(
+                      'Comentario Público:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('"$publico"', style: const TextStyle(fontStyle: FontStyle.italic)),
+                    Text(
+                      '"$publico"',
+                      style: const TextStyle(fontStyle: FontStyle.italic),
+                    ),
                     const SizedBox(height: 12),
-                    const Text('Comentario Privado (Solo Admin):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.red)),
+                    const Text(
+                      'Comentario Privado (Solo Admin):',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Colors.red,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('"$privado"', style: const TextStyle(color: Colors.redAccent)),
+                    Text(
+                      '"$privado"',
+                      style: const TextStyle(color: Colors.redAccent),
+                    ),
                   ],
                 ),
               ),

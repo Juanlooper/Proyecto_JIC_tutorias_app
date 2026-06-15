@@ -13,7 +13,11 @@ class HistorialTutoriasView extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('tutorias').snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('tutorias')
+            .orderBy('fechaHoraSugerida', descending: true)
+            .limit(100)
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(

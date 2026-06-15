@@ -41,19 +41,39 @@ class _MetricasViewState extends State<MetricasView> {
               onSelected: (value) async {
                 final admin = context.read<AdminProvider>();
                 if (value == 'pdf') {
-                  OverlayLoader.mostrar(context, mensaje: "Generando reporte PDF...");
+                  OverlayLoader.mostrar(
+                    context,
+                    mensaje: "Generando reporte PDF...",
+                  );
                   try {
                     await ReportePdfServicio.generarPdf(admin);
                   } catch (e) {
-                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
                   if (context.mounted) OverlayLoader.ocultar(context);
                 } else if (value == 'excel') {
-                  OverlayLoader.mostrar(context, mensaje: "Exportando tabla a Excel...");
+                  OverlayLoader.mostrar(
+                    context,
+                    mensaje: "Exportando tabla a Excel...",
+                  );
                   try {
                     await ExportacionExcelServicio.exportarDatosGlobales(admin);
                   } catch (e) {
-                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
                   if (context.mounted) OverlayLoader.ocultar(context);
                 }
@@ -127,7 +147,9 @@ class _MetricasViewState extends State<MetricasView> {
           _buildDistribucionEstrellas(admin),
 
           const SizedBox(height: 40),
-          _buildSeccionHeader('Mapa de Calor Académico (Bienestar Estudiantil)'),
+          _buildSeccionHeader(
+            'Mapa de Calor Académico (Bienestar Estudiantil)',
+          ),
           const SizedBox(height: 16),
           _buildDesercion(admin),
           const SizedBox(height: 24),
@@ -196,7 +218,13 @@ class _MetricasViewState extends State<MetricasView> {
     if (datos.isEmpty) return const SizedBox.shrink();
 
     final List<Color> colores = [
-      Colors.blue, Colors.red, Colors.green, Colors.orange, Colors.purple, Colors.teal, Colors.pink
+      Colors.blue,
+      Colors.red,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.pink,
     ];
 
     int index = 0;
@@ -212,7 +240,11 @@ class _MetricasViewState extends State<MetricasView> {
             value: value.toDouble(),
             title: '${pct.toStringAsFixed(1)}%',
             radius: 50,
-            titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+            titleStyle: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         );
         index++;
@@ -226,7 +258,10 @@ class _MetricasViewState extends State<MetricasView> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(
+              titulo,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 16),
             SizedBox(
               height: 200,
@@ -249,9 +284,16 @@ class _MetricasViewState extends State<MetricasView> {
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(width: 12, height: 12, color: colores[i % colores.length]),
+                    Container(
+                      width: 12,
+                      height: 12,
+                      color: colores[i % colores.length],
+                    ),
                     const SizedBox(width: 4),
-                    Text('${entry.key} (${entry.value})', style: const TextStyle(fontSize: 12)),
+                    Text(
+                      '${entry.key} (${entry.value})',
+                      style: const TextStyle(fontSize: 12),
+                    ),
                   ],
                 );
               }),
@@ -341,15 +383,16 @@ class _MetricasViewState extends State<MetricasView> {
     facultades.addAll(_facultadesUTP.keys);
 
     final carreras = {'Todas'};
-    if (_filtroFacultad != 'Todas' && _facultadesUTP.containsKey(_filtroFacultad)) {
+    if (_filtroFacultad != 'Todas' &&
+        _facultadesUTP.containsKey(_filtroFacultad)) {
       carreras.addAll(_facultadesUTP[_filtroFacultad]!);
     }
-    
+
     // Añadir dinámicamente las que estén en la DB por si acaso
     for (var e in admin.todosLosEstudiantesConHoras) {
       String fac = e['facultad']?.toString().trim() ?? '';
       if (fac.isNotEmpty && fac != 'No especificada') facultades.add(fac);
-      
+
       if (_filtroFacultad == 'Todas' || e['facultad'] == _filtroFacultad) {
         String car = e['carrera']?.toString().trim() ?? '';
         if (car.isNotEmpty && car != 'No especificada') carreras.add(car);
@@ -364,14 +407,31 @@ class _MetricasViewState extends State<MetricasView> {
       children: [
         Expanded(
           child: InputDecorator(
-            decoration: const InputDecoration(labelText: 'Facultad', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+              labelText: 'Facultad',
+              border: OutlineInputBorder(),
+            ),
             child: DropdownButton<String>(
               isExpanded: true,
               underline: const SizedBox(),
-              value: facultades.contains(_filtroFacultad) ? _filtroFacultad : 'Todas',
-              items: facultades.map((f) => DropdownMenuItem(value: f, child: Text(f, overflow: TextOverflow.ellipsis))).toList(),
+              value: facultades.contains(_filtroFacultad)
+                  ? _filtroFacultad
+                  : 'Todas',
+              items: facultades
+                  .map(
+                    (f) => DropdownMenuItem(
+                      value: f,
+                      child: Text(f, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
+                  .toList(),
               onChanged: (val) {
-                if (val != null) setState(() { _filtroFacultad = val; _filtroCarrera = 'Todas'; });
+                if (val != null) {
+                  setState(() {
+                    _filtroFacultad = val;
+                    _filtroCarrera = 'Todas';
+                  });
+                }
               },
             ),
           ),
@@ -379,14 +439,30 @@ class _MetricasViewState extends State<MetricasView> {
         const SizedBox(width: 16),
         Expanded(
           child: InputDecorator(
-            decoration: const InputDecoration(labelText: 'Carrera', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+              labelText: 'Carrera',
+              border: OutlineInputBorder(),
+            ),
             child: DropdownButton<String>(
               isExpanded: true,
               underline: const SizedBox(),
-              value: carreras.contains(_filtroCarrera) ? _filtroCarrera : 'Todas',
-              items: carreras.map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))).toList(),
+              value: carreras.contains(_filtroCarrera)
+                  ? _filtroCarrera
+                  : 'Todas',
+              items: carreras
+                  .map(
+                    (c) => DropdownMenuItem(
+                      value: c,
+                      child: Text(c, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
+                  .toList(),
               onChanged: (val) {
-                if (val != null) setState(() { _filtroCarrera = val; });
+                if (val != null) {
+                  setState(() {
+                    _filtroCarrera = val;
+                  });
+                }
               },
             ),
           ),
@@ -397,8 +473,10 @@ class _MetricasViewState extends State<MetricasView> {
 
   Widget _buildTablaHoras(AdminProvider admin) {
     var listaFiltrada = admin.todosLosEstudiantesConHoras.where((e) {
-      bool cumpleFac = _filtroFacultad == 'Todas' || e['facultad'] == _filtroFacultad;
-      bool cumpleCarrera = _filtroCarrera == 'Todas' || e['carrera'] == _filtroCarrera;
+      bool cumpleFac =
+          _filtroFacultad == 'Todas' || e['facultad'] == _filtroFacultad;
+      bool cumpleCarrera =
+          _filtroCarrera == 'Todas' || e['carrera'] == _filtroCarrera;
       return cumpleFac && cumpleCarrera;
     }).toList();
 
@@ -413,20 +491,55 @@ class _MetricasViewState extends State<MetricasView> {
             columnSpacing: 20,
             headingRowColor: WidgetStateProperty.all(Colors.grey.shade200),
             columns: const [
-              DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Facultad', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Carrera', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Año', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Horas Totales', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(
+                label: Text(
+                  'Nombre',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'Facultad',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'Carrera',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'Año',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'Horas Totales',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
             ],
             rows: listaFiltrada.map((e) {
-              return DataRow(cells: [
-                DataCell(Text(e['nombre'])),
-                DataCell(Text(e['facultad'])),
-                DataCell(Text(e['carrera'])),
-                DataCell(Text(e['anoCursando'])),
-                DataCell(Text('${(e['horas'] as double).toStringAsFixed(1)} hrs', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))),
-              ]);
+              return DataRow(
+                cells: [
+                  DataCell(Text(e['nombre'])),
+                  DataCell(Text(e['facultad'])),
+                  DataCell(Text(e['carrera'])),
+                  DataCell(Text(e['anoCursando'])),
+                  DataCell(
+                    Text(
+                      '${(e['horas'] as double).toStringAsFixed(1)} hrs',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                ],
+              );
             }).toList(),
           ),
         ),
@@ -442,7 +555,9 @@ class _MetricasViewState extends State<MetricasView> {
     // Calculamos el promedio global de retención solo para mostrar un velocímetro resumen
     double promedioGlobal = 0.0;
     if (admin.tasaRetencionTutor.isNotEmpty) {
-      promedioGlobal = admin.tasaRetencionTutor.values.reduce((a, b) => a + b) / admin.tasaRetencionTutor.length;
+      promedioGlobal =
+          admin.tasaRetencionTutor.values.reduce((a, b) => a + b) /
+          admin.tasaRetencionTutor.length;
     }
 
     Color colorSemaforo = Colors.red;
@@ -459,24 +574,43 @@ class _MetricasViewState extends State<MetricasView> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const Text('Tasa Media de Retención de Estudiantes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text(
+              'Tasa Media de Retención de Estudiantes',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 8),
-            const Text('Promedio de alumnos que repiten clase con un mismo tutor.', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
+            const Text(
+              'Promedio de alumnos que repiten clase con un mismo tutor.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black54),
+            ),
             const SizedBox(height: 20),
             Text(
               '${promedioGlobal.toStringAsFixed(1)}%',
-              style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: colorSemaforo),
+              style: TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
+                color: colorSemaforo,
+              ),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  promedioGlobal >= 50 ? Icons.arrow_upward : Icons.arrow_downward,
+                  promedioGlobal >= 50
+                      ? Icons.arrow_upward
+                      : Icons.arrow_downward,
                   color: colorSemaforo,
                 ),
-                Text(' Nivel de calidad', style: TextStyle(color: colorSemaforo, fontWeight: FontWeight.bold)),
+                Text(
+                  ' Nivel de calidad',
+                  style: TextStyle(
+                    color: colorSemaforo,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
-            )
+            ),
           ],
         ),
       ),
@@ -497,28 +631,52 @@ class _MetricasViewState extends State<MetricasView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Alertas: Cancelaciones Tardías (>15%)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text(
+              'Alertas: Cancelaciones Tardías (>15%)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 8),
-            const Text('Tutores que cancelan clases con menos de 12 horas de aviso.', style: TextStyle(color: Colors.black54)),
+            const Text(
+              'Tutores que cancelan clases con menos de 12 horas de aviso.',
+              style: TextStyle(color: Colors.black54),
+            ),
             const SizedBox(height: 16),
             if (tutoresEnRiesgo.isEmpty)
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 child: const Row(
                   children: [
                     Icon(Icons.check_circle, color: Colors.green),
                     SizedBox(width: 8),
-                    Text('No hay tutores con altas tasas de cancelación.', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                    Text(
+                      'No hay tutores con altas tasas de cancelación.',
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               )
             else
-              ...tutoresEnRiesgo.map((t) => ListTile(
-                leading: const Icon(Icons.warning, color: Colors.red),
-                title: Text('ID Tutor: ${t.key.substring(0, 6)}...'),
-                trailing: Text('${t.value.toStringAsFixed(1)}%', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
-              )),
+              ...tutoresEnRiesgo.map(
+                (t) => ListTile(
+                  leading: const Icon(Icons.warning, color: Colors.red),
+                  title: Text('ID Tutor: ${t.key.substring(0, 6)}...'),
+                  trailing: Text(
+                    '${t.value.toStringAsFixed(1)}%',
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -527,7 +685,7 @@ class _MetricasViewState extends State<MetricasView> {
 
   Widget _buildSLA(AdminProvider admin) {
     int horasSLA = admin.slaPromedioGlobal.inHours;
-    
+
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -535,18 +693,41 @@ class _MetricasViewState extends State<MetricasView> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const Text('Tiempo Medio de Aceptación (SLA)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text(
+              'Tiempo Medio de Aceptación (SLA)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 8),
-            const Text('El tiempo que demora una solicitud huérfana en ser aceptada por un tutor.', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
+            const Text(
+              'El tiempo que demora una solicitud huérfana en ser aceptada por un tutor.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black54),
+            ),
             const SizedBox(height: 20),
             Text(
               '$horasSLA hrs',
-              style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: horasSLA > 48 ? Colors.red : Colors.blue),
+              style: TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
+                color: horasSLA > 48 ? Colors.red : Colors.blue,
+              ),
             ),
             if (horasSLA > 48)
-              const Text('¡SLA EXCEDIDO! Se requieren más tutores', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))
+              const Text(
+                '¡SLA EXCEDIDO! Se requieren más tutores',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
             else
-              const Text('Dentro del límite aceptable (48 hrs)', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+              const Text(
+                'Dentro del límite aceptable (48 hrs)',
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
           ],
         ),
       ),
@@ -554,7 +735,10 @@ class _MetricasViewState extends State<MetricasView> {
   }
 
   Widget _buildDistribucionEstrellas(AdminProvider admin) {
-    int total = admin.distribucionEstrellasGlobal.values.fold(0, (sum, x) => sum + x);
+    int total = admin.distribucionEstrellasGlobal.values.fold(
+      0,
+      (sum, x) => sum + x,
+    );
 
     return Card(
       elevation: 4,
@@ -564,7 +748,10 @@ class _MetricasViewState extends State<MetricasView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Distribución Global de Estrellas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text(
+              'Distribución Global de Estrellas',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 16),
             if (total == 0)
               const Text('Sin evaluaciones registradas')
@@ -577,7 +764,10 @@ class _MetricasViewState extends State<MetricasView> {
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                     children: [
-                      Text('$estrella ★', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(
+                        '$estrella ★',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: LinearProgressIndicator(
@@ -589,7 +779,10 @@ class _MetricasViewState extends State<MetricasView> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text('$count', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(
+                        '$count',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                 );
@@ -610,13 +803,24 @@ class _MetricasViewState extends State<MetricasView> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const Text('Índice de Deserción en Tutorías', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text(
+              'Índice de Deserción en Tutorías',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 8),
-            const Text('Alumnos que solicitan clase pero no asisten.', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
+            const Text(
+              'Alumnos que solicitan clase pero no asisten.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black54),
+            ),
             const SizedBox(height: 20),
             Text(
               '${desercion.toStringAsFixed(1)}%',
-              style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: desercion > 20 ? Colors.red : Colors.purple),
+              style: TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
+                color: desercion > 20 ? Colors.red : Colors.purple,
+              ),
             ),
           ],
         ),
@@ -633,18 +837,35 @@ class _MetricasViewState extends State<MetricasView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Materias Cuello de Botella (Top 5)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text(
+              'Materias Cuello de Botella (Top 5)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 8),
-            const Text('Materias huérfanas con alta demanda no cubierta.', style: TextStyle(color: Colors.black54)),
+            const Text(
+              'Materias huérfanas con alta demanda no cubierta.',
+              style: TextStyle(color: Colors.black54),
+            ),
             const SizedBox(height: 16),
             if (admin.materiasCuelloDeBotella.isEmpty)
-              const Text('No hay cuellos de botella.', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))
+              const Text(
+                'No hay cuellos de botella.',
+                style: TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
             else
-              ...admin.materiasCuelloDeBotella.map((m) => ListTile(
-                leading: const Icon(Icons.book, color: Colors.blueGrey),
-                title: Text(m.key),
-                trailing: Text('${m.value} solic.', style: const TextStyle(fontWeight: FontWeight.bold)),
-              )),
+              ...admin.materiasCuelloDeBotella.map(
+                (m) => ListTile(
+                  leading: const Icon(Icons.book, color: Colors.blueGrey),
+                  title: Text(m.key),
+                  trailing: Text(
+                    '${m.value} solic.',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -672,13 +893,21 @@ class _MetricasViewState extends State<MetricasView> {
           children: [
             const Text(
               'Control General de Horas Usadas en la Plataforma',
-              style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             Text(
               '${admin.totalHorasImpartidas.toStringAsFixed(1)} Horas de Tutoría Impartidas',
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white),
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -717,7 +946,9 @@ class _MetricasViewState extends State<MetricasView> {
       return const SizedBox.shrink();
     }
 
-    double maxHoras = admin.horasPorAsignaturaTreemap.values.reduce((a, b) => a > b ? a : b);
+    double maxHoras = admin.horasPorAsignaturaTreemap.values.reduce(
+      (a, b) => a > b ? a : b,
+    );
     if (maxHoras == 0) maxHoras = 1;
 
     return Card(
@@ -728,9 +959,15 @@ class _MetricasViewState extends State<MetricasView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Horas Consumidas por Asignatura (Profundidad de Estudio)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text(
+              'Horas Consumidas por Asignatura (Profundidad de Estudio)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 8),
-            const Text('Desglose de materias y temas basado en asistencia confirmada.', style: TextStyle(color: Colors.black54)),
+            const Text(
+              'Desglose de materias y temas basado en asistencia confirmada.',
+              style: TextStyle(color: Colors.black54),
+            ),
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,
@@ -738,12 +975,14 @@ class _MetricasViewState extends State<MetricasView> {
               children: admin.horasPorAsignaturaTreemap.entries.map((e) {
                 double heightScore = (e.value / maxHoras) * 100;
                 double size = 60 + heightScore; // min 60, max 160
-                
+
                 return Container(
                   width: size,
                   height: size,
                   decoration: BoxDecoration(
-                    color: Colors.blueAccent.withValues(alpha: (e.value / maxHoras).clamp(0.2, 1.0)),
+                    color: Colors.blueAccent.withValues(
+                      alpha: (e.value / maxHoras).clamp(0.2, 1.0),
+                    ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   padding: const EdgeInsets.all(8),
@@ -751,7 +990,9 @@ class _MetricasViewState extends State<MetricasView> {
                   child: Text(
                     '${e.key}\n${e.value.toStringAsFixed(1)}h',
                     style: TextStyle(
-                      color: (e.value / maxHoras) > 0.5 ? Colors.white : Colors.black87,
+                      color: (e.value / maxHoras) > 0.5
+                          ? Colors.white
+                          : Colors.black87,
                       fontSize: 10 + (e.value / maxHoras) * 4,
                       fontWeight: FontWeight.bold,
                     ),
@@ -779,32 +1020,70 @@ class _MetricasViewState extends State<MetricasView> {
           children: [
             const Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 24,
+                ),
                 SizedBox(width: 8),
-                Expanded(child: Text('Tabla de Riesgo: Estudiantes Heavy Users', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.deepOrange))),
+                Expanded(
+                  child: Text(
+                    'Tabla de Riesgo: Estudiantes Heavy Users',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.deepOrange,
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
-            const Text('Identificar alumnos que consumen excesivas horas. Podrían requerir consejería psicológica o académica.', style: TextStyle(color: Colors.black54)),
+            const Text(
+              'Identificar alumnos que consumen excesivas horas. Podrían requerir consejería psicológica o académica.',
+              style: TextStyle(color: Colors.black54),
+            ),
             const SizedBox(height: 16),
             if (admin.heavyUsers.isEmpty)
               const Text('Sin datos de riesgo registrados.')
             else
               ...admin.heavyUsers.map((u) {
-                bool riesgoAlto = (u['horas'] as double) >= 10; // >10 hours is high risk
+                bool riesgoAlto =
+                    (u['horas'] as double) >= 10; // >10 hours is high risk
                 return ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: riesgoAlto ? Colors.red.shade100 : Colors.orange.shade100,
-                    child: Icon(Icons.person, color: riesgoAlto ? Colors.red : Colors.orange),
+                    backgroundColor: riesgoAlto
+                        ? Colors.red.shade100
+                        : Colors.orange.shade100,
+                    child: Icon(
+                      Icons.person,
+                      color: riesgoAlto ? Colors.red : Colors.orange,
+                    ),
                   ),
-                  title: Text(u['nombre'], style: TextStyle(fontWeight: riesgoAlto ? FontWeight.bold : FontWeight.normal)),
+                  title: Text(
+                    u['nombre'],
+                    style: TextStyle(
+                      fontWeight: riesgoAlto
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  ),
                   trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: riesgoAlto ? Colors.red : Colors.orange,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text('${(u['horas'] as double).toStringAsFixed(1)} hrs', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                    child: Text(
+                      '${(u['horas'] as double).toStringAsFixed(1)} hrs',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 );
               }),
@@ -815,8 +1094,9 @@ class _MetricasViewState extends State<MetricasView> {
   }
 
   Widget _buildHorasTutor(AdminProvider admin) {
-    var tutores = admin.horasPorTutor.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-    
+    var tutores = admin.horasPorTutor.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -825,16 +1105,27 @@ class _MetricasViewState extends State<MetricasView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Conteo de Horas Trabajadas por Tutor', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text(
+              'Conteo de Horas Trabajadas por Tutor',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 16),
             if (tutores.isEmpty)
               const Text('Sin datos registrados.')
             else
-              ...tutores.map((t) => ListTile(
-                leading: const Icon(Icons.work_history, color: Colors.blue),
-                title: Text(t.key),
-                trailing: Text('${t.value.toStringAsFixed(1)} hrs', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              )),
+              ...tutores.map(
+                (t) => ListTile(
+                  leading: const Icon(Icons.work_history, color: Colors.blue),
+                  title: Text(t.key),
+                  trailing: Text(
+                    '${t.value.toStringAsFixed(1)} hrs',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

@@ -47,6 +47,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
   // --- VARIABLES PARA SELECCIÓN OPCIONAL DE TUTOR ---
   /// Lista que almacenará a los tutores descargados de Firestore.
   List<UsuarioModel> tutoresDisponiblesRegistrados = [];
+
   /// Objeto que contendrá al tutor si el usuario decide seleccionarlo.
   UsuarioModel? tutorSeleccionadoOpcionalmente;
 
@@ -135,7 +136,7 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
       4: 'Jueves',
       5: 'Viernes',
       6: 'Sábado',
-      7: 'Domingo'
+      7: 'Domingo',
     };
     final String diaSugerido = diasMap[_fechaSeleccionada!.weekday]!;
 
@@ -145,7 +146,8 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
     List<String> horasOcupadas = [];
 
     try {
-      final String idTutorAConsultar = (widget.tutorDestino != null && widget.tutorDestino!.isNotEmpty)
+      final String idTutorAConsultar =
+          (widget.tutorDestino != null && widget.tutorDestino!.isNotEmpty)
           ? widget.tutorDestino!
           : tutorSeleccionadoOpcionalmente?.identificadorUnico ?? '';
 
@@ -158,16 +160,22 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
 
         if (tutorDoc.exists) {
           final data = tutorDoc.data()!;
-          final horarioDisponibilidad = data['horarioDisponibilidad'] as Map<String, dynamic>?;
-          if (horarioDisponibilidad != null && horarioDisponibilidad[diaSugerido] != null) {
-            horasDisponiblesDelTutor = List<String>.from(horarioDisponibilidad[diaSugerido]);
+          final horarioDisponibilidad =
+              data['horarioDisponibilidad'] as Map<String, dynamic>?;
+          if (horarioDisponibilidad != null &&
+              horarioDisponibilidad[diaSugerido] != null) {
+            horasDisponiblesDelTutor = List<String>.from(
+              horarioDisponibilidad[diaSugerido],
+            );
           } else {
             // El tutor no trabaja este día
             OverlayLoader.ocultar(context);
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text("El tutor seleccionado no ofrece tutorías los $diaSugerido."),
+                  content: Text(
+                    "El tutor seleccionado no ofrece tutorías los $diaSugerido.",
+                  ),
                   backgroundColor: Colors.redAccent,
                 ),
               );
@@ -182,24 +190,38 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
             .where('identificadorDelTutor', isEqualTo: idTutorAConsultar)
             .get();
 
-        final inicioDia = DateTime(_fechaSeleccionada!.year, _fechaSeleccionada!.month, _fechaSeleccionada!.day);
+        final inicioDia = DateTime(
+          _fechaSeleccionada!.year,
+          _fechaSeleccionada!.month,
+          _fechaSeleccionada!.day,
+        );
         final finDia = inicioDia.add(const Duration(days: 1));
 
         for (var doc in tutoriasSnapshot.docs) {
           final data = doc.data();
           final estado = data['estadoDeLaSolicitud'] as String?;
-          if (estado == 'aceptada' || estado == 'pendiente' || estado == 'sugerida_directa') {
-            final fechaClase = (data['fechaHoraSugerida'] as Timestamp).toDate();
+          if (estado == 'aceptada' ||
+              estado == 'pendiente' ||
+              estado == 'sugerida_directa') {
+            final fechaClase = (data['fechaHoraSugerida'] as Timestamp)
+                .toDate();
             // Filtro de fecha local
-            if (fechaClase.isAfter(inicioDia.subtract(const Duration(seconds: 1))) && fechaClase.isBefore(finDia)) {
-              final String horaString = '${fechaClase.hour.toString().padLeft(2, '0')}:00';
+            if (fechaClase.isAfter(
+                  inicioDia.subtract(const Duration(seconds: 1)),
+                ) &&
+                fechaClase.isBefore(finDia)) {
+              final String horaString =
+                  '${fechaClase.hour.toString().padLeft(2, '0')}:00';
               horasOcupadas.add(horaString);
             }
           }
         }
       } else {
         // Si no es un tutor en específico, mostramos todas las horas desde las 07:00 a 21:00
-        horasDisponiblesDelTutor = List.generate(15, (index) => '${(index + 7).toString().padLeft(2, '0')}:00');
+        horasDisponiblesDelTutor = List.generate(
+          15,
+          (index) => '${(index + 7).toString().padLeft(2, '0')}:00',
+        );
       }
     } catch (e) {
       // Error de red o base de datos
@@ -265,20 +287,31 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                               Navigator.pop(contextBottomSheet);
                             },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
-                          color: ocupada ? Colors.grey.shade200 : const Color(0xFF6C63FF).withValues(alpha: 0.1),
+                          color: ocupada
+                              ? Colors.grey.shade200
+                              : const Color(0xFF6C63FF).withValues(alpha: 0.1),
                           border: Border.all(
-                            color: ocupada ? Colors.grey.shade400 : const Color(0xFF6C63FF),
+                            color: ocupada
+                                ? Colors.grey.shade400
+                                : const Color(0xFF6C63FF),
                           ),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           horaString,
                           style: TextStyle(
-                            color: ocupada ? Colors.grey.shade500 : const Color(0xFF6C63FF),
+                            color: ocupada
+                                ? Colors.grey.shade500
+                                : const Color(0xFF6C63FF),
                             fontWeight: FontWeight.bold,
-                            decoration: ocupada ? TextDecoration.lineThrough : null,
+                            decoration: ocupada
+                                ? TextDecoration.lineThrough
+                                : null,
                           ),
                         ),
                       ),
@@ -298,11 +331,13 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
   Future<void> _enviarSugerencia() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (ModeracionServicio.contieneLenguajeToxico(_materiaController.text) || 
+    if (ModeracionServicio.contieneLenguajeToxico(_materiaController.text) ||
         ModeracionServicio.contieneLenguajeToxico(_motivosController.text)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("El texto ingresado contiene lenguaje inapropiado u ofensivo. Por favor, corrígelo antes de enviar."),
+          content: Text(
+            "El texto ingresado contiene lenguaje inapropiado u ofensivo. Por favor, corrígelo antes de enviar.",
+          ),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -336,10 +371,12 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
 
     // Creamos el cascarón de la sugerencia (la id la inyectará el Provider o Firebase)
     // Evaluamos dinámicamente si es una sugerencia directa basándonos en si hay tutor
-    bool esDirecta = widget.tutorDestino != null || tutorSeleccionadoOpcionalmente != null;
+    bool esDirecta =
+        widget.tutorDestino != null || tutorSeleccionadoOpcionalmente != null;
 
     // Evaluamos el identificador del tutor cumpliendo las instrucciones estrictas
-    final String idTutorFinal = (widget.tutorDestino != null && widget.tutorDestino!.isNotEmpty)
+    final String idTutorFinal =
+        (widget.tutorDestino != null && widget.tutorDestino!.isNotEmpty)
         ? widget.tutorDestino!
         : tutorSeleccionadoOpcionalmente?.identificadorUnico ?? '';
 
@@ -348,7 +385,8 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
       materiaOAsignatura: materiaFinal,
       temaEspecifico: _motivosController.text.trim(),
       carrera: 'General / No Especificada', // Ajustable según necesidad futura
-      identificadorDelTutor: idTutorFinal, // CRÍTICO: Utiliza el id dinámico evaluado arriba
+      identificadorDelTutor:
+          idTutorFinal, // CRÍTICO: Utiliza el id dinámico evaluado arriba
       listaDeEstudiantesInscritos: [], // El provider ingresará el UID propio
       modalidadDeClase: _modalidadSeleccionada,
       estadoDeLaSolicitud: esDirecta ? 'sugerida_directa' : 'solicitada',
@@ -368,7 +406,11 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
     if (exito) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(esDirecta ? "✅ Sugerencia directa enviada." : "✅ Solicitud enviada a la bolsa exitosamente."),
+          content: Text(
+            esDirecta
+                ? "✅ Sugerencia directa enviada."
+                : "✅ Solicitud enviada a la bolsa exitosamente.",
+          ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
         ),
@@ -390,7 +432,6 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       appBar: AppBar(
         elevation: 0,
         iconTheme: const IconThemeData(),
@@ -433,7 +474,6 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                               ? "Estás sugiriendo una clase directa a un tutor específico. Él podrá aceptarla o rechazarla."
                               : "¿No encuentras lo que buscas?\nSugiere un tema y dejaremos que la bolsa busque un profesor por ti.",
                           style: TextStyle(
-                            
                             fontWeight: FontWeight.w500,
                             fontSize: 14,
                           ),
@@ -516,7 +556,8 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                 const SizedBox(height: 24),
 
                 // Campo Inyectado: Asignación Opcional de Tutor
-                if (widget.tutorDestino == null || widget.tutorDestino!.isEmpty) ...[
+                if (widget.tutorDestino == null ||
+                    widget.tutorDestino!.isEmpty) ...[
                   _construirLabel("Asignar un Tutor específico (Opcional)"),
                   DropdownButtonFormField<UsuarioModel>(
                     initialValue: tutorSeleccionadoOpcionalmente,
@@ -534,7 +575,9 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                         ),
                       ),
                       // Iteramos la lista asíncrona para construir las opciones
-                      ...tutoresDisponiblesRegistrados.map((UsuarioModel tutor) {
+                      ...tutoresDisponiblesRegistrados.map((
+                        UsuarioModel tutor,
+                      ) {
                         return DropdownMenuItem<UsuarioModel>(
                           value: tutor,
                           child: Text(
@@ -697,12 +740,14 @@ class _SugerirTutoriaViewState extends State<SugerirTutoriaView> {
                         ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Botón de Cancelar / Descartar (HCI: Control y Libertad)
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.5)),
+                    side: BorderSide(
+                      color: Colors.redAccent.withValues(alpha: 0.5),
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),

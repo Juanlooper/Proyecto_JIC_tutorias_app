@@ -101,11 +101,15 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
         padding: EdgeInsets.symmetric(vertical: 8.0),
         child: Text(
           "Este tutor aún no ha seleccionado especialidades",
-          style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 13),
+          style: TextStyle(
+            color: Colors.grey,
+            fontStyle: FontStyle.italic,
+            fontSize: 13,
+          ),
         ),
       );
     }
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       child: Wrap(
@@ -114,7 +118,10 @@ class _PerfilPublicoTutorViewState extends State<PerfilPublicoTutorView> {
         alignment: WrapAlignment.center,
         children: widget.mentor.materiasEspecializadas.map((mat) {
           return Chip(
-            label: Text(mat, style: const TextStyle(fontSize: 12, color: Colors.indigoAccent)),
+            label: Text(
+              mat,
+              style: const TextStyle(fontSize: 12, color: Colors.indigoAccent),
+            ),
             backgroundColor: Colors.indigo.shade50,
             side: BorderSide(color: Colors.indigo.shade200),
           );

@@ -5,6 +5,8 @@ import '../../providers/tutorias_provider.dart';
 import '../../models/tutoria_model.dart';
 import '../../models/usuario_model.dart';
 import '../../core/utils/moderacion_servicio.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/firebase_storage_servicio.dart';
 
 class CrearTutoriaView extends StatefulWidget {
   const CrearTutoriaView({super.key});
@@ -25,6 +27,10 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
   String _modalidadSeleccionada = 'Virtual';
   DateTime? _fechaSeleccionada;
   TimeOfDay? _horaSeleccionada;
+
+  bool _estaSubiendoArchivo = false;
+  String? _archivoSubidoUrl;
+  String? _archivoSubidoNombre;
 
   @override
   void dispose() {
@@ -68,11 +74,13 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
       return;
     }
 
-    if (ModeracionServicio.contieneLenguajeToxico(_materiaController.text) || 
+    if (ModeracionServicio.contieneLenguajeToxico(_materiaController.text) ||
         ModeracionServicio.contieneLenguajeToxico(_temaController.text)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("El texto ingresado contiene lenguaje inapropiado u ofensivo. Por favor, corrígelo antes de publicar."),
+          content: Text(
+            "El texto ingresado contiene lenguaje inapropiado u ofensivo. Por favor, corrígelo antes de publicar.",
+          ),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -84,6 +92,18 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
         const SnackBar(
           content: Text(
             'Por favor, selecciona tanto la fecha como la hora sugerida para la tutoría.',
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    if (_archivoSubidoUrl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Debes adjuntar un material de referencia (PDF o Imagen) para solicitar una tutoría.',
           ),
           backgroundColor: Colors.redAccent,
         ),
@@ -109,8 +129,10 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
     );
 
     // Generamos una huella digital temporal inquebrantable para el documento
-    final String identificadorUnico = DateTime.now().millisecondsSinceEpoch
-        .toString();
+    final String identificadorUnico = FirebaseFirestore.instance
+        .collection('tutorias')
+        .doc()
+        .id;
 
     final int cuposElegidos = int.tryParse(_cupoController.text) ?? 1;
     final int minutosDuracion = int.tryParse(_duracionController.text) ?? 60;
@@ -125,6 +147,12 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
       listaDeEstudiantesInscritos: [
         usuarioCreador.identificadorUnico,
       ], // El autor solicitante ocupa automáticamente la primera plaza
+      enlaces_adjuntos: {
+        usuarioCreador.identificadorUnico: [_archivoSubidoUrl!],
+      },
+      nombres_adjuntos: {
+        usuarioCreador.identificadorUnico: [_archivoSubidoNombre!],
+      },
       modalidadDeClase: _modalidadSeleccionada,
       estadoDeLaSolicitud: 'pendiente',
       fechaHoraSugerida: fechaHoraFinalSugerida,
@@ -322,6 +350,97 @@ class _CrearTutoriaViewState extends State<CrearTutoriaView> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 28),
+
+              // Zona de subida interactiva
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Material de Referencia (Obligatorio)',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_estaSubiendoArchivo)
+                      const Center(child: CircularProgressIndicator())
+                    else if (_archivoSubidoUrl != null)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.green),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'Archivo adjuntado: $_archivoSubidoNombre',
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          setState(() {
+                            _estaSubiendoArchivo = true;
+                          });
+
+                          try {
+                            final mapArchivo = await FirebaseStorageServicio()
+                                .seleccionarYSubirArchivo(
+                                  carpetaDestino: 'tutorias_archivos',
+                                );
+
+                            setState(() {
+                              _estaSubiendoArchivo = false;
+                              if (mapArchivo != null) {
+                                _archivoSubidoUrl = mapArchivo['url'];
+                                _archivoSubidoNombre = mapArchivo['nombre'];
+                              }
+                            });
+                          } catch (e) {
+                            setState(() {
+                              _estaSubiendoArchivo = false;
+                            });
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: $e')),
+                              );
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.upload_file),
+                        label: const Text('Adjuntar PDF o Imagen'),
+                      ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Puedes subir un examen, taller o temario.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    const Text(
+                      'Formatos: PDF, JPG, PNG, DOCX, PPTX (Máx. 5MB)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.redAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 28),
 

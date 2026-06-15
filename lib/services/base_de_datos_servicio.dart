@@ -1,16 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/tutoria_model.dart'; // Importación obligatoria del Modelo que creamos anteriormente
+import '../services/firebase_storage_servicio.dart';
 
 /// Servicio especialista en el manejo de Datos y Estadísticas en la Nube.
 /// Esta clase orquesta todo el control de tráfico dentro de Firestore asociado a las Clases/Tutorías.
 class BaseDeDatosServicio {
-  
   /// Instancia pre-configurada apuntando directamente a nuestra gran bodega online (Firebase Firestore).
   final FirebaseFirestore _bodegaDeConocimiento = FirebaseFirestore.instance;
 
   /// Registra una petición "desde cero" almacenando todo el detalle de la tutoría elaborada en nuestra base de datos.
   /// El bloque 'try' es un escudo anti-cortes de internet, validando que solo retorne "verdadero" si hubo un impacto real en DB.
-  Future<bool> crearNuevaTutoria({required TutoriaModel modeloDeLaNuevaClase}) async {
+  Future<bool> crearNuevaTutoria({
+    required TutoriaModel modeloDeLaNuevaClase,
+  }) async {
     try {
       // REGLA DE NEGOCIO: Validación de Integridad Temporal. No se pueden programar tutorías en un tiempo vencido (pasado).
       if (modeloDeLaNuevaClase.fechaHoraSugerida.isBefore(DateTime.now())) {
@@ -23,11 +25,11 @@ class BaseDeDatosServicio {
           .collection('tutorias')
           .doc(modeloDeLaNuevaClase.identificadorDeTutoria)
           .set(modeloDeLaNuevaClase.toMap());
-          
+
       return true; // Retornal al UI un éxito transparente
     } catch (errorSilencioso) {
       // Control de pérdidas. No "romperá" la app si hay error conectivo o denegación de reglas
-      return false; 
+      return false;
     }
   }
 
@@ -37,22 +39,35 @@ class BaseDeDatosServicio {
     try {
       QuerySnapshot lecturaOptimizada = await _bodegaDeConocimiento
           .collection('tutorias')
-          .where('estadoDeLaSolicitud', whereIn: ['pendiente', 'Pendiente', 'aceptada', 'Aceptada', 'abierta', 'Abierta'])
-          .limit(50) // Optimización escalable: Previene leer miles de docs de golpe, topado a 50 recientes
+          .where(
+            'estadoDeLaSolicitud',
+            whereIn: [
+              'pendiente',
+              'Pendiente',
+              'aceptada',
+              'Aceptada',
+              'abierta',
+              'Abierta',
+            ],
+          )
+          .limit(
+            50,
+          ) // Optimización escalable: Previene leer miles de docs de golpe, topado a 50 recientes
           .get();
 
       // Transformamos ('map') el montón crudo de registros a una lista formal de nuestro prestigioso modelo
-      List<TutoriaModel> listadoResultante = lecturaOptimizada.docs.map((hojaDocumental) {
+      List<TutoriaModel> listadoResultante = lecturaOptimizada.docs.map((
+        hojaDocumental,
+      ) {
         var informacionBruta = hojaDocumental.data() as Map<String, dynamic>?;
         // Aquí pasamos los datos por el colador super-protegido del fromMap que diseñamos antes
-        return TutoriaModel.fromMap(informacionBruta); 
+        return TutoriaModel.fromMap(informacionBruta);
       }).toList();
 
       return listadoResultante;
-
     } catch (errorEnFlujoLectura) {
       // Respuesta resiliente: si colapsamos, entregamos lista vacía [] para no asustar al usuario ni romper gráficas de Alejandra.
-      return []; 
+      return [];
     }
   }
 
@@ -70,22 +85,66 @@ class BaseDeDatosServicio {
         DocumentReference refTutoria = _bodegaDeConocimiento
             .collection('tutorias')
             .doc(identificadorDeTutoriaEspecifica);
-            
+
         DocumentSnapshot tutoriaDoc = await transaccion.get(refTutoria);
-        
+
         if (!tutoriaDoc.exists) {
           return "Error crítico: La tutoría deseada no existe.";
         }
 
-        TutoriaModel tutoriaVigente = TutoriaModel.fromMap(tutoriaDoc.data() as Map<String, dynamic>?);
-        
+        TutoriaModel tutoriaVigente = TutoriaModel.fromMap(
+          tutoriaDoc.data() as Map<String, dynamic>?,
+        );
+
         // REGLA DE NEGOCIO: Proteger el cupo máximo para asegurar la capacidad de la clase.
-        if (tutoriaVigente.listaDeEstudiantesInscritos.length >= tutoriaVigente.cupoMaximo) {
+        if (tutoriaVigente.listaDeEstudiantesInscritos.length >=
+            tutoriaVigente.cupoMaximo) {
           return "La tutoría ha alcanzado su límite de cupos";
         }
-        
+
+        // VALIDACIÓN DE AGENDA ESTUDIANTIL: Evitar clonación (traslape de horarios)
+        DateTime inicioNueva = tutoriaVigente.fechaHoraSugerida;
+        DateTime finNueva = inicioNueva.add(
+          Duration(minutes: tutoriaVigente.duracionMinutos),
+        );
+
+        QuerySnapshot clasesDelAlumno = await _bodegaDeConocimiento
+            .collection('tutorias')
+            .where(
+              'listaDeEstudiantesInscritos',
+              arrayContains: identificadorDeUnAlumnoFinal,
+            )
+            .get();
+
+        for (var docTemporal in clasesDelAlumno.docs) {
+          TutoriaModel tutoriaInscrita = TutoriaModel.fromMap(
+            docTemporal.data() as Map<String, dynamic>?,
+          );
+
+          if (tutoriaInscrita.estadoDeLaSolicitud == 'cancelada' ||
+              tutoriaInscrita.estadoDeLaSolicitud == 'finalizada' ||
+              tutoriaInscrita.estadoDeLaSolicitud == 'expirada' ||
+              tutoriaInscrita.estadoDeLaSolicitud == 'rechazada_directa') {
+            continue;
+          }
+
+          DateTime inicioExistente = tutoriaInscrita.fechaHoraSugerida;
+          DateTime finExistente = inicioExistente.add(
+            Duration(minutes: tutoriaInscrita.duracionMinutos),
+          );
+
+          bool hayConflicto =
+              inicioNueva.isBefore(finExistente) &&
+              finNueva.isAfter(inicioExistente);
+          if (hayConflicto) {
+            return "Error de agenda: Ya estás inscrito en la clase de ${tutoriaInscrita.materiaOAsignatura} en este mismo horario.";
+          }
+        }
+
         transaccion.update(refTutoria, {
-             'listaDeEstudiantesInscritos': FieldValue.arrayUnion([identificadorDeUnAlumnoFinal])
+          'listaDeEstudiantesInscritos': FieldValue.arrayUnion([
+            identificadorDeUnAlumnoFinal,
+          ]),
         });
 
         return "Cupo Asegurado: Ya te encuentras en lista";
@@ -111,31 +170,42 @@ class BaseDeDatosServicio {
       // Iniciamos el blindaje atómico contra condiciones de carrera (Race Conditions)
       await _bodegaDeConocimiento.runTransaction((transaccion) async {
         // 1. LECTURA OBLIGATORIA: Obtenemos el snapshot bloqueante de la tutoría deseada
-        DocumentSnapshot documentoSnapshot = await transaccion.get(refDocumentoTutoria);
-        
+        DocumentSnapshot documentoSnapshot = await transaccion.get(
+          refDocumentoTutoria,
+        );
+
         // 2. NULL SAFETY: Eliminamos aserciones forzadas y realizamos casting defensivo
-        final datosDeLaTutoria = documentoSnapshot.data() as Map<String, dynamic>?;
+        final datosDeLaTutoria =
+            documentoSnapshot.data() as Map<String, dynamic>?;
         if (datosDeLaTutoria == null || !documentoSnapshot.exists) {
-          throw Exception("Error crítico: La tutoría ha caducado o no existe en la base de datos.");
+          throw Exception(
+            "Error crítico: La tutoría ha caducado o no existe en la base de datos.",
+          );
         }
 
         // 3. RECONSTRUCCIÓN HIGIÉNICA: Utilizamos factory method seguro
         TutoriaModel tutoriaPorAceptar = TutoriaModel.fromMap(datosDeLaTutoria);
-        
+
         // 4. CONTROL DE CONCURRENCIA: Rechazo temprano si otro hilo ganó la transacción milisegundos antes
-        if (tutoriaPorAceptar.estadoDeLaSolicitud != 'pendiente' && 
+        if (tutoriaPorAceptar.estadoDeLaSolicitud != 'pendiente' &&
             tutoriaPorAceptar.estadoDeLaSolicitud != 'solicitada') {
           throw Exception("La tutoría ya fue reclamada por otro profesor.");
         }
 
         // 5. PREVENCIÓN DE BUCLES LÓGICOS: Un usuario no puede auto-enseñarse
-        if (tutoriaPorAceptar.listaDeEstudiantesInscritos.contains(maestroHerederoAlMando)) {
-          throw Exception("Error: No puedes ser el tutor de tu propia solicitud.");
+        if (tutoriaPorAceptar.listaDeEstudiantesInscritos.contains(
+          maestroHerederoAlMando,
+        )) {
+          throw Exception(
+            "Error: No puedes ser el tutor de tu propia solicitud.",
+          );
         }
 
         // 6. VALIDACIÓN CRUZADA: Evaluar traslape horario extrayendo el modelo interno
         DateTime inicioNueva = tutoriaPorAceptar.fechaHoraSugerida;
-        DateTime finNueva = inicioNueva.add(Duration(minutes: tutoriaPorAceptar.duracionMinutos));
+        DateTime finNueva = inicioNueva.add(
+          Duration(minutes: tutoriaPorAceptar.duracionMinutos),
+        );
 
         // Procedimiento de chequeo de agenda (Ejecutado perimetralmente para asegurar agenda del tutor)
         QuerySnapshot tutoriasAnteriores = await _bodegaDeConocimiento
@@ -145,13 +215,21 @@ class BaseDeDatosServicio {
             .get();
 
         for (var docTemporal in tutoriasAnteriores.docs) {
-          TutoriaModel tutoriaAceptada = TutoriaModel.fromMap(docTemporal.data() as Map<String, dynamic>?);
+          TutoriaModel tutoriaAceptada = TutoriaModel.fromMap(
+            docTemporal.data() as Map<String, dynamic>?,
+          );
           DateTime inicioExistente = tutoriaAceptada.fechaHoraSugerida;
-          DateTime finExistente = inicioExistente.add(Duration(minutes: tutoriaAceptada.duracionMinutos));
+          DateTime finExistente = inicioExistente.add(
+            Duration(minutes: tutoriaAceptada.duracionMinutos),
+          );
 
-          bool hayConflicto = inicioNueva.isBefore(finExistente) && finNueva.isAfter(inicioExistente);
+          bool hayConflicto =
+              inicioNueva.isBefore(finExistente) &&
+              finNueva.isAfter(inicioExistente);
           if (hayConflicto) {
-            throw Exception("Error de agenda: Ya tienes una tutoría programada en este horario.");
+            throw Exception(
+              "Error de agenda: Ya tienes una tutoría programada en este horario.",
+            );
           }
         }
 
@@ -161,7 +239,8 @@ class BaseDeDatosServicio {
           'identificadorDelTutor': maestroHerederoAlMando,
         };
 
-        if (linkOficialParaSesion != null && linkOficialParaSesion.trim().isNotEmpty) {
+        if (linkOficialParaSesion != null &&
+            linkOficialParaSesion.trim().isNotEmpty) {
           parchesLigeros['enlaceOReunion'] = linkOficialParaSesion;
         }
 
@@ -180,54 +259,101 @@ class BaseDeDatosServicio {
   }
 
   /// Permite a un estudiante sumar su apoyo a una solicitud comunitaria.
-  Future<void> agregarApoyoEnComunidad(String tutoriaId, String uidUsuario) async {
+  Future<void> agregarApoyoEnComunidad(
+    String tutoriaId,
+    String uidUsuario,
+  ) async {
     await _bodegaDeConocimiento.collection('tutorias').doc(tutoriaId).update({
-      'estudiantesApoyando': FieldValue.arrayUnion([uidUsuario])
+      'estudiantesApoyando': FieldValue.arrayUnion([uidUsuario]),
     });
   }
 
   /// Permite a un estudiante abandonar una tutoría (retirarse de listas).
   /// Retorna un mapa con el uid del promovido (si hubo) y datos extra.
-  Future<Map<String, dynamic>> retirarseDeTutoria(String tutoriaId, String uidUsuario) async {
-    final docSnapshot = await _bodegaDeConocimiento.collection('tutorias').doc(tutoriaId).get();
+  Future<Map<String, dynamic>> retirarseDeTutoria(
+    String tutoriaId,
+    String uidUsuario,
+  ) async {
+    final docSnapshot = await _bodegaDeConocimiento
+        .collection('tutorias')
+        .doc(tutoriaId)
+        .get();
     if (!docSnapshot.exists) throw Exception("Tutoría no encontrada.");
-    
+
     final data = docSnapshot.data();
     if (data == null) throw Exception("Documento vacío o corrupto.");
 
     if (data['estadoDeLaSolicitud'] == 'solicitada') {
+      // 1. Borrar archivos físicos
+      Map<String, dynamic> enlaces = Map<String, dynamic>.from(
+        data['enlaces_adjuntos'] ?? {},
+      );
+      if (enlaces.containsKey(uidUsuario)) {
+        final storageSvc = FirebaseStorageServicio();
+        for (var url in enlaces[uidUsuario]) {
+          try {
+            await storageSvc.eliminarArchivoFisico(url.toString());
+          } catch (e) {
+            // Ignorar si ya se borró
+          }
+        }
+        enlaces.remove(uidUsuario);
+      }
+
       await _bodegaDeConocimiento.collection('tutorias').doc(tutoriaId).update({
-        'estudiantesApoyando': FieldValue.arrayRemove([uidUsuario])
+        'estudiantesApoyando': FieldValue.arrayRemove([uidUsuario]),
+        'enlaces_adjuntos': enlaces,
       });
       return {'promovidoUid': null, 'dataOriginal': data};
     } else {
       String? promovidoUid;
       await _bodegaDeConocimiento.runTransaction((transaction) async {
-        final docRef = _bodegaDeConocimiento.collection('tutorias').doc(tutoriaId);
+        final docRef = _bodegaDeConocimiento
+            .collection('tutorias')
+            .doc(tutoriaId);
         final docSnap = await transaction.get(docRef);
         if (!docSnap.exists) throw Exception("Tutoría no encontrada.");
-        
+
         final docData = docSnap.data();
         if (docData == null) throw Exception("Documento vacío.");
 
-        List<dynamic> inscritos = List.from(docData['listaDeEstudiantesInscritos'] ?? []);
+        List<dynamic> inscritos = List.from(
+          docData['listaDeEstudiantesInscritos'] ?? [],
+        );
         List<dynamic> espera = List.from(docData['listaDeEspera'] ?? []);
-        
+
         if (espera.contains(uidUsuario)) {
-           espera.remove(uidUsuario);
-           transaction.update(docRef, {'listaDeEspera': espera});
+          espera.remove(uidUsuario);
+          transaction.update(docRef, {'listaDeEspera': espera});
         } else if (inscritos.contains(uidUsuario)) {
-           inscritos.remove(uidUsuario);
-           
-           if (espera.isNotEmpty) {
-              promovidoUid = espera.removeAt(0).toString();
-              inscritos.add(promovidoUid);
-           }
-           
-           transaction.update(docRef, {
-              'listaDeEstudiantesInscritos': inscritos,
-              'listaDeEspera': espera,
-           });
+          inscritos.remove(uidUsuario);
+
+          if (espera.isNotEmpty) {
+            promovidoUid = espera.removeAt(0).toString();
+            inscritos.add(promovidoUid);
+          }
+
+          // Borrar archivos físicos
+          Map<String, dynamic> enlaces = Map<String, dynamic>.from(
+            docData['enlaces_adjuntos'] ?? {},
+          );
+          if (enlaces.containsKey(uidUsuario)) {
+            final storageSvc = FirebaseStorageServicio();
+            for (var url in enlaces[uidUsuario]) {
+              try {
+                await storageSvc.eliminarArchivoFisico(url.toString());
+              } catch (e) {
+                // Ignorar si ya se borró
+              }
+            }
+            enlaces.remove(uidUsuario);
+          }
+
+          transaction.update(docRef, {
+            'listaDeEstudiantesInscritos': inscritos,
+            'listaDeEspera': espera,
+            'enlaces_adjuntos': enlaces,
+          });
         }
       });
       return {'promovidoUid': promovidoUid, 'dataOriginal': data};
@@ -235,7 +361,13 @@ class BaseDeDatosServicio {
   }
 
   /// Registra una excusa de cancelación en el tribunal.
-  Future<void> registrarExcusaEnTribunal(String tutoriaId, String uidUsuario, String materia, String fecha, String excusa) async {
+  Future<void> registrarExcusaEnTribunal(
+    String tutoriaId,
+    String uidUsuario,
+    String materia,
+    String fecha,
+    String excusa,
+  ) async {
     await _bodegaDeConocimiento.collection('reportes_tribunal').add({
       'alumnoId': uidUsuario,
       'tutoriaId': tutoriaId,
@@ -249,10 +381,17 @@ class BaseDeDatosServicio {
 
   /// Cancela una tutoría como tutor y registra la queja de forma obligatoria.
   /// Retorna los datos íntegros del documento antes de cancelar, para enviar notificaciones posteriores.
-  Future<Map<String, dynamic>> cancelarTutoriaPorTutor(String tutoriaId, String motivoCancelacion, String uidTutor) async {
-    final docSnapshot = await _bodegaDeConocimiento.collection('tutorias').doc(tutoriaId).get();
+  Future<Map<String, dynamic>> cancelarTutoriaPorTutor(
+    String tutoriaId,
+    String motivoCancelacion,
+    String uidTutor,
+  ) async {
+    final docSnapshot = await _bodegaDeConocimiento
+        .collection('tutorias')
+        .doc(tutoriaId)
+        .get();
     if (!docSnapshot.exists) throw Exception("Tutoría no encontrada.");
-    
+
     final data = docSnapshot.data();
     if (data == null) throw Exception("Documento vacío.");
 
@@ -273,7 +412,10 @@ class BaseDeDatosServicio {
 
   /// Actualiza de forma atómica y segura las materias en las que se especializa el tutor.
   /// Se ejecuta un .update() directo para evitar sobreescribir otros datos del documento.
-  Future<bool> actualizarMateriasEspecializadasDelTutor(String uidTutor, List<String> nuevasMaterias) async {
+  Future<bool> actualizarMateriasEspecializadasDelTutor(
+    String uidTutor,
+    List<String> nuevasMaterias,
+  ) async {
     try {
       await _bodegaDeConocimiento.collection('usuarios').doc(uidTutor).update({
         'materiasEspecializadas': nuevasMaterias,

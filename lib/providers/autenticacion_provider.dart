@@ -25,7 +25,7 @@ class AutenticacionProvider extends ChangeNotifier {
   /// para impedir sobrecargas en la base de datos mientras validamos un registro o ingreso.
   bool _estaCargando = false;
 
-  /// Indicador exclusivo para el arranque de la app. 
+  /// Indicador exclusivo para el arranque de la app.
   /// Evita que re-construyamos MaterialApp entero durante transacciones normales de Login.
   bool _estaInicializando = true;
 
@@ -79,9 +79,10 @@ class AutenticacionProvider extends ChangeNotifier {
 
     // Verificación de baneo por tribunal de disciplina
     if (_usuarioActual != null && _usuarioActual!.estaBaneado) {
-       await _servicioIntegradoDeAutenticacion.cerrarSesion();
-       _usuarioActual = null;
-       _mensajeDeError = "Tu cuenta ha sido suspendida por el Tribunal de Disciplina.";
+      await _servicioIntegradoDeAutenticacion.cerrarSesion();
+      _usuarioActual = null;
+      _mensajeDeError =
+          "Tu cuenta ha sido suspendida por el Tribunal de Disciplina.";
     }
 
     _estaInicializando = false;
@@ -106,29 +107,30 @@ class AutenticacionProvider extends ChangeNotifier {
 
     // Si mensajeDeError es null, el inicio de sesión fue exitoso en Firebase
     if (mensajeDeError == null) {
-      // Validación estricta de Email Verificado (DESACTIVADA TEMPORALMENTE PARA PRUEBAS):
-      /*
-      if (FirebaseAuth.instance.currentUser != null && !FirebaseAuth.instance.currentUser!.emailVerified) {
-        String mensajeRetenido = "Debes verificar tu correo para poder entrar. Revisa tu bandeja de entrada o SPAM.";
-        await salirDeLaSesionActual(); 
+      // Validación estricta de Email Verificado:
+      if (FirebaseAuth.instance.currentUser != null &&
+          !FirebaseAuth.instance.currentUser!.emailVerified) {
+        String mensajeRetenido =
+            "Debes verificar tu correo para poder entrar. Revisa tu bandeja de entrada o SPAM.";
+        await salirDeLaSesionActual();
         _mensajeDeError = mensajeRetenido;
         notifyListeners();
         return false;
       }
-      */
 
       // Éxito. Acudimos al baúl de base de datos a traer todo su expediente formal de la JIC.
       _usuarioActual = await _servicioIntegradoDeAutenticacion
           .obtenerDatosDelUsuarioActual();
-          
+
       // Verificación de baneo tras login
       if (_usuarioActual != null && _usuarioActual!.estaBaneado) {
-         await _servicioIntegradoDeAutenticacion.cerrarSesion();
-         _usuarioActual = null;
-         _mensajeDeError = "Tu cuenta ha sido suspendida por acumular 3 strikes. Contacta administración.";
-         _desactivarIndicadorDeCargaEnPantalla();
-         notifyListeners();
-         return false;
+        await _servicioIntegradoDeAutenticacion.cerrarSesion();
+        _usuarioActual = null;
+        _mensajeDeError =
+            "Tu cuenta ha sido suspendida por acumular 3 strikes. Contacta administración.";
+        _desactivarIndicadorDeCargaEnPantalla();
+        notifyListeners();
+        return false;
       }
 
       _desactivarIndicadorDeCargaEnPantalla();
@@ -213,7 +215,7 @@ class AutenticacionProvider extends ChangeNotifier {
         .enviarVerificacionDeCorreo();
 
     _desactivarIndicadorDeCargaEnPantalla();
-    
+
     if (verificacionEnviada != "Verificacion Enviada") {
       _mensajeDeError = verificacionEnviada;
       notifyListeners();

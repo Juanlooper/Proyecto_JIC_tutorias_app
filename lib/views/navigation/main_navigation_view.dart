@@ -14,6 +14,7 @@ import '../profile/perfil_view.dart';
 import '../tutorias/mis_tutorias_view.dart';
 import '../estudiante/mis_sugerencias_view.dart';
 import '../estudiante/sugerir_tutoria_view.dart';
+import '../../services/notificaciones_servicio.dart';
 import '../notifications/notificaciones_view.dart';
 import '../../providers/tema_provider.dart';
 import '../tutor/dashboard_tutor_view.dart';
@@ -52,51 +53,66 @@ class _MainNavigationViewState extends State<MainNavigationView> {
   void _iniciarListenerNotificaciones(String uid) {
     if (_inicializadoListenerNotificaciones) return;
     _inicializadoListenerNotificaciones = true;
+
+    // Limpieza de basura (Notificaciones Viejas > 7 días)
+    NotificacionesServicio().limpiarNotificacionesViejas(diasAntiguedad: 7);
+
     _notificacionesSub = FirebaseFirestore.instance
         .collection('notificaciones')
         .where('usuarioId', isEqualTo: uid)
         .snapshots()
         .listen((snapshot) {
-      // Usamos docChanges para ver únicamente los cambios recientes
-      for (var change in snapshot.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          final data = change.doc.data();
-          if (data != null && data['leida'] == false) {
-            // Verificar que la notificación sea reciente (opcional, para no mostrar viejas al iniciar)
-            final fechaStr = data['fecha'] as String?;
-            if (fechaStr != null) {
-              final fechaNotif = DateTime.tryParse(fechaStr);
-              if (fechaNotif != null && DateTime.now().difference(fechaNotif).inSeconds < 10) {
-                // Es una notificación recién creada
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: [
-                          const Icon(Icons.notifications_active, color: Colors.white),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              data['titulo'] ?? 'Nueva notificación',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
+          // Usamos docChanges para ver únicamente los cambios recientes
+          for (var change in snapshot.docChanges) {
+            if (change.type == DocumentChangeType.added) {
+              final data = change.doc.data();
+              if (data != null && data['leida'] == false) {
+                // Verificar que la notificación sea reciente (opcional, para no mostrar viejas al iniciar)
+                final fechaStr = data['fecha'] as String?;
+                if (fechaStr != null) {
+                  final fechaNotif = DateTime.tryParse(fechaStr);
+                  if (fechaNotif != null &&
+                      DateTime.now().difference(fechaNotif).inSeconds < 10) {
+                    // Es una notificación recién creada
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              const Icon(
+                                Icons.notifications_active,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  data['titulo'] ?? 'Nueva notificación',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      backgroundColor: const Color(0xFF1CA887),
-                      duration: const Duration(seconds: 4),
-                      behavior: SnackBarBehavior.floating,
-                      margin: const EdgeInsets.only(top: 60, left: 20, right: 20),
-                      dismissDirection: DismissDirection.up,
-                    ),
-                  );
+                          backgroundColor: const Color(0xFF1CA887),
+                          duration: const Duration(seconds: 4),
+                          behavior: SnackBarBehavior.floating,
+                          margin: const EdgeInsets.only(
+                            top: 60,
+                            left: 20,
+                            right: 20,
+                          ),
+                          dismissDirection: DismissDirection.up,
+                        ),
+                      );
+                    }
+                  }
                 }
               }
             }
           }
-        }
-      }
-    });
+        });
   }
 
   Future<void> _verificarYMostrarTutorial() async {
@@ -229,221 +245,278 @@ class _MainNavigationViewState extends State<MainNavigationView> {
         .map((e) => e['vista'] as Widget)
         .toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        titleSpacing: 0,
-        backgroundColor: AppTheme.primarioVerde,
-        foregroundColor: Colors.white,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // [Logo Vecta]
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: Image.asset(
-                'assets/images/logo_vecta.png',
-                height: 40,
-                errorBuilder: (context, error, stackTrace) => const Center(
-                  child: Text(
-                    "VECTA",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.white,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+
+        return Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            titleSpacing: 0,
+            backgroundColor: AppTheme.primarioVerde,
+            foregroundColor: Colors.white,
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // [Logo Vecta]
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Image.asset(
+                    'assets/images/logo_vecta.png',
+                    height: 40,
+                    errorBuilder: (context, error, stackTrace) => const Center(
+                      child: Text(
+                        "VECTA",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
 
-            // Bloque Central: Flecha - Título - Flecha
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // [Icono Flecha Izquierda]
-                  // El tamaño estándar de los botones de acción es generalmente 24.0.
-                  // Cálculo de tamaño relativo: 24.0 * 0.75 = 18.0.
-                  // Justificación de jerarquía visual: Un tamaño menor evita que estas flechas
-                  // de navegación secundaria compitan con la atención de los iconos principales
-                  // del menú, así como con el logo y el perfil.
-                  IconButton(
-                    tooltip: 'Desplazar pestañas a la izquierda',
-                    icon: const Icon(
-                      Icons.chevron_left,
-                      color: Colors.white,
-                      size: 18.0,
-                    ),
-                    onPressed:
-                        _desplazarPanelIzquierda, // Nueva función de scroll
-                  ),
-
-                  // [Título/Texto Central]
-                  Flexible(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: SingleChildScrollView(
-                        controller: _scrollControllerBarraSuperior,
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(modulosUI.length, (index) {
-                            final obj = modulosUI[index];
-                            return _crearBotonSuperior(
-                              index,
-                              obj['titulo'] as String,
-                              obj['icono'] as IconData,
-                            );
-                          }),
+                if (!isMobile)
+                  // Bloque Central: Flecha - Título - Flecha
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // [Icono Flecha Izquierda]
+                        // El tamaño estándar de los botones de acción es generalmente 24.0.
+                        // Cálculo de tamaño relativo: 24.0 * 0.75 = 18.0.
+                        // Justificación de jerarquía visual: Un tamaño menor evita que estas flechas
+                        // de navegación secundaria compitan con la atención de los iconos principales
+                        // del menú, así como con el logo y el perfil.
+                        IconButton(
+                          tooltip: 'Desplazar pestañas a la izquierda',
+                          icon: const Icon(
+                            Icons.chevron_left,
+                            color: Colors.white,
+                            size: 18.0,
+                          ),
+                          onPressed:
+                              _desplazarPanelIzquierda, // Nueva función de scroll
                         ),
-                      ),
-                    ),
-                  ),
 
-                  // [Icono Flecha Derecha]
-                  // Tamaño relativo al 75% (24.0 * 0.75 = 18.0) para mantener la jerarquía visual balanceada.
-                  IconButton(
-                    tooltip: 'Desplazar pestañas a la derecha',
-                    // Aplicamos opacidad si llegamos al final de la lista de módulos
-                    icon: Icon(
-                      Icons.chevron_right,
-                      color: _indiceActual < modulosUI.length - 1
-                          ? Colors.white
-                          : Colors.white38,
-                      size: 18.0,
-                    ),
-                    // Evaluamos dinámicamente contra el largo de modulosUI
-                    onPressed: _indiceActual < modulosUI.length - 1
-                        ? () => _desplazarPanelDerecha(modulosUI.length)
-                        : null,
-                  ),
-                ],
-              ),
-            ),
-
-            // [Campanita de Notificaciones]
-            Padding(
-              padding: const EdgeInsets.only(right: 4.0),
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('notificaciones')
-                    .where(
-                      'usuarioId',
-                      isEqualTo: usuarioActual.identificadorUnico,
-                    )
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  int noLeidas = 0;
-                  if (snapshot.hasData) {
-                    for (var doc in snapshot.data!.docs) {
-                      final data = doc.data() as Map<String, dynamic>?;
-                      if (data != null && data['leida'] == false) {
-                        noLeidas++;
-                      }
-                    }
-                  }
-                  return Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      IconButton(
-                        tooltip: 'Ver notificaciones',
-                        icon: const Icon(
-                          Icons.notifications,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const NotificacionesView(),
+                        // [Título/Texto Central]
+                        Flexible(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0,
                             ),
-                          );
-                        },
-                      ),
-                      if (noLeidas > 0)
-                        Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.redAccent,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              noLeidas > 9 ? '9+' : noLeidas.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                            child: SingleChildScrollView(
+                              controller: _scrollControllerBarraSuperior,
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List.generate(modulosUI.length, (
+                                  index,
+                                ) {
+                                  final obj = modulosUI[index];
+                                  return _crearBotonSuperior(
+                                    index,
+                                    obj['titulo'] as String,
+                                    obj['icono'] as IconData,
+                                  );
+                                }),
                               ),
                             ),
                           ),
                         ),
-                    ],
-                  );
-                },
-              ),
-            ),
 
-            // [Icono de Perfil Desplegable]
-            Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: PopupMenuButton<String>(
-                tooltip: 'Opciones de cuenta y perfil',
-                // Icono visual del botón (el mismo que teníamos antes)
-                icon: const CircleAvatar(
-                  backgroundColor: Colors.white24,
-                  child: Icon(Icons.person, color: Colors.white),
+                        // [Icono Flecha Derecha]
+                        // Tamaño relativo al 75% (24.0 * 0.75 = 18.0) para mantener la jerarquía visual balanceada.
+                        IconButton(
+                          tooltip: 'Desplazar pestañas a la derecha',
+                          // Aplicamos opacidad si llegamos al final de la lista de módulos
+                          icon: Icon(
+                            Icons.chevron_right,
+                            color: _indiceActual < modulosUI.length - 1
+                                ? Colors.white
+                                : Colors.white38,
+                            size: 18.0,
+                          ),
+                          // Evaluamos dinámicamente contra el largo de modulosUI
+                          onPressed: _indiceActual < modulosUI.length - 1
+                              ? () => _desplazarPanelDerecha(modulosUI.length)
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                if (isMobile)
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        modulosUI[_indiceActual]['titulo'] as String,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // [Campanita de Notificaciones]
+                Padding(
+                  padding: const EdgeInsets.only(right: 4.0),
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('notificaciones')
+                        .where(
+                          'usuarioId',
+                          isEqualTo: usuarioActual.identificadorUnico,
+                        )
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      int noLeidas = 0;
+                      if (snapshot.hasData) {
+                        for (var doc in snapshot.data!.docs) {
+                          final data = doc.data() as Map<String, dynamic>?;
+                          if (data != null && data['leida'] == false) {
+                            noLeidas++;
+                          }
+                        }
+                      }
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          IconButton(
+                            tooltip: 'Ver notificaciones',
+                            icon: const Icon(
+                              Icons.notifications,
+                              color: Colors.white,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const NotificacionesView(),
+                                ),
+                              );
+                            },
+                          ),
+                          if (noLeidas > 0)
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.redAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  noLeidas > 9 ? '9+' : noLeidas.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
-                offset: const Offset(
-                  0,
-                  45,
-                ), // Desplazamiento hacia abajo para que no tape el AppBar
-                onSelected: (String valor) {
-                  if (valor == 'perfil') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PerfilView()),
+
+                // [Icono de Perfil Desplegable]
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: PopupMenuButton<String>(
+                    tooltip: 'Opciones de cuenta y perfil',
+                    // Icono visual del botón (el mismo que teníamos antes)
+                    icon: const CircleAvatar(
+                      backgroundColor: Colors.white24,
+                      child: Icon(Icons.person, color: Colors.white),
+                    ),
+                    offset: const Offset(
+                      0,
+                      45,
+                    ), // Desplazamiento hacia abajo para que no tape el AppBar
+                    onSelected: (String valor) {
+                      if (valor == 'perfil') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const PerfilView()),
+                        );
+                      }
+                    },
+                    // Lógica de construcción de las opciones del menú delegada a un método
+                    itemBuilder: _construirMenuDeOpciones,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          body: IndexedStack(index: _indiceActual, children: vistasSistema),
+          bottomNavigationBar: isMobile
+              ? BottomNavigationBar(
+                  currentIndex: _indiceActual,
+                  onTap: _seleccionarVista,
+                  selectedItemColor: const Color(0xFF1CA887),
+                  unselectedItemColor: Colors.grey,
+                  showUnselectedLabels: true,
+                  type: BottomNavigationBarType.fixed,
+                  items: modulosUI.map((modulo) {
+                    return BottomNavigationBarItem(
+                      icon: Icon(modulo['icono'] as IconData),
+                      label: modulo['titulo'] as String,
                     );
-                  }
-                },
-                // Lógica de construcción de las opciones del menú delegada a un método
-                itemBuilder: _construirMenuDeOpciones,
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: IndexedStack(index: _indiceActual, children: vistasSistema),
-      floatingActionButton:
-          esAdmin ||
-              [
-                'Mis Tutorias',
-                'Tablero Tutor',
-                'Perfil',
-              ].contains(modulosUI[_indiceActual]['titulo'])
-          ? null
-          : FloatingActionButton.extended(
-              heroTag: 'fab_main_nav',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SugerirTutoriaView()),
-                );
-              },
-              backgroundColor: const Color(0xFF6C63FF),
-              elevation: 4,
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text(
-                "Sugerir Clase",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+                  }).toList(),
+                )
+              : null,
+          floatingActionButton:
+              esAdmin ||
+                  [
+                    'Mis Tutorias',
+                    'Tablero Tutor',
+                    'Perfil',
+                  ].contains(modulosUI[_indiceActual]['titulo'])
+              ? null
+              : (isMobile
+                    ? FloatingActionButton(
+                        heroTag: 'fab_main_nav_mob',
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SugerirTutoriaView(),
+                            ),
+                          );
+                        },
+                        backgroundColor: Colors.blue,
+                        elevation: 4,
+                        child: const Icon(Icons.add, color: Colors.white),
+                      )
+                    : FloatingActionButton.extended(
+                        heroTag: 'fab_main_nav',
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SugerirTutoriaView(),
+                            ),
+                          );
+                        },
+                        backgroundColor: const Color(0xFF6C63FF),
+                        elevation: 4,
+                        icon: const Icon(Icons.add, color: Colors.white),
+                        label: const Text(
+                          "Sugerir Clase",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )),
+        );
+      },
     );
   }
 
@@ -454,13 +527,16 @@ class _MainNavigationViewState extends State<MainNavigationView> {
   /// Switch de modo oscuro a un StatefulBuilder interno para aislar la reconstrucción.
   List<PopupMenuEntry<String>> _construirMenuDeOpciones(BuildContext context) {
     return <PopupMenuEntry<String>>[
-      const PopupMenuItem<String>(
+      PopupMenuItem<String>(
         value: 'perfil',
         child: Row(
           children: [
-            Icon(Icons.person_outline),
-            SizedBox(width: 12),
-            Text('Perfil'),
+            Icon(
+              Icons.person_outline,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            const SizedBox(width: 12),
+            const Text('Perfil'),
           ],
         ),
       ),
@@ -474,11 +550,19 @@ class _MainNavigationViewState extends State<MainNavigationView> {
             return Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.dark_mode_outlined),
+                    Icon(
+                      Icons.dark_mode_outlined,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                     SizedBox(width: 12),
-                    Text('Modo oscuro', style: TextStyle()),
+                    Text(
+                      'Modo oscuro',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
                   ],
                 ),
                 Switch(

@@ -14,7 +14,7 @@ class ConfigurarHorarioView extends StatefulWidget {
 class _ConfigurarHorarioViewState extends State<ConfigurarHorarioView> {
   // Mapa local para gestionar los cambios en pantalla antes de enviarlos a la base de datos
   Map<String, List<String>> _horarioLocal = {};
-  
+
   final List<String> _diasSemana = [
     'Lunes',
     'Martes',
@@ -22,7 +22,7 @@ class _ConfigurarHorarioViewState extends State<ConfigurarHorarioView> {
     'Jueves',
     'Viernes',
     'Sábado',
-    'Domingo'
+    'Domingo',
   ];
 
   // Horas fijas de 7am a 9pm
@@ -42,10 +42,12 @@ class _ConfigurarHorarioViewState extends State<ConfigurarHorarioView> {
   void _cargarHorarioActual() {
     final proveedorAuth = context.read<AutenticacionProvider>();
     final horarioDB = proveedorAuth.usuarioActual?.horarioDisponibilidad;
-    
+
     if (horarioDB != null) {
       // Hacemos una copia profunda (deep copy) del mapa para no mutar el modelo directamente
-      _horarioLocal = horarioDB.map((key, value) => MapEntry(key, List.from(value)));
+      _horarioLocal = horarioDB.map(
+        (key, value) => MapEntry(key, List.from(value)),
+      );
     } else {
       _horarioLocal = {};
     }
@@ -57,7 +59,7 @@ class _ConfigurarHorarioViewState extends State<ConfigurarHorarioView> {
       if (!_horarioLocal.containsKey(dia)) {
         _horarioLocal[dia] = [];
       }
-      
+
       if (_horarioLocal[dia]!.contains(hora)) {
         _horarioLocal[dia]!.remove(hora);
         // Limpiamos la lista si quedó vacía
@@ -144,10 +146,14 @@ class _ConfigurarHorarioViewState extends State<ConfigurarHorarioView> {
               itemCount: _diasSemana.length,
               itemBuilder: (context, index) {
                 final String dia = _diasSemana[index];
-                final List<String> horasSeleccionadas = _horarioLocal[dia] ?? [];
+                final List<String> horasSeleccionadas =
+                    _horarioLocal[dia] ?? [];
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     side: BorderSide(color: Colors.grey.shade300),
@@ -164,8 +170,12 @@ class _ConfigurarHorarioViewState extends State<ConfigurarHorarioView> {
                           ? 'No disponible'
                           : '${horasSeleccionadas.length} bloque(s) seleccionado(s)',
                       style: TextStyle(
-                        color: horasSeleccionadas.isEmpty ? Colors.grey : Colors.deepPurple,
-                        fontWeight: horasSeleccionadas.isEmpty ? FontWeight.normal : FontWeight.w500,
+                        color: horasSeleccionadas.isEmpty
+                            ? Colors.grey
+                            : Colors.deepPurple,
+                        fontWeight: horasSeleccionadas.isEmpty
+                            ? FontWeight.normal
+                            : FontWeight.w500,
                       ),
                     ),
                     children: [
@@ -175,16 +185,22 @@ class _ConfigurarHorarioViewState extends State<ConfigurarHorarioView> {
                           spacing: 8,
                           runSpacing: 12,
                           children: _horasDisponibles.map((hora) {
-                            final bool estaSeleccionada = horasSeleccionadas.contains(hora);
+                            final bool estaSeleccionada = horasSeleccionadas
+                                .contains(hora);
                             return FilterChip(
                               label: Text(hora),
                               selected: estaSeleccionada,
-                              onSelected: (bool selected) => _toggleHora(dia, hora),
+                              onSelected: (bool selected) =>
+                                  _toggleHora(dia, hora),
                               selectedColor: Colors.deepPurple.shade100,
                               checkmarkColor: Colors.deepPurple,
                               labelStyle: TextStyle(
-                                color: estaSeleccionada ? Colors.deepPurple.shade900 : Colors.black87,
-                                fontWeight: estaSeleccionada ? FontWeight.bold : FontWeight.normal,
+                                color: estaSeleccionada
+                                    ? Colors.deepPurple.shade900
+                                    : Colors.black87,
+                                fontWeight: estaSeleccionada
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                               ),
                             );
                           }).toList(),

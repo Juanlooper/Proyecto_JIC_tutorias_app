@@ -2,7 +2,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class OverlayLoader {
-  static void mostrar(BuildContext context, {String mensaje = 'Procesando...'}) {
+  static void mostrar(
+    BuildContext context, {
+    String mensaje = 'Procesando...',
+  }) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -14,7 +17,10 @@ class OverlayLoader {
             filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
+                ),
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(20),
@@ -30,7 +36,9 @@ class OverlayLoader {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1CA887)),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFF1CA887),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(

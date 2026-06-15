@@ -340,7 +340,13 @@ class _LoginViewState extends State<LoginView> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 15, offset: Offset(0, 8))],
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 15,
+            offset: Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         children: [

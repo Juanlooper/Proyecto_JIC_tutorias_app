@@ -7,7 +7,6 @@ import 'notificaciones_servicio.dart'; // Importamos el gestor de push notificat
 /// Funciona como el "recepcionista" y "guardia de seguridad" de la app.
 /// Su misión es validar quién entra, quién sale, y crear las fichas de los usuarios nuevos.
 class AutenticacionServicio {
-  
   /// Herramienta conectada a Firebase Auth para manejar correos y contraseñas.
   /// Es la llave maestra para manejar sesiones seguras.
   final FirebaseAuth _llavesDeAcceso = FirebaseAuth.instance;
@@ -31,13 +30,12 @@ class AutenticacionServicio {
     String? anoCursando,
   }) async {
     try {
-
-
       // Paso 1: Pedimos permiso a Firebase para crear la cuenta de seguridad
-      UserCredential credencialesCreadas = await _llavesDeAcceso.createUserWithEmailAndPassword(
-        email: correoElectronico,
-        password: contrasenaSecreta,
-      );
+      UserCredential credencialesCreadas = await _llavesDeAcceso
+          .createUserWithEmailAndPassword(
+            email: correoElectronico,
+            password: contrasenaSecreta,
+          );
 
       // Verificamos si realmente se asignó un usuario con éxito
       if (credencialesCreadas.user != null) {
@@ -49,10 +47,12 @@ class AutenticacionServicio {
           identificadorUnico: identificadorRecienNacido,
           nombreCompleto: nombreCompleto,
           correoElectronico: correoElectronico,
-          rolEnElSistema: RolSistema.estudiante, // Valor por defecto. Se asume que todo el que se registra es inicialmente estudiante.
+          rolEnElSistema: RolSistema
+              .estudiante, // Valor por defecto. Se asume que todo el que se registra es inicialmente estudiante.
           facultad: facultad,
           carrera: carrera,
-          listaDeTutoresSuscritos: [], // Al ser nuevo, no tiene a nadie en su lista
+          listaDeTutoresSuscritos:
+              [], // Al ser nuevo, no tiene a nadie en su lista
           telefonoPersonal: telefonoPersonal,
           contactoEmergenciaNombre: contactoEmergenciaNombre,
           contactoEmergenciaTelefono: contactoEmergenciaTelefono,
@@ -113,13 +113,12 @@ class AutenticacionServicio {
         email: correoElectronico,
         password: contrasenaSecreta,
       );
-      
+
       // Pedimos los permisos de notificación e inyectamos su token FCM
       await NotificacionesServicio().inicializarYObtenerToken();
 
       // Retornamos null para simbolizar el éxito del proceso
       return null;
-
     } on FirebaseAuthException catch (e) {
       // Lógica precisa para interceder por los errores de FirebaseAuth
       switch (e.code) {
@@ -161,7 +160,7 @@ class AutenticacionServicio {
 
       if (visitanteActivo == null) {
         // La persona que busca información no está realmente logueada (o la sesión caducó)
-        return null; 
+        return null;
       }
 
       String identificadorActual = visitanteActivo.uid;
@@ -175,13 +174,13 @@ class AutenticacionServicio {
       // 3. Revisamos que sí fue encontrado su registro
       if (registroFisicoBD.exists) {
         // Rescatamos los datos como mapa nativo y se lo pasamos al modelo 'UsuarioModel' para que los convierta
-        var informacionMapeada = registroFisicoBD.data() as Map<String, dynamic>?;
+        var informacionMapeada =
+            registroFisicoBD.data() as Map<String, dynamic>?;
         return UsuarioModel.fromMap(informacionMapeada);
       } else {
         // En los casos bordes donde se generaron llaves pero nunca se metió el usuario a una colección
-        return null; 
+        return null;
       }
-      
     } catch (errorGeneral) {
       // Manejador del error, si se nos cae el internet a medio paso retornamos tranquilamente un espacio vacío.
       return null;
@@ -203,7 +202,6 @@ class AutenticacionServicio {
 
       await visitanteActivo.sendEmailVerification();
       return "Verificacion Enviada";
-
     } on FirebaseAuthException catch (errorFirebase) {
       if (errorFirebase.code == 'too-many-requests') {
         return "Has solicitado demasiadas verificaciones. Espera unos minutos antes de intentar nuevamente.";
@@ -215,15 +213,15 @@ class AutenticacionServicio {
   }
 
   /// Envia un enlace seguro al buzon del usuario para que pueda restablecer su contrasena.
-  /// Documentacion para Maiky: Este proceso es exclusivamente controlado por Firebase Auth, 
+  /// Documentacion para Maiky: Este proceso es exclusivamente controlado por Firebase Auth,
   /// quien genera un token temporal con caducidad. Nosotros jamas tocamos la contrasena directamente.
   Future<String> enviarRecuperacionDeContrasena(String correoDestino) async {
     try {
       await _llavesDeAcceso.sendPasswordResetEmail(email: correoDestino);
       return "Recuperacion Enviada";
-
     } on FirebaseAuthException catch (errorFirebase) {
-      if (errorFirebase.code == 'user-not-found' || errorFirebase.code == 'invalid-email') {
+      if (errorFirebase.code == 'user-not-found' ||
+          errorFirebase.code == 'invalid-email') {
         return "No existe ninguna cuenta asociada a ese correo electronico.";
       } else if (errorFirebase.code == 'too-many-requests') {
         return "Demasiados intentos de recuperacion. Espera unos minutos.";

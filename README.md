@@ -1,92 +1,55 @@
-# Plataforma de Tutorías (JIC)
+# Plataforma de Tutorías Vecta UTP (Proyecto JIC)
+**Versión de Despliegue:** 1.0.0 (Producción Final)
 
-> Sistema integral de gestión de tutorías peer-to-peer para centros educativos.
-> Construido con **Flutter**, **Firebase Auth**, **Cloud Firestore**, **Firebase Storage**, y **Cloud Functions**.
-
----
-
-## Tabla de Contenidos
-
-1. [Descripción General](#descripción-general)
-2. [Roles del Sistema](#roles-del-sistema)
-3. [Arquitectura del Proyecto](#arquitectura-del-proyecto)
-4. [Árbol de Archivos](#árbol-de-archivos)
-5. [Capa de Datos: Modelos](#capa-de-datos-modelos)
-6. [Capa de Servicios](#capa-de-servicios)
-7. [Capa de Estado: Providers](#capa-de-estado-providers)
-8. [Capa de Presentación: Vistas](#capa-de-presentación-vistas)
-9. [Flujos de Interacción](#flujos-de-interacción)
-10. [Módulo de Archivos y Notificaciones](#módulo-de-archivos-y-notificaciones)
-11. [Módulo de Moderación y Calidad](#módulo-de-moderación-y-calidad)
-12. [Sistema de Diseño (Branding Vecta)](#sistema-de-diseño-branding-vecta)
-13. [Configuración y Ejecución](#configuración-y-ejecución)
-14. [Seguridad y Reglas de Negocio](#seguridad-y-reglas-de-negocio)
-15. [Autores Principales](#autores-principales)
-16. [Contexto del Proyecto](#contexto-del-proyecto)
+> Sistema integral de gestión de tutorías académicas peer-to-peer para centros educativos, desarrollado para la Jornada de Iniciación Científica (JIC) de la Universidad Tecnológica de Panamá.
+> Construido con **Flutter**, **Firebase Auth**, **Cloud Firestore**, **Firebase Storage**, **Cloud Functions** y **Resend SMTP**.
 
 ---
 
-## Descripción General
+## 📑 Tabla de Contenidos
 
-Es una aplicación móvil y web escalable que conecta estudiantes que necesitan ayuda académica con tutores calificados dentro de su mismo centro educativo. Opera de manera dinámica y en tiempo real bajo un **modelo tipo Uber**:
-
-1. Un **estudiante** publica una solicitud de tutoría especificando la materia, el tema, la fecha sugerida y puede **adjuntar archivos de estudio** (PDFs o Imágenes).
-2. La solicitud aparece en la **Bolsa de Solicitudes**, una cartelera pública visible en tiempo real para todos los tutores de la plataforma. El sistema envía una **notificación In-App** a todos los tutores alertándolos.
-3. Un **tutor** revisa la solicitud, inspecciona los archivos adjuntos (con soporte para visor nativo del SO), proporciona un lugar de encuentro (o enlace virtual) y sus datos de contacto, y la reclama.
-4. El sistema usa **transacciones atómicas** de Firestore para evitar colisiones (evitando que dos tutores acepten la misma solicitud al mismo milisegundo).
-5. Se disparan **Notificaciones Push** (Cloud Messaging) automatizadas y **Notificaciones In-App** al dispositivo del estudiante avisándole que su tutoría fue aceptada, instándolo a inscribirse oficialmente.
-6. Los **tutores** también tienen el poder de crear proactivamente **Clases Fijas** (con recurrencias lógicas de 1, 2, 3 o 4 semanas) para que los estudiantes se inscriban libremente hasta llenar el cupo. Los inscritos o aquellos en cola de sugerencias reciben notificaciones cuando el **cupo se llena** o un alumno **abandona** la clase.
-7. Un **administrador** (moderador global) supervisa todas las métricas, aprueba postulaciones de tutores, ejerce baneos, y gestiona de manera centralizada las quejas de mala conducta.
-
----
-
-## Roles del Sistema
-
-| Rol | Nivel de Acceso y Funcionalidades |
-|---|---|
-| **Estudiante** | Acceso a la Cartelera de clases fijas, creación de solicitudes huérfanas, subida de archivos adjuntos nativos, inscripción en tutorías existentes, levantar quejas secretas contra tutores, evaluar clases, gestión de perfil, explorar comunidad de tutores, visualización de notificaciones In-App, y recepción de notificaciones Push (ej. cancelaciones de clases, aceptación de tutorías). |
-| **Tutor** | Acceso a la Bolsa de solicitudes huérfanas, visualización y descarga nativa de adjuntos de los alumnos, creación y programación de "Clases Fijas" recurrentes, aceptación de peticiones, listado de agenda pendiente, pase de lista (registro de asistencia), visualización de su propio perfil, y recepción de notificaciones In-App (nuevas sugerencias, abandonos, inscripciones, evaluaciones). |
-| **Admin** | Todo lo del estudiante + Panel de Administración unificado. Tienen el poder de ver métricas globales, ejercer moderación activa de reseñas y quejas, ejecutar baneos de usuarios problemáticos, aprobar postulaciones para ascender estudiantes a tutores, y auditar cancelaciones de clases a última hora. |
-
-### Pantallas Visibles por Rol
-
-A continuación, se detalla a qué vistas (pantallas) tiene acceso cada rol en la aplicación:
-
-**0. Público (No autenticado o Accesible por todos)**
-- **Bienvenida (`LandingScreen`)**: Pantalla de aterrizaje con la identidad visual oficial de Vecta.
-- **Ayuda y Soporte (`AyudaScreen`, `SoporteScreen`)**: Secciones de preguntas frecuentes y formulario para contactar a soporte técnico.
-
-**1. Estudiante**
-- **Cartelera (`HomeView`)**: Feed principal de clases ofertadas por tutores.
-- **Mis Tutorías (`MisTutoriasView`)**: Listado de clases a las que el estudiante se ha inscrito.
-- **Sugerencias (`MisSugerenciasView`)**: Historial y estado de las tutorías solicitadas en la Bolsa.
-- **Bolsa de la Comunidad (`ComunidadSugerenciasView`)**: Vista donde los estudiantes pueden ver solicitudes huérfanas creadas por otros y apoyarlas sumándose a ellas.
-- **Comunidad (`ExplorarView`)**: Buscador general de la comunidad de tutores y sus reseñas.
-- **Perfil (`PerfilView`)**: Gestión de datos académicos y biografía.
-- **Notificaciones (`NotificacionesView`)**: Centro In-App de alertas.
-- **Sugerir Clase (`SugerirTutoriaView`)**: Formulario para crear nuevas solicitudes con adjuntos.
-
-**2. Tutor**
-- *Tiene acceso a todas las pantallas base del estudiante, y además:*
-- **Tablero Tutor (`DashboardTutorView`)**: Panel central para administrar clases pendientes, finalizadas y el pase de lista.
-- **Aceptar Solicitud (`AceptarSolicitudView`)**: Interfaz donde el tutor define parámetros (fecha, lugar, cupo) al reclamar una tutoría.
-- **Detalle de Clase (`DetalleClaseView`)**: Vista enfocada para auditar asistencia y abrir de forma nativa los archivos subidos por los alumnos.
-
-**3. Administrador**
-- *Tiene acceso a las pantallas base del estudiante, y además:*
-- **Métricas (`AdminDashboardView` / `MetricasView`)**: Centro de mando con gráficas y estadísticas globales del uso del sistema.
-- **Tribunal de Baneos (`TribunalBaneosView`)**: Panel para resolver quejas, auditar cancelaciones y banear usuarios.
-- **Buzón de Postulaciones (`BuzonPostulacionesView`)**: Interfaz para revisar y aprobar o rechazar a estudiantes que desean convertirse en tutores.
-- **Historial de Tutorías (`HistorialTutoriasView`)**: Registro general y auditable de todas las tutorías dadas en la plataforma.
-- **Lista de Estudiantes (`ListaEstudiantesView`)**: Panel de listado y gestión de la totalidad de usuarios registrados en el sistema.
-- **Quejas (`QuejasView`)**: Panel dedicado exclusivamente a la revisión de denuncias emitidas contra tutores.
+1. [Descripción Ejecutiva](#1-descripción-ejecutiva)
+2. [Arquitectura del Proyecto y Stack Técnico](#2-arquitectura-del-proyecto-y-stack-técnico)
+3. [Árbol de Archivos (Estructura de Carpetas)](#3-árbol-de-archivos-estructura-de-carpetas)
+4. [Desglose Exhaustivo de Funcionalidades (Feature List)](#4-desglose-exhaustivo-de-funcionalidades-feature-list)
+5. [Capa de Datos: Modelos](#5-capa-de-datos-modelos)
+6. [Capa de Servicios y Providers](#6-capa-de-servicios-y-providers)
+7. [HCI y Heurísticas de Usabilidad](#7-hci-y-heurísticas-de-usabilidad)
+8. [Desglose Técnico por Pantallas](#8-desglose-técnico-por-pantallas)
+9. [Roles y Sistema de Permisos](#9-roles-y-sistema-de-permisos)
+10. [Flujos de Sistema y Manejo de Datos](#10-flujos-de-sistema-y-manejo-de-datos)
+11. [Módulo de Análisis de Datos y Reportes](#11-módulo-de-análisis-de-datos-y-reportes)
+12. [Reglas de Seguridad y Ciberseguridad](#12-reglas-de-seguridad-y-ciberseguridad)
+13. [Infraestructura de Correos SMTP](#13-infraestructura-de-correos-smtp)
+14. [Contexto del Proyecto y Autores](#14-contexto-del-proyecto-y-autores)
+15. [Instrucciones de Despliegue e Instalación](#15-instrucciones-de-despliegue-e-instalación)
+16. [Historial de Actualizaciones (Changelogs)](#16-historial-de-actualizaciones-changelogs)
 
 ---
 
-## Arquitectura del Proyecto
+## 1. Descripción Ejecutiva
 
-El proyecto está diseñado bajo una arquitectura limpia en capas, utilizando fuertemente el patrón **Provider** para la inyección de dependencias y gestión de estado. Al ser Serverless, delega toda su lógica de backend a los servicios de Firebase.
+**Tutorías Vecta** es una plataforma móvil y web de economía colaborativa enfocada en el aprendizaje académico. Conecta en tiempo real a estudiantes que necesitan reforzamiento con tutores universitarios capacitados. Opera de manera dinámica bajo un **modelo tipo Uber**: un estudiante lanza una petición huérfana en la "Bolsa de Valores del Conocimiento", y la red global de tutores es notificada para aceptarla y reclamarla en milisegundos.
 
+La aplicación resuelve el problema de deserción estudiantil y falta de orientación, proporcionando herramientas corporativas como el seguimiento de asistencia, métricas globales en vivo, sistema de denuncias anónimas, notificaciones automatizadas y despliegue nativo de PDFs de la universidad.
+
+---
+
+## 2. Arquitectura del Proyecto y Stack Técnico
+
+El proyecto está diseñado bajo una arquitectura limpia en capas, utilizando fuertemente el patrón **Provider** para la inyección de dependencias y gestión de estado. Al ser Serverless, delega toda su lógica de backend a los servicios de Firebase, asegurando alta disponibilidad.
+
+### Stack Tecnológico
+* **Frontend:** Flutter SDK (Dart) para compilación unificada en Web, Android e iOS.
+* **Backend BaaS:** Google Firebase.
+  * **Auth:** Gestión de sesiones, encriptación AES.
+  * **Cloud Firestore:** Base de datos NoSQL reactiva.
+  * **Cloud Storage:** Alojamiento de archivos binarios (PDFs/Imágenes) con recolección de basura automática.
+  * **Firebase Hosting:** Distribución perimetral (CDN) global.
+* **Comunicaciones:** **Resend SMTP** integrado con dominios personalizados (`vectatutorias.me`).
+* **Seguridad Activa:** Firebase App Check (reCAPTCHA v3 y Play Integrity).
+
+### Arquitectura Limpia (MVVM Adaptado)
 ```text
 ┌────────────────────────────────────────────────────────┐
 │               PRESENTACIÓN (Vistas y UI)               │  ← Widgets de Flutter
@@ -102,387 +65,314 @@ El proyecto está diseñado bajo una arquitectura limpia en capas, utilizando fu
 └────────────────────────────────────────────────────────┘
 ```
 
-**Flujo de Datos Típico:**
-El usuario interactúa con una `View` → Llama a un método del `Provider` → El `Provider` ejecuta lógica de negocio y llama al `Service` → El `Service` manipula `Firebase` → Si hay un cambio global, Firebase Functions dispara una alerta Push / El `Provider` crea una Notificación In-App → El `Provider` hace `notifyListeners()` → La `View` se reconstruye reactivamente.
-
 ---
 
-## Árbol de Archivos
+## 3. Árbol de Archivos (Estructura de Carpetas)
+
+El código fuente está rigurosamente compartimentado siguiendo los estándares de escalabilidad de Dart/Flutter.
 
 ```text
 lib/
-├── main.dart                           # Punto de entrada, inicializa Firebase, Notificaciones y Providers
-├── firebase_options.dart               # Configuración auto-generada de Firebase
+├── main.dart                           # Punto de entrada y raíz de Providers
+├── firebase_options.dart               # Constantes de Google Cloud (Auto-generado)
 │
 ├── core/
-│   └── theme/
-│       └── app_theme.dart              # Paleta de colores, tipografía Vecta y ThemeData global
+│   ├── theme/
+│   │   └── app_theme.dart              # Tokens de diseño, Paleta Vecta y Tipografías
+│   └── utils/
+│       └── moderacion_servicio.dart    # Algoritmo heurístico para censurar insultos
 │
 ├── models/
-│   ├── usuario_model.dart              # Modelo de datos del usuario (UID, rol, strikes, etc.)
-│   └── tutoria_model.dart              # Modelo de datos de tutoría (adjuntos, inasistencias, links)
+│   ├── usuario_model.dart              # Esquema de datos del perfil
+│   └── tutoria_model.dart              # Esquema de datos de las transacciones de clase
 │
 ├── services/
-│   ├── autenticacion_servicio.dart     # CRUD de sesión con Firebase Auth
-│   ├── base_de_datos_servicio.dart     # Transacciones e inserciones en Firestore
-│   ├── firebase_storage_servicio.dart  # Subida, descarga y borrado de PDFs/Imágenes nativos
-│   ├── notificaciones_servicio.dart    # Configuración de FCM (Firebase Cloud Messaging) local
-│   ├── usuario_servicio.dart           # Actualización de datos académicos del usuario
-│   └── evaluacion_servicio.dart        # Servicio de reputación y calificaciones
+│   ├── autenticacion_servicio.dart     # Conector con Firebase Auth y Custom SMTP
+│   ├── base_de_datos_servicio.dart     # Transacciones atómicas de Firestore
+│   ├── firebase_storage_servicio.dart  # API de carga/descarga/borrado masivo
+│   ├── pdf_servicio.dart               # Generador nativo de certificados PDF
+│   └── reporte_pdf_servicio.dart       # Generador de reportes matriciales para Admin
 │
 ├── providers/
-│   ├── autenticacion_provider.dart     # Estado global de sesión e identidad
-│   ├── tutorias_provider.dart          # Estado de tutorías (CRUD, transacciones, recolector de basura, in-app notifications)
-│   ├── admin_provider.dart             # Estado del panel de administración
-│   ├── evaluacion_provider.dart        # Estado del sistema de evaluación
-│   └── notificaciones_provider.dart    # Gestor de tokens push FCM
+│   ├── autenticacion_provider.dart     # Estado de identidad, sesión persistente
+│   ├── tutorias_provider.dart          # Orquestador del caché de tutorías
+│   ├── admin_provider.dart             # Procesador de Big Data y métricas en memoria
+│   └── evaluacion_provider.dart        # Rastreador de reputación Anti-Spam
 │
 ├── views/
-│   ├── auth/                           # Pantallas de Login y Registro
-│   ├── navigation/                     # Enrutadores principales según Rol y Bottom Nav Bar
-│   ├── home/                           # Cartelera principal y Formulario de Sugerencias
-│   ├── tutor/                          # Paneles exclusivos para Tutores (Dashboard, Pase de Lista)
-│   ├── tutorias/                       # Listados personalizados de las tutorías del usuario
-│   ├── explore/                        # Explorador de comunidad (Buscador de talento y reseñas)
-│   ├── profile/                        # Vista y edición de perfil del usuario
-│   ├── admin/                          # Centro de mando del Administrador (Métricas, Quejas, Auditorías)
-│   ├── notifications/
-│   │   └── notificaciones_view.dart    # Centro de notificaciones In-App con soporte de pull-to-refresh
-│   └── widgets/                        # Componentes UI reutilizables (Botones, Tutoriales)
-│
-└── functions/
-    ├── index.js                        # Cloud Function (Node 20) orquestando Push Notifications selectivos
-    └── package.json                    # Dependencias backend de la nube
+│   ├── auth/                           # Login, Registro Dinámico, Recuperación
+│   ├── navigation/                     # BottomNavigationBar inteligente según rol
+│   ├── home/                           # Feed, Cartelera y creación de Solicitudes
+│   ├── tutor/                          # Paneles de gestión de clases y Pase de Lista
+│   ├── tutorias/                       # Historial de clases inscritas
+│   ├── explore/                        # Buscador de comunidad de talento
+│   ├── profile/                        # Perfil público y edición de datos
+│   ├── admin/                          # Dashboards de Métricas, Baneos y Postulaciones
+│   └── widgets/                        # Componentes UI (Botones Glassmorphism, Loaders)
 ```
 
 ---
 
-## Capa de Datos: Modelos
+## 4. Desglose Exhaustivo de Funcionalidades (Feature List)
+
+A continuación, se enumeran absolutamente todas las características y módulos programados en la aplicación, divididos por área lógica. No hay funcionalidad oculta que no esté descrita aquí.
+
+### A. Módulo de Autenticación y Cuentas
+- [x] **Login Híbrido:** Inicio de sesión con correo institucional o personal y contraseña encriptada.
+- [x] **Registro Estricto:** Formulario de alta con validación de expresiones regulares (Regex) para formato de cédula panameña (`00-0000-000000`).
+- [x] **Selección Dinámica Universitaria:** Menú en cascada donde elegir la Facultad filtra automáticamente las opciones de la lista de Carreras.
+- [x] **Recuperación de Contraseñas:** Integración nativa con servidor SMTP propio (`adminvecta@vectatutorias.me`) para emitir enlaces criptográficos de reseteo.
+- [x] **Cierre de Sesión Seguro:** Destrucción local del token JWT y limpieza de caché en el dispositivo.
+
+### B. Módulo del Estudiante (Usuario Estándar)
+- [x] **Navegación Personalizada:** BottomNavigationBar y Drawer lateral adaptados a las vistas que el estudiante tiene permitido visitar.
+- [x] **Cartelera Global (Feed):** Visualización en tiempo real de todas las tutorías disponibles ofertadas por tutores, renderizadas en tarjetas interactivas.
+- [x] **Inscripción a Tutorías:** Botón de un solo clic para reservar un cupo. Validación de servidor que impide inscribirse si el cupo máximo ya fue alcanzado.
+- [x] **Adjuntar Materiales de Estudio:** Requisito de subida (PDF/Imagen estática) forzado por Firebase Storage para que el alumno proporcione un problema o tarea antes de unirse a la clase.
+- [x] **Bolsa de Sugerencias:** Foro comunitario donde un alumno postula un tema que nadie está impartiendo, creando una petición "huérfana".
+- [x] **Apoyo Colaborativo (+1):** Botón social que permite a otros alumnos sumarse a una sugerencia huérfana para crear demanda colectiva (Crowdsourcing).
+- [x] **Agenda Histórica (Mis Tutorías):** Registro de todas las sesiones a las que el estudiante se inscribió, ordenadas cronológicamente (Pendientes y Finalizadas).
+- [x] **Sistema de Evaluaciones:** Formulario de reseñas (1 a 5 estrellas + comentario de texto) habilitado **exclusivamente** si el estudiante fue marcado como "Asistente" por el tutor.
+- [x] **Certificados PDF Nativos:** Motor generador vectorial que exporta un diploma (Tutorías Vecta UTP) con nombre, firma y horas cursadas, descargable vía Desktop Web o Móvil.
+- [x] **Postulación a Tutor:** Formulario interno donde el estudiante anexa sus justificaciones y récord para solicitar un ascenso de privilegios al Administrador.
+
+### C. Módulo del Tutor (Rol Operativo)
+- [x] **Dashboard de Trabajo:** Pantalla dividida con control de pestañas para organizar visualmente las "Clases Pendientes" de las "Clases Finalizadas".
+- [x] **Creación Proactiva de Clases:** Formulario extenso donde el tutor imparte una clase ofertándola al público. Permite definir: Tema, Materia, Fecha, Hora, Salón, Modalidad (Virtual/Presencial) y Cupos.
+- [x] **Aceptación Reactiva de Clases:** El tutor puede entrar a la "Bolsa de Sugerencias" de los estudiantes, tomar una petición huérfana y adueñársela, configurándole un horario en ese mismo instante.
+- [x] **Visor de Estudiantes Inscritos:** Panel en vivo que muestra quiénes y cuántos han reservado su asiento en la tutoría.
+- [x] **Pase de Lista Criptográfico:** Sistema de "Toggle Switches" (Interruptores booleanos) que permite al tutor marcar Asistencia o Ausencia. Si marca Ausencia, el sistema le adjudica un *Strike* penal al estudiante.
+- [x] **Consulta de Materiales Alumnos:** Visor para abrir los enlaces PDF y fotos de los problemas que enviaron los estudiantes previamente a la clase.
+- [x] **Cancelación de Emergencia:** Botón de aborto de clase. Obliga al tutor a escribir una "Justificación de Cancelación" que quedará almacenada en los registros del Administrador.
+
+### D. Módulo de Exploración y Social
+- [x] **Buscador Universal:** Barra de búsqueda indexada para localizar perfiles de tutores específicos por su nombre en la base de datos.
+- [x] **Visor de Perfiles Públicos:** Exhibe la biografía del tutor, la facultad a la que pertenece y, crucialmente, su métrica de calificación promedio (Estrellas).
+- [x] **Muro de Reseñas:** Un tablón público en el perfil del tutor donde se pueden leer todos los comentarios de retroalimentación dejados por alumnos pasados.
+
+### E. Módulo de Administración (Big Data y Moderación Policial)
+- [x] **Tablero de Mandos Múltiples:** Interfaz cuadriculada exclusiva para Administradores que enlaza todas las herramientas del sistema.
+- [x] **Métricas Globales Interactivas:** Algoritmos que grafican en formato de Pastel/Dona y Barras los datos en vivo: Tasa de Deserción, Tasa de Cancelación, Horas Impartidas y Demografías por Carrera.
+- [x] **Exportador de Reportes:** Botón maestro que empaqueta todos los gráficos y tablas matemáticas del Dashboard en un documento PDF formateado para impresoras tamaño A4, ideal para las juntas directivas.
+- [x] **Buzón de Postulaciones Estilo Tinder:** Interfaz *Glassmorphism* que presenta tarjetas de biografía de candidatos a tutor. El admin puede deslizar o presionar un botón para aprobar/rechazar el ascenso.
+- [x] **Buzón de Quejas Anónimas:** Bandeja de entrada privada donde se revisan denuncias contra estudiantes o tutores conflictivos.
+- [x] **Tribunal de Baneos (Lista de Estudiantes):** Tabla policial masiva. Muestra a todo usuario de la plataforma y permite ejecutar el "Kill Switch" (Botón de baneo). Un usuario baneado es eyectado del sistema inmediatamente.
+- [x] **Filtro de Disciplina:** Herramienta para ordenar la tabla de usuarios buscando a los que tienen un exceso de ausencias injustificadas (Strikes).
+
+### F. Seguridad, Utilidades y Optimizaciones Backend (Under the Hood)
+- [x] **Moderador de Lenguaje (Censura de Groserías):** Algoritmo heurístico local (Regex) que bloquea el envío de reseñas que contengan insultos camuflados o "Leetspeak" (Ej: P*t@).
+- [x] **Transacciones Atómicas (Evitación de Colisiones):** Empleo del comando `runTransaction` de Firestore para bloquear peticiones dobles (Ej: Dos tutores intentando aceptar la misma solicitud de la bolsa simultáneamente).
+- [x] **Recolección de Basura Automática (Cloud Storage):** Cuando una clase es cancelada, una rutina limpia recursivamente la carpeta del servidor, borrando los PDFs de los alumnos para evitar desbordes de costos.
+- [x] **Theme Switcher:** Cambio fluido (Modo Claro/Oscuro) persistente en el caché local del usuario.
+- [x] **Soporte Directo Integrado:** Pestaña de contacto rápido con correo preconfigurado (`vecta.administrador@gmail.com`).
+- [x] **Firebase App Check:** Criptografía de atestación mediante Google Play Integrity (Android) y reCaptcha v3 Invisible (Web Desktop).
+- [x] **Sistema de Alertas In-App:** Subcolección de Firebase dedicada que actúa como bandeja de notificaciones. Genera un registro silencioso si "Tu clase fue aceptada", "Se canceló un evento" o "El cupo está lleno".
+- [x] **Impeller Engine Bypass:** Código inyectado en C++/Java para desactivar el nuevo motor de Flutter en dispositivos Xiaomi/Asiáticos incompatibles, resolviendo el fatal error de pantalla negra.
+
+---
+
+## 5. Capa de Datos: Modelos
+
+El corazón de los datos, estandarizados para serializar el formato JSON de Firebase.
 
 ### `usuario_model.dart`
+Representa el perfil, historial y reputación de cualquier usuario (Estudiante, Tutor o Admin).
 
-Representa a cualquier persona registrada en la plataforma. Estandarizado a `camelCase` en Flutter, manteniendo compatibilidad con `snake_case` en Firestore.
-
-| Campo en Dart | Tipo | Descripción |
+| Atributo Clave | Tipo | Propósito Estratégico |
 |---|---|---|
-| `identificadorUnico` | `String` | UID seguro provisto por Firebase Auth |
-| `nombreCompleto` | `String` | Nombre y apellido concatenados |
-| `correoElectronico` | `String` | Credencial de acceso (única) |
-| `rolEnElSistema` | `RolSistema` | Enumerador: `estudiante`, `tutor`, `admin` |
-| `facultad` | `String?` | Facultad universitaria a la que pertenece |
-| `carrera` | `String?` | Carrera universitaria actual |
-| `listaDeTutoresSuscritos` | `List<String>` | Lista de UIDs de tutores que sigue (Bookmarks) |
-| `strikesInasistencia` | `int` | Contador de inasistencias comprobadas. Al llegar a 3, alerta al Admin. |
-| `estaBaneado` | `bool` | Flag crítico: Indica si la cuenta tiene el acceso restringido. |
-| `estadoSolicitudTutor` | `String` | `'ninguna'`, `'en_revision'`, `'aprobado'` (Proceso de postulación) |
-| `descripcionPerfil` | `String?` | Biografía que el tutor redacta para convencer a la comunidad. |
-| `telefonoPersonal` | `String?` | Contacto de WhatsApp |
-
----
+| `identificadorUnico` | `String` | UID primario enlazado criptográficamente a Auth. |
+| `rolEnElSistema` | `String` | Define dinámicamente si el UI muestra el panel Admin, Tutor o Estudiante. |
+| `strikesInasistencia` | `int` | Contador penal. Si un estudiante falta a demasiadas clases, se le suspende. |
+| `estaBaneado` | `bool` | *Kill-Switch*. Booleano de emergencia que el Admin apaga para denegar accesos. |
+| `estadoSolicitudTutor` | `String` | Máquina de estados (`ninguna`, `en_revision`, `aprobado`) para moderar el ascenso de rango. |
+| `facultad` / `carrera` | `String` | Clasificadores usados por los algoritmos del Dashboard de Métricas. |
+| `promedioEstrellas` | `double` | Métrica pública de rendimiento (1.0 a 5.0) visible para la comunidad. |
 
 ### `tutoria_model.dart`
+El activo más pesado del sistema. Representa una petición, una clase programada o una clase histórica.
 
-Representa una sesión de tutoría altamente parametrizada, lista para ser procesada en la base de datos.
-
-| Campo | Tipo | Descripción |
+| Atributo Clave | Tipo | Propósito Estratégico |
 |---|---|---|
-| `identificadorDeTutoria` | `String` | ID único de la sesión autogenerado |
-| `materiaOAsignatura` | `String` | Título del conocimiento requerido |
-| `temaEspecifico` | `String` | El syllabus específico a tratar |
-| `identificadorDelTutor` | `String` | UID del tutor. Si está vacío `''`, la solicitud está huérfana en la Bolsa. |
-| `listaDeEstudiantesInscritos` | `List<String>` | Arreglo de UIDs que reservaron cupo en la tutoría. |
-| `modalidadDeClase` | `String` | Modalidad seleccionada (`'Virtual'` o `'Presencial'`) |
-| `estadoDeLaSolicitud` | `String` | `'pendiente'`, `'aceptada'`, `'finalizada'`, `'cancelada'` |
-| `fechaHoraSugerida` | `DateTime` | El *deadline* o fecha pactada |
-| `enlaceOReunion` | `String?` | URL para clases virtuales, o salón (ej. "Edificio 3, Piso 2") |
-| `cupoMaximo` | `int` | Capacidad máxima que dicta el tutor (ej. 15 alumnos) |
-| `esGrupal` | `bool` | Bandera rápida de renderizado de UI para saber si es 1 a 1. |
-| `motivos_alumnos` | `Map<String, String>?` | UID alumno → Razón textual por la que necesita la clase. |
-| `enlaces_adjuntos` | `Map<String, List<String>>?` | UID alumno → Arreglo de URLs de Firebase Storage con los PDFs/Imágenes subidos. |
-| `nombres_adjuntos` | `Map<String, List<String>>?` | UID alumno → Arreglo de nombres legibles (ej. `"guia_fisica_2.pdf"`). |
-| `registro_asistencia` | `Map<String, bool>?` | UID alumno → `true` (asistió) o `false` (faltó, genera strike). |
-| `justificacion_cancelacion` | `String?` | Si el tutor cancela abruptamente, su excusa queda guardada aquí. |
-| `lugar` | `String?` | Dirección estática u observaciones del punto de encuentro. |
+| `identificadorDelTutor` | `String` | Si está vacío `''`, es de dominio público (Bolsa Comunitaria). Si está lleno, fue reclamada. |
+| `enlaces_adjuntos` | `Map` | `UID_Alumno -> Array[URL_PDF_Storage]`. Alojamiento de tareas enviadas por los alumnos. |
+| `registro_asistencia` | `Map` | Sistema de pases de lista (`UID_Alumno -> bool`). Evita que un ausente pueda evaluar al tutor. |
+| `estadoDeLaSolicitud` | `String` | Flujo principal: `pendiente` -> `aceptada` -> `finalizada` (o `cancelada`). |
+| `alumnosQueYaEvaluaron` | `List` | Escudo lógico para impedir que una persona vote dos veces (Review Bombing). |
+| `justificacion_cancelacion` | `String` | Evidencia legal obligatoria si el tutor cancela abruptamente una clase. |
+| `estudiantesSuscritos` | `List` | Registro vivo de la matrícula de la clase y el orden de llegada. |
 
 ---
 
-## Capa de Servicios
+## 6. Capa de Servicios y Providers
 
-1. **`autenticacion_servicio.dart`**: Comunicación directa con Auth. Maneja logs, creación de tokens y verificación de correos institucionales.
-2. **`base_de_datos_servicio.dart`**: La maquinaria pesada. Transacciones seguras con Cloud Firestore para la creación, lectura y borrado de documentos de tutorías, así como la inserción auditada de quejas.
-3. **`firebase_storage_servicio.dart`**: Interfaz con Google Cloud Storage. Permite subir archivos controlando su límite de tamaño (5 MB), abrir nativamente archivos subidos por estudiantes, y vaciar Storage.
-4. **`notificaciones_servicio.dart`**: Gestor FCM que pide permisos al OS (iOS/Android/Web) y suscribe al usuario a recepción de notificaciones Push.
-5. **`usuario_servicio.dart`**: Controlador para la edición del perfil académico personal.
-6. **`evaluacion_servicio.dart`**: Módulo matemático para agregar estrellas de calificaciones y emitir los cálculos de promedios de cada tutor.
+### Servicios (Capa de Red Pura)
+* **`autenticacion_servicio.dart`:** Control de identidades. Resuelve JWT tokens.
+* **`base_de_datos_servicio.dart`:** Núcleo de las sentencias SQL-Like (Firestore queries). Utiliza `FirebaseFirestore.instance.runTransaction` para efectuar modificaciones atómicas.
+* **`firebase_storage_servicio.dart`:** Escudo de tamaño. Impide subidas mayores a 5MB y valida tipos MIME para rechazar malwares (solo PDFs e Imágenes estáticas).
+* **`moderacion_servicio.dart`:** Analizador heurístico de lenguaje local.
 
----
-
-## Capa de Estado: Providers
-
-Toda la aplicación reactiva es controlada aquí mediante `ChangeNotifier`:
-
-- **`autenticacion_provider.dart`**: Cerebro de la identidad. Transforma un stream de Auth en un usuario sólido cacheado. Maneja el control de sesiones, evita la suplantación y controla el "estado de carga" al entrar a la app.
-- **`tutorias_provider.dart`**: El núcleo de operaciones. Gestiona el CRUD completo, se encarga de crear copias recursivas al pedir "Clases Fijas", maneja las cancelaciones atómicas, inyecta alertas **In-App** en 8 flujos distintos a la base de datos (firestore) de notificaciones, y ejecuta el **Recolector de Basura** para vaciar Firebase Storage cuando una tutoría muere.
-- **`admin_provider.dart`**: Agrupa y procesa matemáticamente las métricas (número de quejas, tutorías globales, reportes) para renderizar gráficas limpias en el dashboard.
-- **`evaluacion_provider.dart`**: Rastrea si el estudiante actual ya calificó una tutoría finalizada específica para impedir doble votación.
-- **`notificaciones_provider.dart`**: Almacena y sincroniza el "Token de Dispositivo" para habilitar notificaciones push backend.
+### Providers (Capa de Estado Reactivo)
+* **`autenticacion_provider.dart`:** Mantiene viva la sesión de usuario a lo largo de toda la RAM de la aplicación.
+* **`tutorias_provider.dart`:** Actúa como orquestador y *Garbage Collector* ecológico. Reacciona a cancelaciones.
+* **`admin_provider.dart`:** Mantiene una copia local en caché de todas las quejas, usuarios y métricas para que la pestaña del Administrador no gaste cientos de peticiones de lectura de red cada vez que recalcula estadísticas.
+* **`evaluacion_provider.dart`:** Mide constantemente el rendimiento matemático del usuario promedio.
 
 ---
 
-## Capa de Presentación: Vistas
+## 7. HCI y Heurísticas de Usabilidad
 
-| Categoría | Vistas Principales | Descripción |
-|---|---|---|
-| **Público** | `landing_screen`, `ayuda_screen`, `soporte_screen` | Pantalla inicial de bienvenida con la marca Vecta, sección de FAQs y formulario de contacto para soporte técnico. |
-| **Autenticación** | `login_view`, `registro_view` | Flujo unificado con buscador dinámico de carreras, validación estricta (cédula, teléfonos) y Términos & Condiciones desplegables. |
-| **Navegación** | `enrutador_roles_view`, `main_navigation_view` | Deciden de manera instantánea a qué tab enviar al usuario tras iniciar sesión basándose en su `rolEnElSistema`. Posee Campanita de Alertas centralizada. |
-| **Principal (Home)**| `home_view`, `sugerir_tutoria_view`, `comunidad_sugerencias_view` | La "Cartelera". Aquí el alumno ve el feed estilo red social con las clases ofertadas, llena su solicitud subiendo archivos adjuntos o apoya sugerencias en la bolsa comunitaria. |
-| **Estudiante** | `mis_sugerencias_view`, `mis_tutorias_view` | Seguimiento de las tutorías sugeridas y agenda personal de clases inscritas. |
-| **Tutor** | `dashboard_tutor_view`, `aceptar_solicitud_view`, `detalle_clase_view` | Paneles con pestañas (Pendientes / Finalizadas). En `detalle_clase_view` el tutor da clic a los archivos subidos por el alumno y los abre directamente con el visor nativo. |
-| **Notificaciones** | `notificaciones_view` | Historial de alertas de la plataforma, filtrado por usuario y con manejo robusto de excepciones (pull to refresh local). |
-| **Comunidad** | `explorar_view`, `perfil_publico_tutor_view` | Buscador de talento. Muestra las biografías de los tutores, su promedio de estrellas y el botón rojo de levantar una queja a la administración. |
-| **Administración**| `admin_dashboard_view`, `metricas_view`, `tribunal_baneos_view`, `buzon_postulaciones_view`, `historial_tutorias_view`, `lista_estudiantes_view`, `quejas_view` | Centro de comando. Vista de alto impacto con gráficas e interruptores para banear o des-banear a un usuario con 1 clic. Adicionalmente agrupa historiales y gestión completa de postulaciones, usuarios y quejas. |
+El diseño cumple rigurosamente con los lineamientos de Interacción Humano-Computadora (HCI) y las 10 Heurísticas de Jakob Nielsen.
 
----
-
-## Flujos de Interacción
-
-### 1. Flujo "Uber" — Creación y Aceptación
-1. **Estudiante:** Presiona "+" → Rellena materia y tema → Sube un PDF de sus ejercicios → "Sugerir Tutoría". (La tutoría nace con estado `pendiente` y `idTutor: ''`). Se alerta In-App a todos los Tutores.
-2. **Tutor:** Entra a su "Bolsa de Solicitudes" (o presiona la alerta en la campana). Ve la petición. Le da a "Aceptar".
-3. **App:** Pasa a la vista de configuración. El tutor confirma lugar, fecha exacta y cupo. Confirma.
-4. **Backend:** Se dispara una **Transacción Atómica**. Firestore verifica que en ese microsegundo nadie más haya reclamado la clase. Pasa el estado a `aceptada` y asigna su UID.
-5. **Nube:** La Cloud Function detecta el cambio e inmediatamente dispara un Push Notification al estudiante incitándolo a inscribirse oficialmente.
-
-### 2. Flujo de Subida de Archivos Adjuntos (Nativo)
-1. Durante la reserva de cupo o creación de sugerencia, el estudiante presiona "Añadir Archivos".
-2. `file_picker` invoca la galería nativa de Android/iOS o explorador de Windows.
-3. Se verifica tamaño (< 5 MB).
-4. `firebase_storage_servicio.dart` sube el archivo a `/tutorias/{id_tutoria}/{archivo.pdf}` y devuelve la URL pública cifrada, almacenándola en el array del documento.
-5. El Tutor abre la tutoría e invoca `url_launcher` para ver los PDFs / Imágenes sin salir del flujo.
-
-### 3. Flujo de Pase de Asistencia e Inasistencia
-1. Terminada la hora, el tutor abre su "Panel de Clases Pendientes" → "Iniciar Pase de Lista".
-2. Visualiza a todos los inscritos con un Toggle *Switch* (✅ / ❌).
-3. Al darle a guardar, la app ejecuta una sola petición masiva (`runTransaction`):
-   - Cambia estado a `finalizada`.
-   - A cada alumno marcado con ❌ le suma `+1` a su propiedad `strikesInasistencia` en el modelo global de Usuarios.
-
-### 4. Flujo de Cancelación y Auditoría
-1. Tutor se le presenta una emergencia. Entra a la clase y presiona "Cancelar".
-2. La app le obliga a redactar una justificación de 30 caracteres mínimo.
-3. La app revisa el reloj: ¿Faltan menos de 12 horas para la clase?
-   - Si SÍ: Genera un reporte automático e invisible hacia la colección de `quejas` catalogado como "Cancelación Tardía Abusiva".
-   - Borra la clase del feed.
-4. **Garbage Collection:** El Provider manda a destruir toda la carpeta de archivos en Cloud Storage vinculada a esa tutoría para evitar guardar basura inútil en el servidor.
-5. **Avisos Masivos:** La función Cloud Functions dispara alertas a todos los estudiantes que se habían inscrito en esa clase explicándoles la cancelación.
-
-### 5. Flujo de Registro Unificado
-1. El estudiante ingresa sus datos con formateo automático en tiempo real (Cédula `00-0000-000000`, Celulares `+507 0000-0000`).
-2. Selecciona su Facultad y utiliza el **Buscador Dinámico** (`DropdownMenu`) para filtrar y elegir su carrera exacta de la UTP.
-3. Despliega y lee los **Términos, Condiciones y Políticas de Vecta** integrados fluidamente en el formulario antes de aceptar.
-4. El sistema crea la cuenta en Firebase Auth, inyecta el perfil académico en Firestore y emite un correo de verificación institucional.
+1. **Visibilidad del estado del sistema:** Todos los botones de mutación de base de datos (`Aceptar`, `Cancelar`, `Registrar`) transforman la pantalla en un *Overlay Loader* con texto descriptivo para que el usuario no toque dos veces.
+2. **Relación con el Mundo Real:** Uso de analogías físicas. El *Buzón de Postulaciones* se presenta como tarjetas, las "Campanitas" muestran números de alertas en rojo.
+3. **Control y Libertad del Usuario:** Uso exhaustivo de `Navigator.pop(context)` para proveer salidas de emergencia en todos los diálogos y modales de confirmación.
+4. **Consistencia y Estándares (Glassmorphism):** Se incorporó la tendencia de cristal esmerilado en los paneles críticos (Dashboard y Buzón). Tarjetas semitransparentes, sombras proyectadas y bordes sutiles que generan una sensación premium operando consistentemente entre Android, iOS y Web.
+5. **Prevención de Errores (Error Prevention):** 
+   * Filtros de fechas nativos: El calendario bloquea seleccionar días en el pasado.
+   * Reglas de formularios: Ningún formulario puede ser disparado si los Regex de contraseña, cédula y campos no coinciden.
+6. **Reconocer, no recordar:** Auto-llenado visual en las tarjetas de perfil y menú desplegable para las Facultades.
+7. **Estética y Diseño Minimalista (Dark Mode Nativo):** Interfaz fluida adaptable a las preferencias del SO del usuario, con soporte a un *Dark Mode* oscuro profundo que respeta el contraste de colores WCAG.
+8. **Ayuda a reconocer errores:** Mensajes *Snackbars* de color rojo sangre cuando la red falla o la contraseña es débil.
+9. **Documentación Externa:** Se provee una vista completa de Soporte Técnico guiado.
 
 ---
 
-## Módulo de Archivos y Notificaciones
+## 8. Desglose Técnico por Pantallas
 
-El corazón comunicativo del sistema, estructurado en dos pilares simultáneos:
+*(Ver Sección 4: Feature List para un detalle de cada vista de la interfaz por módulo).* 
 
-### 1. In-App Notifications (Persistentes)
-Un centro de notificaciones (representado por una "campanita" en el Header) que guarda localmente en Firestore 8 flujos vitales de comunicación, manteniendo un registro auditable e interactivo:
-1. Alerta a tutores de **Nueva Sugerencia en la Bolsa**.
-2. Alerta a estudiante de **Sugerencia Aceptada**.
-3. Alerta a estudiantes apoyadores si un **Cupo se Llenó**.
-4. Alerta a tutor de **Nuevo Estudiante Inscrito**.
-5. Alerta a tutor si un **Estudiante Abandonó** su clase.
-6. Alerta a inscritos de **Tutoría Cancelada** por fuerza mayor.
-7. Alerta a tutor de **Nueva Evaluación Recibida**.
-
-### 2. Push Notifications (Cloud Functions FCM)
-Servidor Node.js 20 backend en Firebase (`functions/index.js`) con `onUpdate` triggers. 
-1. Si un estado cambia a `aceptada`, la nube dispara automáticamente FCM push al móvil / navegador del estudiante que estaba en cola, alertando de que el tutor está listo.
-2. Si un estado cambia a `cancelada`, lanza Push Notifications a la lista de estudiantes inscritos, de modo que se enteran sin tan siquiera abrir la aplicación.
-
-### 3. Limpieza Ecológica de Storage
-Para evitar facturas astronómicas de Cloud, la lógica de `TutoriasProvider` está enlazada estrechamente a los métodos de eliminación. Tutoría muerta / abortada = Carpeta de almacenamiento limpia instantáneamente en la nube.
+Adicionalmente, se subraya la utilización de `StatefulWidgets` locales donde el componente requiere controladores de texto (`TextEditingController`), evitando ensuciar la RAM global de los *Providers*. Para la capa visual se usaron *Slivers* que permiten el ocultamiento dinámico del AppBar superior al hacer *Scroll*, maximizando el área de visión en pantallas móviles pequeñas.
 
 ---
 
-## Módulo de Moderación y Calidad
+## 9. Roles y Sistema de Permisos
 
-Para evitar que la plataforma se vuelva caótica, el sistema promueve el sano comportamiento:
+El sistema es trifásico y no se basa únicamente en el Frontend. Todos los accesos están blindados por las **Reglas de Firestore (IAM)**.
 
-- **Sistema Anti-Review Bombing:** ¿Un alumno falta a clase y quiere ponerle 1 estrella al tutor por despecho? Imposible. La UI de evaluación comprueba si el alumno asistió; si tiene falta marcada, el sistema le bloquea el acceso a las reseñas.
-- **Filtro Léxico Dinámico (Moderador de Lenguaje):** Algoritmo que detecta palabras prohibidas, toxicidad, y variantes ofuscadas (como Leetspeak y homoglifos) tanto en nombres de usuario como en las justificaciones o descripciones.
-- **Botón de Pánico (Quejas):** Si un tutor tiene conductas inapropiadas, su perfil tiene un botón rojo de reporte. Envía la data cifrada directamente a la mesa del Admin.
-- **Moderación de Reseñas y Calificaciones:** Si un alumno deja un comentario vulgar, el Admin tiene la jerarquía para borrar el comentario abusivo desde la UI. Además, calificaciones iguales o menores a 2 estrellas generan alertas automáticas a los administradores.
-- **Tribunal de Baneos:** El administrador revisa a los alumnos con altos *strikes* o tutores con demasiadas quejas, y puede apagar su bandera `estaBaneado`. Si la bandera está en `true`, `Auth` no les permitirá entrar a la app en el próximo log-in.
-
----
-
-## Sistema de Diseño (Branding Vecta)
-
-El código es puramente temático y estandarizado, dictado por `lib/core/theme/app_theme.dart`.
-
-| Nombre del Token | Código Hexadecimal | Propósito UI |
-|---|---|---|
-| `primarioAzul` | `#1951CB` | Botones de Llamada a la Acción, Iconos, AppBar activa |
-| `primarioVerde` | `#1CA887` | Botones de Éxito, Chips de status, Interfaces de Tutor |
-| `fondoClaro` | `#F8FAFC` | Background relajante de toda la app (Scaffold) |
-| `textoOscuro` | `#1E2938` | Alta legibilidad para textos y títulos H1/H2 |
-| `grisTexto` | `#8B929A` | Metadatos, fechas y placeholders |
-
-**Tipografía Exclusiva:**
-- Uso de `GoogleFonts.poppins` para cabeceras prominentes y gruesas.
-- Uso de `GoogleFonts.inter` para párrafos densos, priorizando la legibilidad humana.
+| Rol en DB | Privilegios Visuales y Permisos Criptográficos |
+|---|---|
+| `estudiante` | Solo puede leer clases aprobadas y perfiles. Solo puede modificar su propio documento de perfil y subir datos a la subcolección de sus propias sugerencias. No tiene derecho a consultar reportes ajenos o la métrica global de la UTP. |
+| `tutor` | Posee permisos de escritura parciales sobre la colección de Tutorías (Para reclamarlas o modificarlas). Puede alterar estados (`pendiente` -> `aceptada`). No puede modificar ni manipular las quejas en su contra, ni cambiar sus propias evaluaciones (Estrellas). |
+| `admin` | Jerarquía `Omnipotente`. Regla de Firestore: `allow read, write: if request.auth.uid in getAdmins()`. Tiene escritura ilimitada en cualquier nodo del sistema para ejercer la moderación policial de los baneos y auditorías. |
 
 ---
 
-## Configuración y Ejecución
+## 10. Flujos de Sistema y Manejo de Datos
 
-### Prerrequisitos del Entorno
-- Flutter SDK ≥ 3.20.x
-- Dart SDK ≥ 3.x
-- Cuenta en Firebase Console con plan *Blaze* (requerido para Cloud Functions y Storage).
-- Node.js 20+ instalado localmente (si vas a programar más Functions).
+La aplicación es altísimamente transaccional. Para sobrevivir a la concurrencia universitaria, implementamos los siguientes escudos de manejo de información:
 
-### Instalación Rápida
+### A. Transacciones Atómicas (Evadiendo Condiciones de Carrera)
+* *El Problema:* Si una clase es lanzada a la Bolsa Comunitaria, 5 tutores podrían intentar oprimir el botón "Aceptar" al mismo milisegundo. En un sistema estándar, el último en pulsar sobreescribiría al resto.
+* *Solución Vecta:* Se usa el protocolo de transacción atómica de Firestore. El servidor enruta la petición, pausa la base de datos para ese documento, lee su estado, verifica que el `identificadorDelTutor` siga vacío `''`, se lo asigna al primero que llegó y rechaza criptográficamente a los otros 4 informándoles que la clase "Acaba de ser tomada".
+
+### B. Notificaciones Asíncronas Cruzadas
+El usuario es constantemente alimentado por notificaciones *In-App* persistentes. 
+* Si la clase llega a su límite de capacidad (Ej: 15/15), el `TutoriasProvider` emite inmediatamente una escritura fantasma de Alerta en los buzones de los 15 alumnos indicando "Cupo Lleno". 
+* Si el tutor cancela la clase por fuerza mayor, el sistema de alertas detona un barrido enviando el mensaje a la subcolección privada de notificaciones de todos los participantes sin necesidad de usar recursos pesados.
+
+---
+
+## 11. Módulo de Análisis de Datos y Reportes
+
+La versión 1.0 no solo es operativa, sino analítica. A través de la vista de Administración (`MetricasView`), la universidad puede observar el pulso de la JIC:
+
+1. **Rastreo Demográfico y Clustering:** Los algoritmos internos mapean todos los nodos de usuarios y generan un *ranking* en vivo de qué Facultades o Carreras están exigiendo la mayor carga de tutorías, revelando deficiencias institucionales.
+2. **Cálculo de Deserción Escolar Estudiantil:** Restando las ausencias registradas (`Strikes`) sobre las inscripciones totales, el programa arroja el porcentaje exacto de alumnos que apartan cupo pero abandonan la materia sin justificación.
+3. **Métrica de Horas de Vida (Social Impact):** Se acumula matemáticamente el tiempo (`minutos / 60`) invertido en todas las sesiones finalizadas exitosamente, para reportar el impacto social puro a las entidades gubernamentales.
+4. **Exportador Vectorial Universitario:** Renderización del documento PDF con logo oficial, usando la librería `Printing.layoutPdf` para compatibilidad extrema con navegadores Desktop Web (Chrome, Edge) invocando directamente el driver nativo de la impresora.
+
+---
+
+## 12. Reglas de Seguridad y Ciberseguridad
+
+El ecosistema entero ha sido envuelto en una muralla técnica empresarial que bloquea cualquier vector de ataque básico:
+
+1. **Firebase App Check (Aseguramiento Anti-Scraping):**
+   La base de datos completa de Firestore fue clausurada a la internet pública. Se inyectaron SDKs criptográficos para el despliegue de **Google Play Integrity** (en smartphones nativos) y **reCAPTCHA v3 Invisible** (en el ecosistema Web). Cualquier llamada proveniente de un script de Python, Postman o un emulador rooteado será silenciada con un código de error `403 Forbidden`.
+2. **Estructura de Firestore Rules (Zero-Trust):**
+   Las reglas de base de datos impiden suplantación de identidad (Spoofing). Un usuario no puede escribir en el documento de otro usuario porque el servidor exige la sentencia `allow write: if request.auth.uid == userId;`.
+3. **Impeller Engine Bypass (Compatibilidad Gráfica):**
+   Para garantizar tolerancia a fallos en dispositivos Android de gama baja/asiáticos (Específicamente el bloqueo fatal de Pantalla Negra en la familia Xiaomi/HyperOS), se inyectó un Meta-Data en el manifiesto Android (`EnableImpeller = false`) obligando al motor a usar Skia OpenGL clásico.
+4. **Escudos en Storage (Denial of Wallet):**
+   El *Storage* solo admite archivos tipados como MIME `application/pdf`, `image/png`, `image/jpeg` limitados estrictamente a **5 Megabytes**. Esto bloquea infecciones y evita cobros exorbitantes de infraestructura Cloud.
+
+---
+
+## 13. Infraestructura de Correos SMTP
+
+El mayor reto logístico de los correos corporativos (Microsoft Exchange y Google Workspace Universitario) es el filtrado letal de SPAM.
+
+**Tutorías Vecta** prescinde del correo gratuito de Firebase (Que usualmente rebota en los cortafuegos de la UTP) y utiliza una tubería dedicada provista por el partner **Resend.com**.
+* **Registros DKIM & SPF:** El dominio privado `vectatutorias.me` ha sido adquirido en Namecheap. Los registros DNS de TXT y MX fueron alineados para firmar criptográficamente (DKIM) cada correo de validación saliente.
+* **Remitente Dedicado:** Todos los enlaces criptográficos de recuperación de contraseñas, reseteos y validación de correos provienen unificadamente y sin advertencias rojas de fraude desde `adminvecta@vectatutorias.me`.
+
+---
+
+## 14. Contexto del Proyecto y Autores
+
+**Tutorías Vecta** nace para la **JIC (Jornada de Iniciación Científica)** a nivel nacional en Panamá, como una propuesta formal al problema del vacío de reforzamiento académico extra-curricular en la Universidad Tecnológica de Panamá (UTP).
+
+### Equipo Técnico Principal
+
+| Autor | Responsabilidades y Arquitectura |
+|---|---|
+| **Juan Rodriguez** | Liderazgo Técnico y Arquitecto Backend. Infraestructura en Firebase (Reglas, Storage, App Check), despliegue SMTP (DKIM/SPF) con Resend, Transacciones Atómicas (SRE), Seguridad, despliegue Web Hosting y lógica de minería de datos (Dashboard). |
+| **Alejandra Falcon** | Directora de Experiencia (UI/UX). Implementación exhaustiva del sistema de Glassmorphism, heurísticas de interacción, diseño de paleta Vecta, consistencia gráfica y accesibilidad. |
+| **Miguel Oliver** | QA & Control de Calidad. Auditorías funcionales intensivas, mapeo del *User Journey*, rastreo de memory leaks, pruebas exhaustivas en hardware gama baja y depuración de embudos críticos. |
+
+---
+
+## 15. Instrucciones de Despliegue e Instalación
+
+> Todo el ecosistema de Pruebas (Mock Data, Impresiones en terminal) fue erradicado para la rama maestra. 
+> Esta es la **Versión 1.0**, empaquetada lista para Producción en servidor.
+
+### A. Preparación del Entorno
+- Instalar **Flutter SDK `3.20+`** y **Dart SDK `3.x`**.
+- Clonar el repositorio localmente.
 
 ```bash
-# 1. Clonar el repositorio
-git clone https://github.com/Juanlooper/Proyecto_JIC_tutorias_app.git
-cd Proyecto_JIC_tutorias_app
-
-# 2. Descargar todo el ecosistema de dependencias Flutter
+# 1. Recuperar dependencias pub alojadas
 flutter pub get
 
-# 3. Correr la app en modo emulador web
+# 2. (Opcional) Compilar localmente en Chrome para pruebas calientes
 flutter run -d chrome
-
-# O bien, lanzar en tu teléfono Android / iOS físico
-flutter run
 ```
 
-### Despliegue de Reglas de Seguridad (Admin)
-Si modificas el código de Firebase, protege la base de datos haciendo:
+### B. Despliegue de Producción Final (Firebase)
+
+Asegúrese de estar autenticado en la terminal (`firebase login`) con los credenciales del administrador y poseer el ID del proyecto Vecta inicializado (`firebase init`).
+
 ```bash
+# 1. Generar los archivos binarios puros (Minificados y Tree-Shaking optimizados) para Web
+flutter build web --release
+
+# 2. Desplegar de forma remota los Security Rules a la base de datos Firestore y Storage
 firebase deploy --only firestore:rules,storage
-firebase deploy --only functions
+
+# 3. Empujar la aplicación cliente compilada al CDN global (Content Delivery Network)
 firebase deploy --only hosting
 ```
 
 ---
 
-## Seguridad y Políticas de Protección de Datos
+## 16. Historial de Actualizaciones (Changelogs)
 
-El sistema ha superado múltiples auditorías de seguridad (incluyendo escaneos de vulnerabilidades críticas) y opera bajo un estricto modelo de Confianza Cero (Zero Trust) a nivel de servidor.
+### Changelog v1.0.0 (Release Candidate y Glassmorphism)
+- **Infraestructura SMTP Corporativa:** Conexión exitosa del dominio adquirido `vectatutorias.me` hacia los microservicios de Resend (Validación DNS DKIM/SPF) para despliegue de correos enrutados desde `adminvecta@vectatutorias.me`, mitigando bloqueos institucionales en Microsoft Outlook UTP y Gmail.
+- **Arquitectura de Interfaz Glassmorphism:** Renderizado UI de cristal, diseño de tarjetas semitransparentes y optimización dinámica de íconos reactivos (Variable `onSurface`) incrustados en la navegación principal (Bottom Navigation) adaptable a paletas de colores diurnas/nocturnas.
+- **Hardening de Dispositivos (Hardware Compat):** Reglas nativas en la etiqueta `<meta-data>` del `AndroidManifest.xml` inyectadas a nivel binario para evadir los fallos estructurales de *Impeller* en hipercapas gráficas de la arquitectura Xiaomi/HyperOS y procesadores MediaTek antiguos.
+- **Refactorización de Lógica de UI:** Erradicación irreversible del botón "Cambiar Contraseña" del perfíl local del frontend y optimización drástica de los controladores asíncronos.
+- **Exportador Vectorial Independiente:** Corrección maestra de la impresión vectorial de certificados PDF y gráficas de Dashboards utilizando la nueva API `Printing.layoutPdf()`, obligando al motor de Chrome Web Desktop a disparar los controladores de la impresora del SO anfitrión.
+- **Seguridad Perimetral Total (Lockdown Definitivo):** Módulo Firebase App Check reconfigurado exhaustivamente en régimen militar estricto (`reCaptchaV3` invisible con límite de tokens) para producción.
 
-### 1. Reglas Firestore Strict-Mode (Defensa contra exploits)
-- **Escudo de Privilegios (Escalamiento Bloqueado):** Ningún cliente puede modificar su propio campo `rolEnElSistema`, `estaBaneado` o `strikes_inasistencia`. Aunque un usuario malintencionado haga ingeniería inversa a la App y reescriba la petición HTTP hacia Firebase, el servidor rechazará la mutación. Solo procesos backend o un `admin` pueden alterar estas propiedades.
-- **Protección de Tutorías (Anti-Hack JIC):** Se mitigó una vulnerabilidad crítica que permitía la alteración masiva de clases. Ahora, la regla `allow update` evalúa criptográficamente que la modificación solo provenga de: el creador de la tutoría, el tutor asignado, o un estudiante legítimamente inscrito. Ningún alumno externo puede borrar a los participantes ni alterar los horarios de clases de otros.
-- **Blindaje contra Espionaje de Notificaciones:** Inicialmente la lectura de notificaciones era global. Se implementó una verificación estricta (`resource.data.usuarioId == request.auth.uid`) para que cada dispositivo y usuario solo pueda desencriptar y leer las notificaciones y mensajes dirigidos exclusivamente a su UID.
-- **Eliminación Lógica vs Física:** Se prohíbe rotundamente el borrado de documentos de perfil (`allow delete: if false`). En su lugar, el sistema emplea "soft deletes" y banderas booleanas para mantener la integridad de la base de datos histórica.
+### Changelog v0.9.0 (Arquitectura SRE y Data Mining)
+- Implementación de `FirebaseFirestore.instance.runTransaction()` nativas orientadas a bloquear la base de datos contra peticiones concurrentes masivas de reclamación de tutorías simultáneas (Blindaje anti-Race Conditions).
+- Rediseño estructural del stack de Navegación (`Navigator.push` y `MaterialPageRoute`) en absolutamente todos los formularios transaccionales, habilitando integración directa con los botones de "Atrás" físicos del sistema operativo Android y gestos "Swipe" de iOS.
+- Construcción algorítmica completa del Dashboard de Analítica de Datos (Métricas globales) con cálculos heurísticos iterativos para la extracción de "Deserción Escolar", sumatoria de "Horas de Vida Social Invertidas", y exportación automatizada de reportes estadísticos directos a Documentos PDF.
+- Reescritura arquitectónica profunda de las tuberías de Inyección de Dependencias `Provider` para frenar contundentemente todas las fugas asíncronas de memoria (Memory Leaks) producidas por renders desconectados del ciclo de vida visual de la aplicación.
+- Construcción modular de los evaluadores (`Promedio Estrellas`), censurador léxico Regex (`Leetspeak`) y limpieza recursiva de archivos nativos del Storage atada a la recolección de basura del backend.
 
-### 2. Firewall de Firebase Storage
-- **Validación de Tipos MIME (Regex):** La puerta de entrada de archivos rechaza sistemáticamente cualquier subida que no sea explícitamente `application/pdf` o formato de imagen (`image/.*`), bloqueando la inyección de malware o scripts maliciosos.
-- **Límite Físico (Denial of Wallet):** Existe un límite infranqueable de `5 MB` por cada petición de subida para prevenir que un atacante sature el servidor con peticiones masivas.
-- **Protección contra Borrado Masivo:** Se clausuró el acceso público a las eliminaciones en bloque; la purga de carpetas de almacenamiento quedó delegada de manera exclusiva al recolector de basura nativo del administrador o del proceso de limpieza del backend.
+***
 
-### 3. Reglas de Negocio y Privacidad del Usuario
-- **Cumplimiento de Ley 81 (Protección de Datos - Panamá):** Se recogen los datos estrictamente necesarios bajo el consentimiento explícito del estudiante (implementado con un formulario obligatorio de Términos y Condiciones).
-- **Cifrado de Credenciales:** Todas las transacciones de inicio de sesión utilizan algoritmos nativos AES manejados por Google Identity.
-- **Filtro Anti-Review Bombing:** Lógica a nivel de vista y backend para impedir que estudiantes evalúen a tutores de clases a las que nunca asistieron (verificando el `registro_asistencia`).
-
-### 4. Autenticación y Ciberseguridad Activa (Hardening)
-- **Firebase App Check (Play Integrity & reCAPTCHA v3):** Se bloqueó el acceso público al ecosistema de Firebase. La base de datos y los buckets solo responden si la petición proviene de un humano en la web (reCAPTCHA v3 invisible) o desde la app oficial de Android sin alterar ni emular (Play Integrity), mitigando el *scraping* y ataques de denegación de servicio.
-- **Hardening de Contraseñas:** Se rechazan claves débiles mediante expresiones regulares. La plataforma exige contraseñas alfanuméricas de al menos 8 caracteres que incluyan obligatoriamente símbolos, mayúsculas y números.
-
-### 5. Términos, Condiciones y Política de Privacidad de Vecta
-Durante el registro, el usuario debe aceptar un contrato legal detallado. A continuación, se desglosa el propósito de cada cláusula estipulada en la aplicación:
-
-1. **Marco Legal y Derechos del Usuario (Derechos ARCO):** Garantiza que Vecta opera bajo la Ley No. 81 de Panamá. Asegura al estudiante que tiene el derecho de **Acceder, Rectificar, Cancelar u Oponerse** al uso de sus datos en cualquier momento.
-2. **¿Qué datos recopilamos y para qué?:** Principio de transparencia. Explica que solo se recopilan datos de contacto institucionales y académicos (Facultad/Carrera) para alimentar el algoritmo de matchmaking de tutorías, asegurando que no se venderá la información a terceros.
-3. **Ciberseguridad y Almacenamiento:** Da tranquilidad al usuario final explicando que su contraseña no se guarda en texto plano, sino mediante encriptación asimétrica de Firebase, y que la plataforma cuenta con autenticación segura.
-4. **Reglas de Uso y Conducta:** Establece las bases para los baneos. Prohíbe explícitamente la suplantación de identidad, el bullying en los espacios de clase, el spam y los intentos de hacking (modificación del código).
-5. **Propiedad Intelectual:** Protege el diseño, los logotipos y el código fuente (especialmente la integración gráfica del símbolo de sumatoria y la espiral de Fibonacci de Vecta) contra el plagio.
-6. **Limitaciones de Responsabilidad:** Una cláusula crítica para proteger a los desarrolladores y tutores. Aclara que usar Vecta no garantiza aprobar una asignatura (el éxito depende del estudiante) y exime a la plataforma por problemas de conectividad o acuerdos externos que los usuarios hagan por fuera de la app.
-7. **Cambios en estas Políticas:** Cláusula de contingencia que reserva el derecho a la administración de modificar el documento notificando a los usuarios en futuras actualizaciones.
-
----
-
-## Autores Principales
-
-| Autor | Rol en el Proyecto | Responsabilidades Asignadas |
-|---|---|---|
-| **Juan Rodriguez** | Liderazgo Técnico  | Diseño de arquitectura, programación en Dart, configuración completa del clúster de Firebase, Cloud Functions, Integración In-App/Push Notifications, Storage nativo, Seguridad IAM y transacciones lógicas. |
-| **Alejandra Falcon** | Interfaz (UI/UX) | Sistema de diseño visual, maquetación del frontend de pantallas, estandarización tipográfica, wireframing y accesibilidad del color. |
-| **Miguel Oliver** | Control de Calidad (QA / Tester) | Auditorías de flujo, revisión de seguridad, reporte y prevención de *Memory Leaks*, pruebas en dispositivos de gama baja y control estadístico. |
-
----
-
-## Contexto del Proyecto
-
-**Plataforma de Tutorías** es el producto estrella de software desarrollado grupalmente para la **JIC (Jornada de Iniciación Científica)** a nivel nacional en **Panamá**, enfocado a solucionar el vacío de reforzamiento académico extra-curricular en la Universidad Tecnológica de Panamá (UTP) y otras instituciones secundarias.
-
-### Fase Inicial con Grupo Vecta
-El código original, el branding actual, y la base de datos de los primeros prototipos fueron inyectados en colaboración con el **Grupo Vecta**, sirviendo como nuestro *focus group* y ambiente de pruebas beta (Closed Testing). Esto permitió iterar los flujos de "estudiante/tutor" en una micro-sociedad académica real antes del despliegue masivo.
-
-> [!TIP]
-> **Arquitectura Agnóstica:** Pese al uso del branding Vecta en código o colores, este repositorio fue reescrito de manera modular. Cualquier otra universidad, colegio o junta educativa puede clonar este sistema, cambiar variables de color y el logo, y tendrán un sistema de educación peer-to-peer 100% funcional y asegurado.
-
----
-
-> **Versión del Proyecto:** 1.6.0 (Refactorización Estructural y SRE)  
-
-### Registro de Actualizaciones (Changelog v1.6.0)
-
-#### 🚀 1. Optimización del Flujo de Usuario (UX/Navegación)
-- **Navegación Nativa (Stack):** Se eliminó el reseteo abrupto del `BottomNavigationBar` al momento de sugerir una tutoría. Ahora, el sistema utiliza `Navigator.push` para apilar las vistas, habilitando soporte fluido para gestos de retroceso en iOS y el botón físico 'Atrás' en Android.
-- **Asignación Opcional Dinámica:** El formulario de sugerencias ahora consulta a Firebase asíncronamente para desplegar la lista actualizada de tutores registrados, permitiendo al estudiante etiquetar opcionalmente a un tutor de su preferencia dentro de la solicitud pública.
-- **Transición a Bolsa Pública:** Se descontinuó por completo el sistema aislado de "Sugerencias Directas". Todas las peticiones nacen ahora en un entorno crowdsourced (Bolsa de la Comunidad), democratizando el acceso a las clases.
-
-#### 🧠 2. Ingeniería de Confiabilidad (SRE) y Clean Code
-- **Transacciones Atómicas Obligatorias:** Se reescribieron los métodos críticos (`aceptarTutoria`) utilizando `runTransaction` de Firestore dentro de la capa `BaseDeDatosServicio`. Esto blinda la app contra *Race Conditions* (condiciones de carrera), garantizando que si dos tutores intentan reclamar la misma clase al mismo milisegundo, la base de datos bloquee criptográficamente al segundo.
-- **Prevención de Fugas de Memoria (Memory Leaks):** Se estandarizó el uso del patrón `estaDisposedElProvider` dentro de los *Providers* (como `tutorias_provider.dart`), evitando colapsos de RAM (crashes) ocasionados por llamadas asíncronas tardías a `notifyListeners()` en widgets previamente destruidos.
-- **Delegación de Responsabilidades (SRP):** Limpieza arquitectónica separando estrictamente la lectura/escritura en red (Servicios) de la reactividad de interfaz (Providers).
-
-#### 🛡️ 3. Resiliencia de Bases de Datos
-- **Tolerancia a Case-Sensitivity NoSQL:** Se implementó una ampliación de lectura utilizando el operador `whereIn` inyectando redundancias ortográficas (`['aceptada', 'Aceptada']`) para forzar a Firebase a recuperar documentos antiguos sin requerir pesadas migraciones de datos. Se blindó la higiene a futuro forzando la escritura en estricta minúscula.
-
-### Registro de Actualizaciones Histórico (Changelog v1.5.0)
-
-#### 🚀 1. Funcionalidades Premium y Experiencia de Usuario (UI/UX)
-- **Creación Proactiva de Clases:** Transición del modelo pasivo al proactivo. Ahora los tutores pueden crear sus propias "Clases Fijas", permitiendo a los estudiantes inscribirse libremente hasta llenar el cupo.
-- **Chat en Tiempo Real:** Las tutorías ahora tienen una sala de chat integrada. Detecta automáticamente enlaces web (Zoom, Google Meet) haciéndolos clicables.
-- **UI Libre de Errores (Zero Overflow):** Limpieza profunda de errores de desbordamiento (franjas amarillas/negras) envolviendo vistas complejas como el Calendario y el Chat en contenedores deslizables (`ScrollViews`).
-- **Generación de PDFs:** Capacidad para que la aplicación construya certificados y reportes descargables en formato PDF utilizando las fuentes y branding oficiales.
-
-#### 🧠 2. El Cerebro Analítico (Dashboard Administrativo Completo)
-- **Filtros Demográficos Dinámicos:** Panel de métricas donde los filtros (Facultad/Carrera) operan al instante y en memoria caché sin consumir lecturas de internet extra.
-- **Rastreo Integral:** Implementación de cálculo de **Tasa de Cancelación Tardía** (penalización), **Mapeo de Demografía** (conteo de alumnos por año y facultad), cálculo de **Horas de Vida** (tiempo invertido por usuario) y barrido de **Calificaciones Globales** (distribución de 1 a 5 estrellas).
-- **Gestor de Cuellos de Botella:** Identificación de las materias más solicitadas y control centralizado de quejas.
-
-#### 🛡️ 3. Infraestructura y Seguridad en la Nube
-- **Dominio Propio y Correos Corporativos:** Migración hacia `tutoriasjic.me`. Correos de verificación emitidos desde `info@tutoriasjic.me` (DNS validado con SPF, DKIM y CNAME) para evitar la carpeta de Spam en Microsoft 365 / UTP.
-- **Reglas de Firestore Reescritas:** Arquitectura de seguridad endurecida para bloquear usuarios no autorizados, proteger los chats privados y blindar el acceso al panel de administración exclusivo.
-- **Filtros Anti-Spam (Máx 3 Clases/Día):** Algoritmo silencioso que vigila y bloquea preventivamente a cualquier tutor que intente publicar más de 3 clases en un mismo día, evitando inundaciones en la cartelera.
-- **Chat Inteligente a Costo Cero (Autodestrucción):** Solución descentralizada para evitar facturas de servidor. El celular del usuario hace el mantenimiento: al abrir el chat, el cliente rastrea y borra permanentemente todos los mensajes con más de 24 horas de antigüedad.
-- **Erradicación del Motor de Pruebas:** Eliminación física y absoluta del script `mock_data_servicio.dart`. El código base de producción está garantizado 100% libre de código basura o de pruebas.
-
-### Registro de Actualizaciones Histórico (Changelog v1.4.0)
-- **App Check Integrado:** Firebase backend asegurado contra bots, emuladores root y scripts mediante Play Integrity API y reCAPTCHA v3 invisible.
-- **Filtros de Lenguaje y Toxicidad:** Algoritmo en el `ModeracionServicio` integrado en el formulario de registro y en la creación de peticiones para detectar groserías y ofuscaciones de texto (Leetspeak).
-- **Endurecimiento de Credenciales:** Reglas estrictas en el `RegistroView` exigiendo un mínimo de 8 caracteres, mayúsculas, números y símbolos especiales en la creación de contraseñas.
-- **Alertas Administrativas Automatizadas:** Las calificaciones por debajo de 3 estrellas en el perfil del tutor y las cancelaciones tardías disparan alertas en la central del administrador.
-- **Gráficas de Uso Global:** Se añadió a `MetricasView` un contador y visualización gráfica del impacto real mediante "Horas recibidas por estudiantes".
-
-### Registro de Actualizaciones Histórico (Changelog v1.3.0)
-- **Migración de Dominio:** Transición exitosa del ambiente de pruebas (tutorias-jic.web.app) al subdominio oficial `tutorias-vecta.web.app`.
-- **Identidad Vecta:** Reemplazo de iconos genéricos de Flutter por el logotipo oficial de Vecta en la `LandingScreen`.
-- **Refactorización UI/UX:** Implementación de `LayoutBuilder` en las pantallas de Ayuda y Soporte para asegurar una renderización impecable tanto en navegadores web de escritorio como en dispositivos móviles (Responsive Design).
-- **Formularios Dinámicos:** Integración de un menú desplegable interactivo (`DropdownButtonFormField`) en la vista de Sugerir Tutoría para estandarizar las materias (Cálculo I, Física I, etc.), con una opción "Otros" que despliega dinámicamente un campo de texto adicional.
-- **Auditoría de Código:** Resolución completa de advertencias del compilador (Linter a 0 errores), incluyendo la sustitución de código obsoleto (`.withOpacity` a `.withValues`) y dependencias huérfanas.
-
-> **Auditoría de Seguridad:** Completada y superada con éxito (Google Cloud Rules Enforced & DNS Authenticated).  
-> **Última actualización:** Mayo 2026
+**Tutorías Vecta — JIC UTP Panamá — Todos los Derechos Reservados © 2026**

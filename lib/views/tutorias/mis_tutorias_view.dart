@@ -67,57 +67,29 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
           ),
           centerTitle: true,
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(72.0),
-            child: Builder(
-              builder: (context) {
-                return Row(
-                  children: [
-                    IconButton(
-                      tooltip: 'Ver mes anterior',
-                      icon: const Icon(
-                        Icons.chevron_left,
-                        color: AppTheme.primarioAzul,
-                      ),
-                      onPressed: () {
-                        final controller = DefaultTabController.of(context);
-                        if (controller.index > 0) {
-                          controller.animateTo(controller.index - 1);
-                        }
-                      },
-                    ),
-                    const Expanded(
-                      child: TabBar(
-                        isScrollable: true,
-                        tabAlignment: TabAlignment.center,
-                        labelColor: AppTheme.primarioAzul,
-                        unselectedLabelColor: AppTheme.grisTexto,
-                        indicatorColor: AppTheme.primarioAzul,
-                        tabs: [
-                          Tab(
-                            text: "Calendario",
-                            icon: Icon(Icons.calendar_month),
-                          ),
-                          Tab(text: "Próximas", icon: Icon(Icons.schedule)),
-                          Tab(text: "Historial", icon: Icon(Icons.history_edu)),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Ver mes siguiente',
-                      icon: const Icon(
-                        Icons.chevron_right,
-                        color: AppTheme.primarioAzul,
-                      ),
-                      onPressed: () {
-                        final controller = DefaultTabController.of(context);
-                        if (controller.index < controller.length - 1) {
-                          controller.animateTo(controller.index + 1);
-                        }
-                      },
-                    ),
-                  ],
-                );
-              },
+            preferredSize: const Size.fromHeight(60.0),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: const TabBar(
+                dividerColor: Colors.transparent,
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicator: BoxDecoration(
+                  borderRadius: BorderRadius.all(Radius.circular(25)),
+                  color: Color(0xFF1CA887),
+                ),
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.grey,
+                labelStyle: TextStyle(fontWeight: FontWeight.bold),
+                tabs: [
+                  Tab(text: "Calendario"),
+                  Tab(text: "Próximas"),
+                  Tab(text: "Historial"),
+                ],
+              ),
             ),
           ),
         ),
@@ -513,12 +485,19 @@ class _ModuloListaDeTutorias extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.event_busy, size: 64, color: AppTheme.grisTexto),
+                const Icon(
+                  Icons.event_busy,
+                  size: 64,
+                  color: AppTheme.grisTexto,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   mensajeVacio,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16, color: AppTheme.grisTexto),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: AppTheme.grisTexto,
+                  ),
                 ),
               ],
             ),
@@ -886,10 +865,16 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
     final TextEditingController ctrlComentarioPublico = TextEditingController();
 
     final List<String> etiquetasPositivas = [
-      'Explica claro', 'Paciente', 'Buen material', 'Dinámico'
+      'Explica claro',
+      'Paciente',
+      'Buen material',
+      'Dinámico',
     ];
     final List<String> etiquetasNegativas = [
-      'Llegó tarde', 'Poco preparado', 'Difícil de entender', 'Se desvió del tema'
+      'Llegó tarde',
+      'Poco preparado',
+      'Difícil de entender',
+      'Se desvió del tema',
     ];
 
     await showDialog(
@@ -900,7 +885,9 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
           builder: (context, setEstadoInterno) {
             return Dialog(
               backgroundColor: Theme.of(context).colorScheme.surface,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
@@ -909,57 +896,116 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                   children: [
                     const Text(
                       'Evaluar Tutoría',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 22,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
-                    
-                    const Text('Puntualidad y Compromiso', style: TextStyle(fontWeight: FontWeight.w600)),
-                    _construirSelectorEstrellas(context, (v) => setEstadoInterno(() => puntualidad = v), puntualidad),
+
+                    const Text(
+                      'Puntualidad y Compromiso',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    _construirSelectorEstrellas(
+                      context,
+                      (v) => setEstadoInterno(() => puntualidad = v),
+                      puntualidad,
+                    ),
                     const SizedBox(height: 16),
 
-                    const Text('Dominio del Tema', style: TextStyle(fontWeight: FontWeight.w600)),
-                    _construirSelectorEstrellas(context, (v) => setEstadoInterno(() => dominio = v), dominio),
+                    const Text(
+                      'Dominio del Tema',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    _construirSelectorEstrellas(
+                      context,
+                      (v) => setEstadoInterno(() => dominio = v),
+                      dominio,
+                    ),
                     const SizedBox(height: 16),
 
-                    const Text('Empatía y Paciencia', style: TextStyle(fontWeight: FontWeight.w600)),
-                    _construirSelectorEstrellas(context, (v) => setEstadoInterno(() => empatia = v), empatia),
+                    const Text(
+                      'Empatía y Paciencia',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    _construirSelectorEstrellas(
+                      context,
+                      (v) => setEstadoInterno(() => empatia = v),
+                      empatia,
+                    ),
                     const SizedBox(height: 24),
 
-                    const Text('Etiquetas Rápidas', style: TextStyle(fontWeight: FontWeight.w600)),
+                    const Text(
+                      'Etiquetas Rápidas',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        ...etiquetasPositivas.map((t) => FilterChip(
-                          label: Text(t, style: TextStyle(fontSize: 12, color: etiquetasSeleccionadas.contains(t) ? Colors.white : Colors.green[800])),
-                          selected: etiquetasSeleccionadas.contains(t),
-                          selectedColor: Colors.green,
-                          backgroundColor: Colors.green.withValues(alpha: 0.1),
-                          onSelected: (val) {
-                            setEstadoInterno(() {
-                              val ? etiquetasSeleccionadas.add(t) : etiquetasSeleccionadas.remove(t);
-                            });
-                          },
-                        )),
-                        ...etiquetasNegativas.map((t) => FilterChip(
-                          label: Text(t, style: TextStyle(fontSize: 12, color: etiquetasSeleccionadas.contains(t) ? Colors.white : Colors.red[800])),
-                          selected: etiquetasSeleccionadas.contains(t),
-                          selectedColor: Colors.red,
-                          backgroundColor: Colors.red.withValues(alpha: 0.1),
-                          onSelected: (val) {
-                            setEstadoInterno(() {
-                              val ? etiquetasSeleccionadas.add(t) : etiquetasSeleccionadas.remove(t);
-                            });
-                          },
-                        )),
+                        ...etiquetasPositivas.map(
+                          (t) => FilterChip(
+                            label: Text(
+                              t,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: etiquetasSeleccionadas.contains(t)
+                                    ? Colors.white
+                                    : Colors.green[800],
+                              ),
+                            ),
+                            selected: etiquetasSeleccionadas.contains(t),
+                            selectedColor: Colors.green,
+                            backgroundColor: Colors.green.withValues(
+                              alpha: 0.1,
+                            ),
+                            onSelected: (val) {
+                              setEstadoInterno(() {
+                                val
+                                    ? etiquetasSeleccionadas.add(t)
+                                    : etiquetasSeleccionadas.remove(t);
+                              });
+                            },
+                          ),
+                        ),
+                        ...etiquetasNegativas.map(
+                          (t) => FilterChip(
+                            label: Text(
+                              t,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: etiquetasSeleccionadas.contains(t)
+                                    ? Colors.white
+                                    : Colors.red[800],
+                              ),
+                            ),
+                            selected: etiquetasSeleccionadas.contains(t),
+                            selectedColor: Colors.red,
+                            backgroundColor: Colors.red.withValues(alpha: 0.1),
+                            onSelected: (val) {
+                              setEstadoInterno(() {
+                                val
+                                    ? etiquetasSeleccionadas.add(t)
+                                    : etiquetasSeleccionadas.remove(t);
+                              });
+                            },
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 24),
 
-                    const Text('Comentario Confidencial para Admin:', style: TextStyle(fontWeight: FontWeight.w600)),
-                    const Text('(El tutor nunca verá este mensaje)', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    const Text(
+                      'Comentario Confidencial para Admin:',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const Text(
+                      '(El tutor nunca verá este mensaje)',
+                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: ctrlComentario,
@@ -967,62 +1013,98 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                       decoration: InputDecoration(
                         hintText: 'Opcional. ¿Hubo algún problema grave?',
                         filled: true,
-                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[900] : Colors.grey[100],
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        fillColor:
+                            Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[900]
+                            : Colors.grey[100],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    
-                    const Text('Comentario para la Comunidad:', style: TextStyle(fontWeight: FontWeight.w600)),
-                    const Text('(Visible públicamente en el perfil del tutor)', style: TextStyle(fontSize: 11, color: Colors.grey)),
+
+                    const Text(
+                      'Comentario para la Comunidad:',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const Text(
+                      '(Visible públicamente en el perfil del tutor)',
+                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: ctrlComentarioPublico,
                       maxLines: 2,
                       decoration: InputDecoration(
-                        hintText: 'Opcional. Deja un comentario de agradecimiento.',
+                        hintText:
+                            'Opcional. Deja un comentario de agradecimiento.',
                         filled: true,
-                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[900] : Colors.grey[100],
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        fillColor:
+                            Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[900]
+                            : Colors.grey[100],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 32),
-                    
+
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(contextDialogo),
-                          child: const Text('CANCELAR', style: TextStyle(color: Colors.grey)),
+                          child: const Text(
+                            'CANCELAR',
+                            style: TextStyle(color: Colors.grey),
+                          ),
                         ),
                         FilledButton(
-                          style: FilledButton.styleFrom(backgroundColor: AppTheme.primarioAzul),
-                          onPressed: (puntualidad == 0 || dominio == 0 || empatia == 0)
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppTheme.primarioAzul,
+                          ),
+                          onPressed:
+                              (puntualidad == 0 || dominio == 0 || empatia == 0)
                               ? null
                               : () async {
                                   final double dPunt = puntualidad.toDouble();
                                   final double dDom = dominio.toDouble();
                                   final double dEmp = empatia.toDouble();
-                                  
-                                  final proveedorRef = context.read<TutoriasProvider>();
-                                  bool exito = await proveedorRef.enviarEvaluacionTutoria(
-                                    datos.identificadorDeTutoria,
-                                    datos.identificadorDelTutor,
-                                    dPunt,
-                                    dDom,
-                                    dEmp,
-                                    etiquetasSeleccionadas,
-                                    ctrlComentario.text.trim(),
-                                    ctrlComentarioPublico.text.trim(),
-                                  );
-                                  
-                                  if (contextDialogo.mounted) Navigator.pop(contextDialogo);
-                                  
+
+                                  final proveedorRef = context
+                                      .read<TutoriasProvider>();
+                                  bool exito = await proveedorRef
+                                      .enviarEvaluacionTutoria(
+                                        datos.identificadorDeTutoria,
+                                        datos.identificadorDelTutor,
+                                        dPunt,
+                                        dDom,
+                                        dEmp,
+                                        etiquetasSeleccionadas,
+                                        ctrlComentario.text.trim(),
+                                        ctrlComentarioPublico.text.trim(),
+                                      );
+
+                                  if (contextDialogo.mounted) {
+                                    Navigator.pop(contextDialogo);
+                                  }
+
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text(exito ? '¡Evaluación dimensional guardada!' : proveedorRef.mensajeDeErrorDelSistema),
-                                        backgroundColor: exito ? Colors.green : Colors.redAccent,
+                                        content: Text(
+                                          exito
+                                              ? '¡Evaluación dimensional guardada!'
+                                              : proveedorRef
+                                                    .mensajeDeErrorDelSistema,
+                                        ),
+                                        backgroundColor: exito
+                                            ? Colors.green
+                                            : Colors.redAccent,
                                       ),
                                     );
                                   }
@@ -1099,7 +1181,9 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                   if (datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' &&
                       datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')
                     FilledButton.icon(
-                      style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1CA887)),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF1CA887),
+                      ),
                       onPressed: () {
                         Navigator.pop(sheetContext);
                         Navigator.push(
@@ -1154,23 +1238,36 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 12.0),
                                   child: FilledButton.icon(
-                                    style: FilledButton.styleFrom(backgroundColor: Colors.indigo),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: Colors.indigo,
+                                    ),
                                     onPressed: () async {
-                                      final proveedorUsuarios = contextoPadre.read<AutenticacionProvider>();
-                                      final tutorSnapshot = await FirebaseFirestore.instance.collection('usuarios').doc(datos.identificadorDelTutor).get();
-                                      String nombreTutor = tutorSnapshot.data()?['nombreCompleto'] ?? 'Tutor';
-                                      
+                                      final proveedorUsuarios = contextoPadre
+                                          .read<AutenticacionProvider>();
+                                      final tutorSnapshot =
+                                          await FirebaseFirestore.instance
+                                              .collection('usuarios')
+                                              .doc(datos.identificadorDelTutor)
+                                              .get();
+                                      String nombreTutor =
+                                          tutorSnapshot
+                                              .data()?['nombreCompleto'] ??
+                                          'Tutor';
+
                                       await PdfServicio.generarCertificadoAsistencia(
-                                        estudiante: proveedorUsuarios.usuarioActual!,
+                                        estudiante:
+                                            proveedorUsuarios.usuarioActual!,
                                         tutoria: datos,
                                         tutorNombre: nombreTutor,
                                       );
                                     },
                                     icon: const Icon(Icons.picture_as_pdf),
-                                    label: const Text('Descargar Certificado PDF'),
+                                    label: const Text(
+                                      'Descargar Certificado PDF',
+                                    ),
                                   ),
                                 ),
-                              
+
                               // Botón de Evaluar
                               datos.alumnosQueYaEvaluaron.contains(uidActual)
                                   ? const Center(
@@ -1185,7 +1282,9 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                                   : FilledButton.icon(
                                       onPressed: () {
                                         Navigator.pop(sheetContext);
-                                        _mostrarDialogoDeEvaluacion(contextoPadre);
+                                        _mostrarDialogoDeEvaluacion(
+                                          contextoPadre,
+                                        );
                                       },
                                       icon: const Icon(Icons.rate_review),
                                       label: const Text('Evaluar Sesión'),
@@ -1250,63 +1349,41 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1,
+      elevation: 0,
+      color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.grey.shade700
-              : Colors.grey.shade300,
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: esDictando
-              ? AppTheme.primarioAzul.withValues(alpha: 0.1)
-              : Colors.teal.shade50,
-          child: Icon(
-            esDictando ? Icons.co_present : Icons.import_contacts,
-            color: esDictando ? AppTheme.primarioAzul : Colors.teal.shade600,
-          ),
-        ),
-        title: Text(
-          datos.materiaOAsignatura,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
-            Text(
-              '${datos.fechaHoraSugerida.hour.toString().padLeft(2, '0')}:${datos.fechaHoraSugerida.minute.toString().padLeft(2, '0')} Hrs - ${datos.temaEspecifico}',
-              style: const TextStyle(color: Colors.grey),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            if (datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' && datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada')
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('📍 Lugar/Mod: ${datos.lugar ?? datos.modalidadDeClase}', style: const TextStyle(fontSize: 12, color: Colors.blueAccent)),
-                    Text('📞 Contacto: ${datos.contacto_tutor ?? 'No provisto'}', style: const TextStyle(fontSize: 12, color: Colors.blueAccent)),
-                  ],
-                ),
-              ),
             Row(
               children: [
+                Icon(
+                  esDictando ? Icons.co_present : Icons.videocam,
+                  color: const Color(0xFF1CA887),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    datos.materiaOAsignatura.toUpperCase(),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
+                    horizontal: 12,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: colorDeEstado.withAlpha(50),
-                    borderRadius: BorderRadius.circular(12),
+                    color: colorDeEstado.withAlpha(20),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     datos.estadoDeLaSolicitud.toUpperCase(),
@@ -1317,35 +1394,126 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                     ),
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              datos.temaEspecifico,
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.schedule, size: 16, color: Colors.grey),
                 const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${datos.fechaHoraSugerida.hour.toString().padLeft(2, '0')}:${datos.fechaHoraSugerida.minute.toString().padLeft(2, '0')} Hrs - ${datos.fechaHoraSugerida.day.toString().padLeft(2, '0')}/${datos.fechaHoraSugerida.month.toString().padLeft(2, '0')}',
+                    style: const TextStyle(color: Colors.black87),
+                  ),
+                ),
+                const Icon(
+                  Icons.hourglass_bottom,
+                  size: 16,
+                  color: Colors.grey,
+                ),
+                const SizedBox(width: 4),
                 Text(
-                  esDictando ? '(Soy el Tutor)' : '(Asistente)',
+                  '${datos.duracionMinutos} min',
                   style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
-            if (!esDictando && datos.estadoDeLaSolicitud.toLowerCase() == 'finalizada' && !datos.alumnosQueYaEvaluaron.contains(uidActual) && (datos.registro_asistencia == null || datos.registro_asistencia![uidActual] != false))
+            const SizedBox(height: 6),
+            if (datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' &&
+                datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada') ...[
+              Row(
+                children: [
+                  const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Text(
+                    datos.lugar ?? datos.modalidadDeClase,
+                    style: const TextStyle(color: Colors.black87),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.person, size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Contacto: ${datos.contacto_tutor ?? 'No provisto'}',
+                    style: const TextStyle(color: Colors.black87),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => _abrirDetallesTutoria(context, esDictando),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF1CA887),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Ver Detalles'),
+                  ),
+                ),
+                if (!esDictando &&
+                    datos.estadoDeLaSolicitud.toLowerCase() != 'finalizada' &&
+                    datos.estadoDeLaSolicitud.toLowerCase() != 'cancelada') ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => _abandonarTutoriaEstudiante(context),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.grey.shade200,
+                        foregroundColor: Colors.black87,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text('Cancelar'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (!esDictando &&
+                datos.estadoDeLaSolicitud.toLowerCase() == 'finalizada' &&
+                !datos.alumnosQueYaEvaluaron.contains(uidActual) &&
+                (datos.registro_asistencia == null ||
+                    datos.registro_asistencia![uidActual] != false))
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
-                child: ElevatedButton.icon(
-                  onPressed: () => _mostrarDialogoDeEvaluacion(context),
-                  icon: const Icon(Icons.star_rate, size: 16),
-                  label: const Text('Calificar Tutoría', style: TextStyle(fontSize: 12)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(0, 32),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => _mostrarDialogoDeEvaluacion(context),
+                    icon: const Icon(Icons.star_rate, size: 16),
+                    label: const Text(
+                      'Calificar Tutoría',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
                   ),
                 ),
               ),
           ],
         ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-        onTap: () => _abrirDetallesTutoria(context, esDictando),
       ),
     );
   }

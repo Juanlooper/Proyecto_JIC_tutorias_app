@@ -176,7 +176,8 @@ class TutoriaModel {
       'listaDeEspera': listaDeEspera,
       'creador': creador,
       'fecha_creacion_solicitud': fecha_creacion_solicitud?.toIso8601String(),
-      'fecha_aceptacion_solicitud': fecha_aceptacion_solicitud?.toIso8601String(),
+      'fecha_aceptacion_solicitud': fecha_aceptacion_solicitud
+          ?.toIso8601String(),
     };
   }
 
@@ -194,7 +195,8 @@ class TutoriaModel {
         listaDeEstudiantesInscritos: [],
         modalidadDeClase: 'Virtual',
         estadoDeLaSolicitud: 'pendiente',
-        fechaHoraSugerida: DateTime.now(), // Por si no hay fecha, no colapsa el motor
+        fechaHoraSugerida:
+            DateTime.now(), // Por si no hay fecha, no colapsa el motor
         cupoMaximo: 1,
         duracionMinutos: 60,
         alumnosQueYaEvaluaron: [],
@@ -211,7 +213,7 @@ class TutoriaModel {
     // de Base de datos como Timestamp, como String, o un DateTime puro nativo en el dispositivo.
     DateTime fechaSegura;
     var rawFecha = mapaDeDatos['fechaHoraSugerida'];
-    
+
     if (rawFecha == null) {
       fechaSegura = DateTime.now();
     } else if (rawFecha is DateTime) {
@@ -230,43 +232,50 @@ class TutoriaModel {
     // Retorno limpio usando coalescencia nula (??) proveyéndonos valores predeterminados
     return TutoriaModel(
       identificadorDeTutoria: mapaDeDatos['identificadorDeTutoria'] ?? '',
-      materiaOAsignatura: mapaDeDatos['materiaOAsignatura'] ?? 'Materia no definida',
-      temaEspecifico: mapaDeDatos['temaEspecifico'] ?? 'No se ha indicado un tema',
+      materiaOAsignatura:
+          mapaDeDatos['materiaOAsignatura'] ?? 'Materia no definida',
+      temaEspecifico:
+          mapaDeDatos['temaEspecifico'] ?? 'No se ha indicado un tema',
       carrera: mapaDeDatos['carrera'] ?? 'General',
       identificadorDelTutor: mapaDeDatos['identificadorDelTutor'] ?? '',
-      
+
       // Requisito cumplido: Si la lista de estudiantes viene vacía o nula se la obliga a interpretar y crear un []
-      listaDeEstudiantesInscritos: mapaDeDatos['listaDeEstudiantesInscritos'] != null
+      listaDeEstudiantesInscritos:
+          mapaDeDatos['listaDeEstudiantesInscritos'] != null
           ? List<String>.from(mapaDeDatos['listaDeEstudiantesInscritos'])
           : [],
-          
+
       modalidadDeClase: mapaDeDatos['modalidadDeClase'] ?? 'Virtual',
-      
+
       // Requisito cumplido: Si el estado no está definido del todo (nulo), se forzará por orden al estado raíz 'pendiente'
       estadoDeLaSolicitud: mapaDeDatos['estadoDeLaSolicitud'] ?? 'pendiente',
-      
+
       fechaHoraSugerida: fechaSegura,
       enlaceOReunion: mapaDeDatos['enlaceOReunion'],
       cupoMaximo: mapaDeDatos['cupoMaximo'] ?? 1,
       duracionMinutos: mapaDeDatos['duracionMinutos'] ?? 60,
-      horaInicioReal: mapaDeDatos['horaInicioReal'] != null ? DateTime.tryParse(mapaDeDatos['horaInicioReal']) : null,
-      horaFinReal: mapaDeDatos['horaFinReal'] != null ? DateTime.tryParse(mapaDeDatos['horaFinReal']) : null,
-      esGrupal: mapaDeDatos['esGrupal'] ?? false,
-      motivos_alumnos: mapaDeDatos['motivos_alumnos'] != null 
-          ? Map<String, String>.from(mapaDeDatos['motivos_alumnos']) 
+      horaInicioReal: mapaDeDatos['horaInicioReal'] != null
+          ? DateTime.tryParse(mapaDeDatos['horaInicioReal'])
           : null,
-      enlaces_adjuntos: mapaDeDatos['enlaces_adjuntos'] != null 
+      horaFinReal: mapaDeDatos['horaFinReal'] != null
+          ? DateTime.tryParse(mapaDeDatos['horaFinReal'])
+          : null,
+      esGrupal: mapaDeDatos['esGrupal'] ?? false,
+      motivos_alumnos: mapaDeDatos['motivos_alumnos'] != null
+          ? Map<String, String>.from(mapaDeDatos['motivos_alumnos'])
+          : null,
+      enlaces_adjuntos: mapaDeDatos['enlaces_adjuntos'] != null
           ? (mapaDeDatos['enlaces_adjuntos'] as Map<String, dynamic>).map(
               (k, v) => MapEntry(k, List<String>.from(v)),
-            ) 
+            )
           : null,
-      nombres_adjuntos: mapaDeDatos['nombres_adjuntos'] != null 
+      nombres_adjuntos: mapaDeDatos['nombres_adjuntos'] != null
           ? (mapaDeDatos['nombres_adjuntos'] as Map<String, dynamic>).map(
               (k, v) => MapEntry(k, List<String>.from(v)),
-            ) 
+            )
           : null,
-      registro_asistencia: mapaDeDatos['registro_asistencia'] != null 
-          ? Map<String, bool>.from(mapaDeDatos['registro_asistencia']) 
+      registro_asistencia: mapaDeDatos['registro_asistencia'] != null
+          ? Map<String, bool>.from(mapaDeDatos['registro_asistencia'])
           : null,
       justificacion_cancelacion: mapaDeDatos['justificacion_cancelacion'],
       lugar: mapaDeDatos['lugar'],
@@ -285,8 +294,13 @@ class TutoriaModel {
           ? List<String>.from(mapaDeDatos['listaDeEspera'])
           : [],
       creador: mapaDeDatos['creador'],
-      fecha_creacion_solicitud: mapaDeDatos['fecha_creacion_solicitud'] != null ? DateTime.tryParse(mapaDeDatos['fecha_creacion_solicitud']) : null,
-      fecha_aceptacion_solicitud: mapaDeDatos['fecha_aceptacion_solicitud'] != null ? DateTime.tryParse(mapaDeDatos['fecha_aceptacion_solicitud']) : null,
+      fecha_creacion_solicitud: mapaDeDatos['fecha_creacion_solicitud'] != null
+          ? DateTime.tryParse(mapaDeDatos['fecha_creacion_solicitud'])
+          : null,
+      fecha_aceptacion_solicitud:
+          mapaDeDatos['fecha_aceptacion_solicitud'] != null
+          ? DateTime.tryParse(mapaDeDatos['fecha_aceptacion_solicitud'])
+          : null,
     );
   }
 
@@ -324,12 +338,15 @@ class TutoriaModel {
     DateTime? fecha_aceptacion_solicitud,
   }) {
     return TutoriaModel(
-      identificadorDeTutoria: identificadorDeTutoria ?? this.identificadorDeTutoria,
+      identificadorDeTutoria:
+          identificadorDeTutoria ?? this.identificadorDeTutoria,
       materiaOAsignatura: materiaOAsignatura ?? this.materiaOAsignatura,
       temaEspecifico: temaEspecifico ?? this.temaEspecifico,
       carrera: carrera ?? this.carrera,
-      identificadorDelTutor: identificadorDelTutor ?? this.identificadorDelTutor,
-      listaDeEstudiantesInscritos: listaDeEstudiantesInscritos ?? this.listaDeEstudiantesInscritos,
+      identificadorDelTutor:
+          identificadorDelTutor ?? this.identificadorDelTutor,
+      listaDeEstudiantesInscritos:
+          listaDeEstudiantesInscritos ?? this.listaDeEstudiantesInscritos,
       modalidadDeClase: modalidadDeClase ?? this.modalidadDeClase,
       estadoDeLaSolicitud: estadoDeLaSolicitud ?? this.estadoDeLaSolicitud,
       fechaHoraSugerida: fechaHoraSugerida ?? this.fechaHoraSugerida,
@@ -343,17 +360,22 @@ class TutoriaModel {
       enlaces_adjuntos: enlaces_adjuntos ?? this.enlaces_adjuntos,
       nombres_adjuntos: nombres_adjuntos ?? this.nombres_adjuntos,
       registro_asistencia: registro_asistencia ?? this.registro_asistencia,
-      justificacion_cancelacion: justificacion_cancelacion ?? this.justificacion_cancelacion,
+      justificacion_cancelacion:
+          justificacion_cancelacion ?? this.justificacion_cancelacion,
       lugar: lugar ?? this.lugar,
       contacto_tutor: contacto_tutor ?? this.contacto_tutor,
       nombre_tutor: nombre_tutor ?? this.nombre_tutor,
-      alumnosQueYaEvaluaron: alumnosQueYaEvaluaron ?? this.alumnosQueYaEvaluaron,
-      alumnosEvaluadosPorTutor: alumnosEvaluadosPorTutor ?? this.alumnosEvaluadosPorTutor,
+      alumnosQueYaEvaluaron:
+          alumnosQueYaEvaluaron ?? this.alumnosQueYaEvaluaron,
+      alumnosEvaluadosPorTutor:
+          alumnosEvaluadosPorTutor ?? this.alumnosEvaluadosPorTutor,
       estudiantesApoyando: estudiantesApoyando ?? this.estudiantesApoyando,
       listaDeEspera: listaDeEspera ?? this.listaDeEspera,
       creador: creador ?? this.creador,
-      fecha_creacion_solicitud: fecha_creacion_solicitud ?? this.fecha_creacion_solicitud,
-      fecha_aceptacion_solicitud: fecha_aceptacion_solicitud ?? this.fecha_aceptacion_solicitud,
+      fecha_creacion_solicitud:
+          fecha_creacion_solicitud ?? this.fecha_creacion_solicitud,
+      fecha_aceptacion_solicitud:
+          fecha_aceptacion_solicitud ?? this.fecha_aceptacion_solicitud,
     );
   }
 }

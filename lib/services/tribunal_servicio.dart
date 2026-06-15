@@ -33,7 +33,7 @@ class TribunalServicio {
           'excusa': justificacion,
           'estado': 'pendiente',
         });
-        
+
         await _notificacionesSvc.notificarAdministradores(
           'Nueva Excusa en Tribunal ⚖️',
           'El tutor $tutorId canceló tarde ($materia) y presentó una justificación.',
@@ -45,35 +45,39 @@ class TribunalServicio {
   }
 
   /// Procesa strikes de estudiantes que no asistieron y evalúa si merecen ban.
-  Future<void> procesarInasistenciaEstudiante(String uidAlumno, String tutoriaId) async {
+  Future<void> procesarInasistenciaEstudiante(
+    String uidAlumno,
+    String tutoriaId,
+  ) async {
     try {
-      final usuarioRef = FirebaseFirestore.instance.collection('usuarios').doc(uidAlumno);
-      
+      final usuarioRef = FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(uidAlumno);
+
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final usuarioSnapshot = await transaction.get(usuarioRef);
         if (usuarioSnapshot.exists) {
           final datosUsuario = usuarioSnapshot.data()!;
           final strikesActuales = datosUsuario['strikes_inasistencia'] ?? 0;
           final nuevosStrikes = strikesActuales + 1;
-          
+
           Map<String, dynamic> actualizacion = {
             'strikes_inasistencia': nuevosStrikes,
           };
-          
+
           if (nuevosStrikes >= 3) {
             actualizacion['esta_baneado'] = true;
           }
-          
+
           transaction.update(usuarioRef, actualizacion);
         }
       });
-      
+
       await _notificacionesSvc.notificarAdministradores(
         'Alerta Administrativa: Strike',
         'El alumno $uidAlumno recibió un strike por inasistencia en tutoría $tutoriaId.',
-        tipo: 'alerta_roja'
+        tipo: 'alerta_roja',
       );
-      
     } catch (e) {
       debugPrint('Error procesando inasistencia de $uidAlumno: $e');
     }

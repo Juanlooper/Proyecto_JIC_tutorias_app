@@ -1,4 +1,4 @@
-import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 class MensajeChat {
@@ -7,6 +7,8 @@ class MensajeChat {
   final String emisorNombre;
   final String texto;
   final DateTime fechaHora;
+  final String? respuestaA;
+  final String? textoRespuesta;
 
   MensajeChat({
     required this.id,
@@ -14,15 +16,21 @@ class MensajeChat {
     required this.emisorNombre,
     required this.texto,
     required this.fechaHora,
+    this.respuestaA,
+    this.textoRespuesta,
   });
 
-  factory MensajeChat.fromMap(String key, Map<dynamic, dynamic> map) {
+  factory MensajeChat.fromMap(String key, Map<String, dynamic> map) {
     return MensajeChat(
       id: key,
       emisorId: map['emisorId'] ?? '',
       emisorNombre: map['emisorNombre'] ?? 'Usuario',
       texto: map['texto'] ?? '',
-      fechaHora: DateTime.tryParse(map['fechaHora'] ?? '') ?? DateTime.now(),
+      fechaHora: map['fechaHora'] != null
+          ? (map['fechaHora'] as Timestamp).toDate()
+          : DateTime.now(),
+      respuestaA: map['respuestaA'],
+      textoRespuesta: map['textoRespuesta'],
     );
   }
 
@@ -31,40 +39,39 @@ class MensajeChat {
       'emisorId': emisorId,
       'emisorNombre': emisorNombre,
       'texto': texto,
-      'fechaHora': fechaHora.toIso8601String(),
+      'fechaHora': Timestamp.fromDate(fechaHora),
+      if (respuestaA != null) 'respuestaA': respuestaA,
+      if (textoRespuesta != null) 'textoRespuesta': textoRespuesta,
     };
   }
 }
 
 class ChatServicio {
-  final FirebaseDatabase _db = FirebaseDatabase.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   /// Retorna un Stream con los mensajes de una tutoría ordenados por fecha.
   Stream<List<MensajeChat>> obtenerMensajesDeTutoria(String tutoriaId) {
-    return _db.ref('chats/$tutoriaId').orderByChild('fechaHora').onValue.map((event) {
-      final data = event.snapshot.value as Map<dynamic, dynamic>?;
-      if (data == null) return [];
+    return _db
+        .collection('tutorias')
+        .doc(tutoriaId)
+        .collection('chat')
+        .orderBy('fechaHora', descending: false)
+        .snapshots()
+        .map((snapshot) {
+          final ahora = DateTime.now();
+          List<MensajeChat> mensajesRecientes = [];
 
-      final mensajes = data.entries.map((e) {
-        return MensajeChat.fromMap(e.key.toString(), e.value as Map<dynamic, dynamic>);
-      }).toList();
+          for (var doc in snapshot.docs) {
+            final msg = MensajeChat.fromMap(doc.id, doc.data());
 
-      final ahora = DateTime.now();
-      List<MensajeChat> mensajesRecientes = [];
+            // Filtro local de 24 horas (Garbage Collection visual)
+            if (ahora.difference(msg.fechaHora).inHours < 24) {
+              mensajesRecientes.add(msg);
+            }
+          }
 
-      for (var msg in mensajes) {
-        if (ahora.difference(msg.fechaHora).inHours >= 24) {
-          // Limpieza descentralizada: Borramos el mensaje expirado de la base de datos (Costo 0)
-          _db.ref('chats/$tutoriaId/${msg.id}').remove();
-        } else {
-          mensajesRecientes.add(msg);
-        }
-      }
-
-      // Ordenar localmente por si Firebase no lo entrega perfectamente ordenado
-      mensajesRecientes.sort((a, b) => a.fechaHora.compareTo(b.fechaHora));
-      return mensajesRecientes;
-    });
+          return mensajesRecientes;
+        });
   }
 
   /// Envía un mensaje al nodo de la tutoría específica.
@@ -73,20 +80,67 @@ class ChatServicio {
     required String emisorId,
     required String emisorNombre,
     required String texto,
+    String? respuestaA,
+    String? textoRespuesta,
   }) async {
     try {
-      final ref = _db.ref('chats/$tutoriaId').push();
+      final collectionRef = _db
+          .collection('tutorias')
+          .doc(tutoriaId)
+          .collection('chat');
+      final nuevoDoc = collectionRef.doc();
+
       final nuevoMensaje = MensajeChat(
-        id: ref.key ?? '',
+        id: nuevoDoc.id,
         emisorId: emisorId,
         emisorNombre: emisorNombre,
         texto: texto,
         fechaHora: DateTime.now(),
+        respuestaA: respuestaA,
+        textoRespuesta: textoRespuesta,
       );
-      
-      await ref.set(nuevoMensaje.toMap());
+
+      await nuevoDoc.set(nuevoMensaje.toMap());
     } catch (e) {
-      debugPrint('Error al enviar mensaje de chat: $e');
+      debugPrint('Error al enviar mensaje de chat en Firestore: $e');
+      throw Exception('Error de red al enviar mensaje.');
+    }
+  }
+
+  /// Elimina un mensaje específico del chat (Ej. el usuario se arrepiente)
+  Future<void> eliminarMensaje(String tutoriaId, String mensajeId) async {
+    try {
+      await _db
+          .collection('tutorias')
+          .doc(tutoriaId)
+          .collection('chat')
+          .doc(mensajeId)
+          .delete();
+    } catch (e) {
+      debugPrint('Error al eliminar mensaje en Firestore: $e');
+      throw Exception('Error al eliminar el mensaje.');
+    }
+  }
+
+  /// Elimina la subcolección completa del chat usando un Batch Delete
+  Future<void> eliminarChatCompleto(String tutoriaId) async {
+    try {
+      final collectionRef = _db
+          .collection('tutorias')
+          .doc(tutoriaId)
+          .collection('chat');
+      final snapshot = await collectionRef.get();
+
+      if (snapshot.docs.isEmpty) return;
+
+      final batch = _db.batch();
+      for (var doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      await batch.commit();
+    } catch (e) {
+      debugPrint('Error al borrar nodo completo de chat en Firestore: $e');
     }
   }
 }

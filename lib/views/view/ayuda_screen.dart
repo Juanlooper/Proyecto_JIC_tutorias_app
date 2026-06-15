@@ -8,9 +8,7 @@ class AyudaScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       appBar: AppBar(
-        
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppTheme.primarioVerde),
@@ -60,11 +58,7 @@ class AyudaScreen extends StatelessWidget {
       children: [
         const Text(
           'Preguntas Frecuentes',
-          style: TextStyle(
-            fontSize: 36,
-            fontWeight: FontWeight.bold,
-            
-          ),
+          style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
         const Text(
@@ -99,10 +93,7 @@ class AyudaScreen extends StatelessWidget {
       child: ExpansionTile(
         title: Text(
           pregunta,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         children: [
           Padding(
@@ -124,12 +115,18 @@ class AyudaScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.primarioAzul.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: AppTheme.primarioAzul.withValues(alpha: 0.2)),
+          border: Border.all(
+            color: AppTheme.primarioAzul.withValues(alpha: 0.2),
+          ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.help_center_rounded, size: 80, color: AppTheme.primarioAzul),
+            const Icon(
+              Icons.help_center_rounded,
+              size: 80,
+              color: AppTheme.primarioAzul,
+            ),
             const SizedBox(height: 20),
             const Text(
               '¿Aún tienes dudas?',
@@ -143,14 +140,20 @@ class AyudaScreen extends StatelessWidget {
             const Text(
               'Si las preguntas frecuentes no resolvieron tu problema, puedes contactar a soporte técnico directamente.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: AppTheme.grisTexto, height: 1.5),
+              style: TextStyle(
+                fontSize: 16,
+                color: AppTheme.grisTexto,
+                height: 1.5,
+              ),
             ),
             const SizedBox(height: 25),
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const SoporteScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const SoporteScreen(),
+                  ),
                 );
               },
               icon: const Icon(Icons.support_agent_rounded),
@@ -158,12 +161,15 @@ class AyudaScreen extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primarioAzul,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 15,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),

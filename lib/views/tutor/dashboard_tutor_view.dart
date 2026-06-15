@@ -32,6 +32,10 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
           idActual,
         );
         context.read<TutoriasProvider>().cargarListadoDeTutoriasPendientes();
+        // Ejecutar recolección de basura de solicitudes expiradas
+        context.read<TutoriasProvider>().limpiarSolicitudesExpiradas();
+        // Ejecutar recolección de clases zombie (olvido de pase de lista)
+        context.read<TutoriasProvider>().limpiarClasesZombie();
       }
     });
   }
@@ -100,7 +104,13 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -326,8 +336,6 @@ class _DashboardTutorViewState extends State<DashboardTutorView> {
       },
     );
   }
-
-
 
   @override
   Widget build(BuildContext context) {

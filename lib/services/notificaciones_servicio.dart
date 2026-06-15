@@ -19,14 +19,14 @@ class NotificacionesServicio {
       );
 
       if (configuracion.authorizationStatus == AuthorizationStatus.authorized ||
-          configuracion.authorizationStatus == AuthorizationStatus.provisional) {
-        
+          configuracion.authorizationStatus ==
+              AuthorizationStatus.provisional) {
         debugPrint('Permisos de notificación concedidos al sistema.');
-        
+
         // 2. Obtener el Token identificador del teléfono/emulador
         String? tokenFCM = await _messaging.getToken();
         debugPrint('FCM Token Extraído: $tokenFCM');
-        
+
         if (tokenFCM != null) {
           await _guardarTokenEnFirestore(tokenFCM);
         }
@@ -35,7 +35,6 @@ class NotificacionesServicio {
         _messaging.onTokenRefresh.listen((nuevoToken) {
           _guardarTokenEnFirestore(nuevoToken);
         });
-
       } else {
         debugPrint('El usuario denegó los permisos de notificación.');
       }
@@ -49,14 +48,19 @@ class NotificacionesServicio {
     final uidUsuario = FirebaseAuth.instance.currentUser?.uid;
     if (uidUsuario != null) {
       try {
-        await FirebaseFirestore.instance.collection('usuarios').doc(uidUsuario).set({
-          'token_dispositivo': token,
-        }, SetOptions(merge: true)); // Se usa merge para no sobreescribir otros datos
+        await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(uidUsuario)
+            .set(
+              {'token_dispositivo': token},
+              SetOptions(merge: true),
+            ); // Se usa merge para no sobreescribir otros datos
       } catch (e) {
         debugPrint('Fallo al guardar el token de dispositivo en la nube: $e');
       }
     }
   }
+
   /// Crea una notificación individual para un usuario.
   Future<void> crearNotificacion({
     required String usuarioId,
@@ -86,12 +90,21 @@ class NotificacionesServicio {
     String tipo = 'info',
   }) async {
     for (var uid in uids) {
-      await crearNotificacion(usuarioId: uid, titulo: titulo, mensaje: mensaje, tipo: tipo);
+      await crearNotificacion(
+        usuarioId: uid,
+        titulo: titulo,
+        mensaje: mensaje,
+        tipo: tipo,
+      );
     }
   }
 
   /// Notifica inmediatamente a todo el staff de administradores del sistema.
-  Future<void> notificarAdministradores(String titulo, String mensaje, {String tipo = 'alerta_admin'}) async {
+  Future<void> notificarAdministradores(
+    String titulo,
+    String mensaje, {
+    String tipo = 'alerta_admin',
+  }) async {
     try {
       final adminsSnapshot = await FirebaseFirestore.instance
           .collection('usuarios')
@@ -111,6 +124,48 @@ class NotificacionesServicio {
       }
     } catch (e) {
       debugPrint('Error al notificar administradores: $e');
+    }
+  }
+
+  /// Garbage Collector: Elimina silenciosamente notificaciones antiguas (Por defecto: 7 días)
+  Future<void> limpiarNotificacionesViejas({int diasAntiguedad = 7}) async {
+    try {
+      final uidUsuario = FirebaseAuth.instance.currentUser?.uid;
+      if (uidUsuario == null) return;
+
+      final limiteFecha = DateTime.now().subtract(
+        Duration(days: diasAntiguedad),
+      );
+
+      final query = await FirebaseFirestore.instance
+          .collection('notificaciones')
+          .where('usuarioId', isEqualTo: uidUsuario)
+          .get();
+
+      final batch = FirebaseFirestore.instance.batch();
+      bool hayBasura = false;
+
+      for (var doc in query.docs) {
+        final data = doc.data();
+        final fechaStr = data['fecha'];
+        if (fechaStr != null) {
+          final fechaDoc = DateTime.tryParse(fechaStr.toString());
+          // Si tiene más de 7 días, se enlista para borrado
+          if (fechaDoc != null && fechaDoc.isBefore(limiteFecha)) {
+            batch.delete(doc.reference);
+            hayBasura = true;
+          }
+        }
+      }
+
+      if (hayBasura) {
+        await batch.commit();
+        debugPrint(
+          '🗑️ GC: Notificaciones de más de $diasAntiguedad días eliminadas.',
+        );
+      }
+    } catch (e) {
+      debugPrint('Error en GC de notificaciones: $e');
     }
   }
 }

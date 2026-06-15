@@ -146,7 +146,6 @@ class _AceptarSolicitudViewState extends State<AceptarSolicitudView> {
     );
 
     return Scaffold(
-      
       appBar: AppBar(
         title: const Text(
           "Configurar Sesión",
@@ -176,11 +175,7 @@ class _AceptarSolicitudViewState extends State<AceptarSolicitudView> {
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
-                    BoxShadow(
-
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
+                    BoxShadow(blurRadius: 10, offset: const Offset(0, 4)),
                   ],
                 ),
                 child: Column(

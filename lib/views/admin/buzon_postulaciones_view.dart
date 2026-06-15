@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_theme.dart';
+import '../../models/usuario_model.dart';
 
 class BuzonPostulacionesView extends StatelessWidget {
   const BuzonPostulacionesView({super.key});
@@ -13,7 +14,10 @@ class BuzonPostulacionesView extends StatelessWidget {
   ) async {
     try {
       final actualizacion = aprobado
-          ? {'rolEnElSistema': 'tutor', 'estado_solicitud_tutor': 'aprobado'}
+          ? {
+              'rolEnElSistema': RolSistema.tutor.name,
+              'estado_solicitud_tutor': 'aprobado',
+            }
           : {'estado_solicitud_tutor': 'ninguna'};
 
       await FirebaseFirestore.instance

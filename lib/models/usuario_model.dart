@@ -142,17 +142,19 @@ class UsuarioModel {
         (rol) => rol.name == mapaDeDatos['rolEnElSistema'],
         orElse: () => RolSistema.estudiante,
       ),
-      
+
       // La facultad y la carrera aceptan valores nulos de forma natural, por lo que no es necesario un valor por defecto drástico.
       facultad: mapaDeDatos['facultad'],
       carrera: mapaDeDatos['carrera'],
-      
+
       // Protección 3: Chequeamos si existe la lista de tutores. Si no existe en la base de datos, asignamos una lista vacía [].
       listaDeTutoresSuscritos: mapaDeDatos['listaDeTutoresSuscritos'] != null
           ? List<String>.from(mapaDeDatos['listaDeTutoresSuscritos'])
           : [],
       strikesInasistencia: mapaDeDatos['strikes_inasistencia'] ?? 0,
-      estaBaneado: (mapaDeDatos['esta_baneado'] == true) || ((mapaDeDatos['strikes_inasistencia'] ?? 0) >= 3),
+      estaBaneado:
+          (mapaDeDatos['esta_baneado'] == true) ||
+          ((mapaDeDatos['strikes_inasistencia'] ?? 0) >= 3),
       estadoSolicitudTutor: mapaDeDatos['estado_solicitud_tutor'] ?? 'ninguna',
       descripcionPerfil: mapaDeDatos['descripcionPerfil'],
       telefonoPersonal: mapaDeDatos['telefonoPersonal'],
@@ -160,7 +162,7 @@ class UsuarioModel {
       contactoEmergenciaTelefono: mapaDeDatos['contactoEmergenciaTelefono'],
       anoCursando: mapaDeDatos['anoCursando'],
       puntosVecta: mapaDeDatos['puntos_vecta'] ?? 0,
-      insigniasTutor: mapaDeDatos['insignias_tutor'] != null 
+      insigniasTutor: mapaDeDatos['insignias_tutor'] != null
           ? List<String>.from(mapaDeDatos['insignias_tutor'])
           : [],
       horarioDisponibilidad: mapaDeDatos['horarioDisponibilidad'] != null
@@ -209,19 +211,24 @@ class UsuarioModel {
       rolEnElSistema: rolEnElSistema ?? this.rolEnElSistema,
       facultad: facultad ?? this.facultad,
       carrera: carrera ?? this.carrera,
-      listaDeTutoresSuscritos: listaDeTutoresSuscritos ?? this.listaDeTutoresSuscritos,
+      listaDeTutoresSuscritos:
+          listaDeTutoresSuscritos ?? this.listaDeTutoresSuscritos,
       strikesInasistencia: strikesInasistencia ?? this.strikesInasistencia,
       estaBaneado: estaBaneado ?? this.estaBaneado,
       estadoSolicitudTutor: estadoSolicitudTutor ?? this.estadoSolicitudTutor,
       descripcionPerfil: descripcionPerfil ?? this.descripcionPerfil,
       telefonoPersonal: telefonoPersonal ?? this.telefonoPersonal,
-      contactoEmergenciaNombre: contactoEmergenciaNombre ?? this.contactoEmergenciaNombre,
-      contactoEmergenciaTelefono: contactoEmergenciaTelefono ?? this.contactoEmergenciaTelefono,
+      contactoEmergenciaNombre:
+          contactoEmergenciaNombre ?? this.contactoEmergenciaNombre,
+      contactoEmergenciaTelefono:
+          contactoEmergenciaTelefono ?? this.contactoEmergenciaTelefono,
       anoCursando: anoCursando ?? this.anoCursando,
       puntosVecta: puntosVecta ?? this.puntosVecta,
       insigniasTutor: insigniasTutor ?? this.insigniasTutor,
-      horarioDisponibilidad: horarioDisponibilidad ?? this.horarioDisponibilidad,
-      materiasEspecializadas: materiasEspecializadas ?? this.materiasEspecializadas,
+      horarioDisponibilidad:
+          horarioDisponibilidad ?? this.horarioDisponibilidad,
+      materiasEspecializadas:
+          materiasEspecializadas ?? this.materiasEspecializadas,
     );
   }
 }

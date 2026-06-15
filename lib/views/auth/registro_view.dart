@@ -169,7 +169,9 @@ class _RegistroViewState extends State<RegistroView> {
             'Ayuda: $tituloField',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Theme.of(context).brightness == Brightness.dark ? Colors.white : VectaColors.darkBlue,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : VectaColors.darkBlue,
             ),
           ),
           content: Text(
@@ -205,8 +207,8 @@ class _RegistroViewState extends State<RegistroView> {
       if (val.isEmpty) {
         _errorEmail = 'El correo es obligatorio';
         _emailEsValido = false;
-      } else if (!val.endsWith('@utp.ac.pa')) {
-        _errorEmail = 'Debe ser tu correo institucional (@utp.ac.pa)';
+      } else if (!val.contains('@')) {
+        _errorEmail = 'Ingresa un correo válido';
         _emailEsValido = false;
       } else {
         _errorEmail = null;
@@ -230,9 +232,16 @@ class _RegistroViewState extends State<RegistroView> {
       return;
     }
 
-    if (ModeracionServicio.contieneLenguajeToxico(_ctrlPrimerNombre.text) || 
+    if (ModeracionServicio.contieneLenguajeToxico(_ctrlPrimerNombre.text) ||
         ModeracionServicio.contieneLenguajeToxico(_ctrlPrimerApellido.text)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Por favor, usa tu nombre real. El lenguaje ofensivo no está permitido en Vecta.'), backgroundColor: VectaColors.errorRed));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Por favor, usa tu nombre real. El lenguaje ofensivo no está permitido en Vecta.',
+          ),
+          backgroundColor: VectaColors.errorRed,
+        ),
+      );
       return;
     }
     if (_facultadSeleccionada == null || _carreraSeleccionada == null) {
@@ -264,7 +273,14 @@ class _RegistroViewState extends State<RegistroView> {
     final hasSpecial = pass.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
 
     if (pass.length < 8 || !hasUppercase || !hasNumber || !hasSpecial) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.'), backgroundColor: VectaColors.errorRed));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.',
+          ),
+          backgroundColor: VectaColors.errorRed,
+        ),
+      );
       return;
     }
 
@@ -305,8 +321,13 @@ class _RegistroViewState extends State<RegistroView> {
       anoCursando: _anoSeleccionado,
     );
 
+    if (mounted) {
+      OverlayLoader.ocultar(context);
+    }
+
     if (exitoRegistrando && mounted) {
-      bool correoEnviado = await motorDeIdentidad.dispararVerificacionDeCorreo();
+      bool correoEnviado = await motorDeIdentidad
+          .dispararVerificacionDeCorreo();
       await motorDeIdentidad.salirDeLaSesionActual();
 
       if (mounted) {
@@ -324,7 +345,9 @@ class _RegistroViewState extends State<RegistroView> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Cuenta creada pero el correo falló: ${motorDeIdentidad.mensajeDeError}'),
+              content: Text(
+                'Cuenta creada pero el correo falló: ${motorDeIdentidad.mensajeDeError}',
+              ),
               backgroundColor: VectaColors.errorRed,
               duration: const Duration(seconds: 8),
             ),
@@ -332,13 +355,7 @@ class _RegistroViewState extends State<RegistroView> {
           Navigator.pop(context);
         }
       }
-    } 
-    
-    if (mounted) {
-      OverlayLoader.ocultar(context);
-    }
-    
-    if (!exitoRegistrando && mounted) {
+    } else if (!exitoRegistrando && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(motorDeIdentidad.mensajeDeError),
@@ -347,16 +364,13 @@ class _RegistroViewState extends State<RegistroView> {
       );
     }
   }
+
   Widget _buildResponsiveRow(Widget child1, Widget child2) {
     bool isSmallScreen = MediaQuery.of(context).size.width < 600;
     if (isSmallScreen) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          child1,
-          const SizedBox(height: 15),
-          child2,
-        ],
+        children: [child1, const SizedBox(height: 15), child2],
       );
     } else {
       return Row(
@@ -636,9 +650,15 @@ class _RegistroViewState extends State<RegistroView> {
                         obscureText: _obscureText,
                         onChanged: _validarContrasenaEnTiempoReal,
                         decoration: InputDecoration(
-                          hintText: 'Contraseña (min. 8 caracteres, Mayús, #, Especial)',
-                          hintStyle: const TextStyle(color: VectaColors.softBlue),
-                          prefixIcon: const Icon(Icons.lock, color: VectaColors.secondaryBlue),
+                          hintText:
+                              'Contraseña (min. 8 caracteres, Mayús, #, Especial)',
+                          hintStyle: const TextStyle(
+                            color: VectaColors.softBlue,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.lock,
+                            color: VectaColors.secondaryBlue,
+                          ),
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -657,8 +677,15 @@ class _RegistroViewState extends State<RegistroView> {
                                 },
                               ),
                               IconButton(
-                                icon: const Icon(Icons.help_outline, color: VectaColors.secondaryBlue, size: 20),
-                                onPressed: () => _mostrarVentanaAyuda('Contraseña', 'Crea una contraseña segura de al menos 8 caracteres. Obligatoriamente debe contener al menos una mayúscula, un número y un carácter especial (ej. !@#\$%^&*).'),
+                                icon: const Icon(
+                                  Icons.help_outline,
+                                  color: VectaColors.secondaryBlue,
+                                  size: 20,
+                                ),
+                                onPressed: () => _mostrarVentanaAyuda(
+                                  'Contraseña',
+                                  'Crea una contraseña segura de al menos 8 caracteres. Obligatoriamente debe contener al menos una mayúscula, un número y un carácter especial (ej. !@#\$%^&*).',
+                                ),
                               ),
                             ],
                           ),
@@ -688,10 +715,22 @@ class _RegistroViewState extends State<RegistroView> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _construirFilaChecklist(_reqLongitud, "Mínimo 8 caracteres"),
-                            _construirFilaChecklist(_reqMayuscula, "Al menos una mayúscula"),
-                            _construirFilaChecklist(_reqNumero, "Al menos un número"),
-                            _construirFilaChecklist(_reqEspecial, "Un carácter especial (!@#\$%^&*)"),
+                            _construirFilaChecklist(
+                              _reqLongitud,
+                              "Mínimo 8 caracteres",
+                            ),
+                            _construirFilaChecklist(
+                              _reqMayuscula,
+                              "Al menos una mayúscula",
+                            ),
+                            _construirFilaChecklist(
+                              _reqNumero,
+                              "Al menos un número",
+                            ),
+                            _construirFilaChecklist(
+                              _reqEspecial,
+                              "Un carácter especial (!@#\$%^&*)",
+                            ),
                           ],
                         ),
                     ],
@@ -715,7 +754,9 @@ class _RegistroViewState extends State<RegistroView> {
                       title: Text(
                         'Leer Términos y Condiciones',
                         style: TextStyle(
-                          color: Theme.of(context).brightness == Brightness.dark ? Colors.white : VectaColors.darkBlue,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : VectaColors.darkBlue,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -772,7 +813,11 @@ Vecta es una herramienta tecnológica diseñada para facilitar el apoyo académi
 7. Cambios en estas Políticas
 Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas regulaciones legales o mejoras en la aplicación. Te notificaremos a través de la app o por correo electrónico si se realizan cambios importantes.''',
                             style: TextStyle(
-                              color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : VectaColors.darkBlue,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.white70
+                                  : VectaColors.darkBlue,
                               fontSize: 13,
                               height: 1.5,
                             ),
@@ -931,7 +976,9 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
         prefixIcon: Icon(icon, color: VectaColors.secondaryBlue, size: 22),
         prefixText: type == _FieldType.celular ? '+507 ' : null,
         prefixStyle: TextStyle(
-          color: Theme.of(context).brightness == Brightness.dark ? Colors.white : VectaColors.darkBlue,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white
+              : VectaColors.darkBlue,
           fontWeight: FontWeight.bold,
         ),
 
@@ -1002,7 +1049,9 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
                     child: Text(
                       val,
                       style: TextStyle(
-                        color: Theme.of(context).brightness == Brightness.dark ? Colors.white : VectaColors.darkBlue,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : VectaColors.darkBlue,
                       ),
                     ),
                   ),
@@ -1054,7 +1103,9 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
                 controller: controller,
                 hintText: hint,
                 textStyle: TextStyle(
-                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : VectaColors.darkBlue,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : VectaColors.darkBlue,
                   overflow: TextOverflow.ellipsis,
                 ),
                 inputDecorationTheme: const InputDecorationTheme(
@@ -1081,7 +1132,10 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
                     value: val,
                     label: val,
                     style: MenuItemButton.styleFrom(
-                      foregroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.white : VectaColors.darkBlue,
+                      foregroundColor:
+                          Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : VectaColors.darkBlue,
                     ),
                   );
                 }).toList(),

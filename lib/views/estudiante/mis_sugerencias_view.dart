@@ -9,8 +9,21 @@ import '../../providers/tutorias_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../tutor/aceptar_solicitud_view.dart';
 
-class MisSugerenciasView extends StatelessWidget {
+class MisSugerenciasView extends StatefulWidget {
   const MisSugerenciasView({super.key});
+
+  @override
+  State<MisSugerenciasView> createState() => _MisSugerenciasViewState();
+}
+
+class _MisSugerenciasViewState extends State<MisSugerenciasView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TutoriasProvider>().limpiarSolicitudesExpiradas();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -222,112 +235,132 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
     final bool esMiCreacion =
         sugerencia.creador == usuarioActual.identificadorUnico;
 
-    // Tarjeta plana, borde fino
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300, width: 1.0),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: const Color(0xFF1CA887).withValues(alpha: 0.2),
+          width: 1,
+        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    sugerencia.materiaOAsignatura,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      sugerencia.materiaOAsignatura,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.people, size: 14, color: Colors.orange),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$cantidadApoyos',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.people,
+                          size: 14,
                           color: Colors.orange,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tema: ${sugerencia.temaEspecifico}',
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            const Divider(height: 1),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (!esTutor)
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          yoApoyoEsto ? Icons.thumb_down : Icons.thumb_up,
-                          color: yoApoyoEsto
-                              ? Colors.redAccent
-                              : AppTheme.primarioVerde,
+                        const SizedBox(width: 4),
+                        Text(
+                          '$cantidadApoyos',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
                         ),
-                        tooltip: yoApoyoEsto ? 'Retirar apoyo' : 'Apoyar',
-                        onPressed: () => _ejecutarApoyo(context, yoApoyoEsto),
-                      ),
-                      Text(
-                        yoApoyoEsto ? 'Retirar apoyo' : 'Apoyar',
-                        style: TextStyle(
-                          color: yoApoyoEsto
-                              ? Colors.redAccent
-                              : AppTheme.primarioVerde,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                if (esTutor)
-                  FilledButton.icon(
-                    onPressed: () => _aceptarClaseComoTutor(context),
-                    icon: const Icon(Icons.check, size: 18),
-                    label: const Text('Postularme como Tutor'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppTheme.primarioAzul,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ],
                     ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tema: ${sugerencia.temaEspecifico}',
+                style: const TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (!esTutor)
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            yoApoyoEsto ? Icons.thumb_down : Icons.thumb_up,
+                            color: yoApoyoEsto
+                                ? Colors.redAccent
+                                : AppTheme.primarioVerde,
+                          ),
+                          tooltip: yoApoyoEsto ? 'Retirar apoyo' : 'Apoyar',
+                          onPressed: () => _ejecutarApoyo(context, yoApoyoEsto),
+                        ),
+                        Text(
+                          yoApoyoEsto ? 'Retirar apoyo' : 'Apoyar',
+                          style: TextStyle(
+                            color: yoApoyoEsto
+                                ? Colors.redAccent
+                                : AppTheme.primarioVerde,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
 
-                if (!esTutor && esMiCreacion)
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.grey),
-                    tooltip: 'Eliminar mi sugerencia',
-                    onPressed: () => _borrarMisugerenciaPropia(context),
-                  ),
-              ],
-            ),
-          ],
+                  if (esTutor)
+                    FilledButton.icon(
+                      onPressed: () => _aceptarClaseComoTutor(context),
+                      icon: const Icon(Icons.check, size: 18),
+                      label: const Text('Postularme como Tutor'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.primarioAzul,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                    ),
+
+                  if (!esTutor && esMiCreacion)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.grey,
+                      ),
+                      tooltip: 'Eliminar mi sugerencia',
+                      onPressed: () => _borrarMisugerenciaPropia(context),
+                    ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

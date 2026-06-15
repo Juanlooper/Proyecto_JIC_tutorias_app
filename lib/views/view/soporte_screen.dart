@@ -7,9 +7,7 @@ class SoporteScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       appBar: AppBar(
-        
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppTheme.primarioVerde),
@@ -25,7 +23,9 @@ class SoporteScreen extends StatelessWidget {
               horizontal: esMovil ? 24.0 : 60.0,
               vertical: 20,
             ),
-            child: esMovil ? _buildMobileLayout(context) : _buildDesktopLayout(context),
+            child: esMovil
+                ? _buildMobileLayout(context)
+                : _buildDesktopLayout(context),
           );
         },
       ),
@@ -59,11 +59,7 @@ class SoporteScreen extends StatelessWidget {
       children: [
         const Text(
           'Soporte Técnico',
-          style: TextStyle(
-            fontSize: 36,
-            fontWeight: FontWeight.bold,
-            
-          ),
+          style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
         const Text(
@@ -89,7 +85,9 @@ class SoporteScreen extends StatelessWidget {
               // Simular envío de reporte
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('✅ Tu reporte ha sido enviado con éxito. Te contactaremos pronto.'),
+                  content: Text(
+                    '✅ Tu reporte ha sido enviado con éxito. Te contactaremos pronto.',
+                  ),
                   backgroundColor: AppTheme.primarioVerde,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -135,12 +133,18 @@ class SoporteScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.primarioVerde.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: AppTheme.primarioVerde.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: AppTheme.primarioVerde.withValues(alpha: 0.2),
+        ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.support_agent_rounded, size: 80, color: AppTheme.primarioVerde),
+          const Icon(
+            Icons.support_agent_rounded,
+            size: 80,
+            color: AppTheme.primarioVerde,
+          ),
           const SizedBox(height: 20),
           const Text(
             'Estamos para ayudarte',
@@ -154,7 +158,11 @@ class SoporteScreen extends StatelessWidget {
           const Text(
             'Nuestro equipo técnico revisará tu reporte y te contactará al correo registrado en la plataforma lo antes posible.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: AppTheme.grisTexto, height: 1.5),
+            style: TextStyle(
+              fontSize: 16,
+              color: AppTheme.grisTexto,
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 35),
           ListTile(
@@ -164,10 +172,16 @@ class SoporteScreen extends StatelessWidget {
                 color: AppTheme.primarioVerde.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.email_rounded, color: AppTheme.primarioVerde),
+              child: const Icon(
+                Icons.email_rounded,
+                color: AppTheme.primarioVerde,
+              ),
             ),
-            title: const Text('Soporte Directo', style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('soporte@vecta.edu.pa'),
+            title: const Text(
+              'Soporte Directo',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: const Text('vecta.administrador@gmail.com'),
           ),
           const SizedBox(height: 15),
           ListTile(
@@ -177,9 +191,15 @@ class SoporteScreen extends StatelessWidget {
                 color: AppTheme.primarioVerde.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.access_time_rounded, color: AppTheme.primarioVerde),
+              child: const Icon(
+                Icons.access_time_rounded,
+                color: AppTheme.primarioVerde,
+              ),
             ),
-            title: const Text('Horario de Atención', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: const Text(
+              'Horario de Atención',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             subtitle: const Text('Lunes a Viernes, 8:00 AM - 5:00 PM'),
           ),
         ],

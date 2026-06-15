@@ -450,7 +450,9 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         FilledButton.icon(
-                          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1CA887)),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF1CA887),
+                          ),
                           onPressed: () {
                             Navigator.push(
                               context,

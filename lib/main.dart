@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'providers/tema_provider.dart';
@@ -20,15 +21,21 @@ import 'views/navigation/main_navigation_view.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
 
-  // Activación de Firebase App Check temporalmente comentada para evitar errores en web
-  // await FirebaseAppCheck.instance.activate(
-  //   providerAndroid: AndroidPlayIntegrityProvider(), // Producción Android
-  //   providerWeb: ReCaptchaV3Provider(
-  //     '6LdyttEsAAAAABqlMu_KYIZOUgG0AfSUjoI5inkx',
-  //   ), // reCAPTCHA v3 invisible (Web)
-  // );
+  // Activación de Firebase App Check para seguridad estricta en producción
+  await FirebaseAppCheck.instance.activate(
+    // ignore: deprecated_member_use
+    androidProvider: AndroidProvider.playIntegrity, // Producción Android
+    // ignore: deprecated_member_use
+    webProvider: ReCaptchaV3Provider(
+      '6LdyttEsAAAAABqlMu_KYIZOUgG0AfSUjoI5inkx',
+    ), // reCAPTCHA v3 invisible (Web)
+  );
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

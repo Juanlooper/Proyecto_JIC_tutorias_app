@@ -5,8 +5,22 @@ import '../../models/tutoria_model.dart';
 import '../../providers/autenticacion_provider.dart';
 import '../../providers/tutorias_provider.dart';
 
-class ComunidadSugerenciasView extends StatelessWidget {
+class ComunidadSugerenciasView extends StatefulWidget {
   const ComunidadSugerenciasView({super.key});
+
+  @override
+  State<ComunidadSugerenciasView> createState() =>
+      _ComunidadSugerenciasViewState();
+}
+
+class _ComunidadSugerenciasViewState extends State<ComunidadSugerenciasView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TutoriasProvider>().limpiarSolicitudesExpiradas();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +35,6 @@ class ComunidadSugerenciasView extends StatelessWidget {
     }
 
     return Scaffold(
-      
       appBar: AppBar(
         title: const Text(
           "Bolsa de la Comunidad",
@@ -172,14 +185,12 @@ class _TarjetaVotacionComunitaria extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey),
-        boxShadow: [
-          BoxShadow(
-
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey.shade700
+              : Colors.grey,
+        ),
+        boxShadow: [BoxShadow(blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -215,7 +226,6 @@ class _TarjetaVotacionComunitaria extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
-                          
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -288,7 +298,11 @@ class _TarjetaVotacionComunitaria extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               border: Border(
-                top: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey),
+                top: BorderSide(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey.shade700
+                      : Colors.grey,
+                ),
               ),
             ),
             child: Row(

@@ -20,7 +20,9 @@ class _CrearClasePropiaViewState extends State<CrearClasePropiaView> {
   // Controladores de texto para capturar los datos
   final TextEditingController _materiaController = TextEditingController();
   final TextEditingController _motivosController = TextEditingController();
-  final TextEditingController _cupoController = TextEditingController(text: '1');
+  final TextEditingController _cupoController = TextEditingController(
+    text: '1',
+  );
 
   DateTime? _fechaSeleccionada;
   TimeOfDay? _horaSeleccionada;
@@ -44,7 +46,7 @@ class _CrearClasePropiaViewState extends State<CrearClasePropiaView> {
   bool _estaCargando = false;
   List<String> _archivosSubidosUrl = [];
   List<String> _archivosSubidosNombre = [];
-  
+
   // Variables para mostrar el progreso de subida si fuera necesario (opcional)
   bool _estaSubiendoArchivos = false;
 
@@ -109,11 +111,13 @@ class _CrearClasePropiaViewState extends State<CrearClasePropiaView> {
   Future<void> _enviarSugerencia() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (ModeracionServicio.contieneLenguajeToxico(_materiaController.text) || 
+    if (ModeracionServicio.contieneLenguajeToxico(_materiaController.text) ||
         ModeracionServicio.contieneLenguajeToxico(_motivosController.text)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("El texto ingresado contiene lenguaje inapropiado u ofensivo. Por favor, corrígelo antes de enviar."),
+          content: Text(
+            "El texto ingresado contiene lenguaje inapropiado u ofensivo. Por favor, corrígelo antes de enviar.",
+          ),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -145,14 +149,10 @@ class _CrearClasePropiaViewState extends State<CrearClasePropiaView> {
 
     final uidLocal = FirebaseAuth.instance.currentUser?.uid ?? 'anonimo';
     final enlacesOpcionales = _archivosSubidosUrl.isNotEmpty
-        ? {
-            uidLocal: _archivosSubidosUrl,
-          }
+        ? {uidLocal: _archivosSubidosUrl}
         : null;
     final nombresOpcionales = _archivosSubidosNombre.isNotEmpty
-        ? {
-            uidLocal: _archivosSubidosNombre,
-          }
+        ? {uidLocal: _archivosSubidosNombre}
         : null;
 
     final materiaFinal = _materiaSeleccionada == 'Otros'
@@ -168,9 +168,10 @@ class _CrearClasePropiaViewState extends State<CrearClasePropiaView> {
       temaEspecifico: _motivosController.text.trim(),
       carrera: 'General / No Especificada',
       identificadorDelTutor: uidLocal, // El tutor es quien la crea
-      listaDeEstudiantesInscritos: [], 
+      listaDeEstudiantesInscritos: [],
       modalidadDeClase: _modalidadSeleccionada,
-      estadoDeLaSolicitud: 'aceptada', // Ya nace aceptada (o abierta si es grupal y tiene cupo > 1)
+      estadoDeLaSolicitud:
+          'aceptada', // Ya nace aceptada (o abierta si es grupal y tiene cupo > 1)
       fechaHoraSugerida: fechaHoraFinal,
       cupoMaximo: cupoParseado,
       duracionMinutos: 60,
@@ -180,10 +181,12 @@ class _CrearClasePropiaViewState extends State<CrearClasePropiaView> {
     );
 
     final provider = Provider.of<TutoriasProvider>(context, listen: false);
-    
+
     // Si la clase es grupal, la convertimos a abierta para que los estudiantes puedan inscribirse
     if (cupoParseado > 1) {
-      sugerenciaCruda = sugerenciaCruda.copyWith(estadoDeLaSolicitud: 'abierta');
+      sugerenciaCruda = sugerenciaCruda.copyWith(
+        estadoDeLaSolicitud: 'abierta',
+      );
     }
 
     bool exito = await provider.tutorCreaClase(sugerenciaCruda);
@@ -219,7 +222,6 @@ class _CrearClasePropiaViewState extends State<CrearClasePropiaView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       appBar: AppBar(
         elevation: 0,
         iconTheme: const IconThemeData(),
@@ -376,7 +378,9 @@ class _CrearClasePropiaViewState extends State<CrearClasePropiaView> {
                                       style: TextStyle(
                                         color: _fechaSeleccionada == null
                                             ? Colors.grey[500]
-                                            : Theme.of(context).textTheme.bodyMedium?.color,
+                                            : Theme.of(
+                                                context,
+                                              ).textTheme.bodyMedium?.color,
                                         fontSize: 15,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -419,7 +423,9 @@ class _CrearClasePropiaViewState extends State<CrearClasePropiaView> {
                                       style: TextStyle(
                                         color: _horaSeleccionada == null
                                             ? Colors.grey[500]
-                                            : Theme.of(context).textTheme.bodyMedium?.color,
+                                            : Theme.of(
+                                                context,
+                                              ).textTheme.bodyMedium?.color,
                                         fontSize: 15,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -447,7 +453,9 @@ class _CrearClasePropiaViewState extends State<CrearClasePropiaView> {
                     icono: Icons.group_rounded,
                   ),
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) return "Ingrese el cupo.";
+                    if (value == null || value.trim().isEmpty) {
+                      return "Ingrese el cupo.";
+                    }
                     final n = int.tryParse(value);
                     if (n == null || n < 1) return "Cupo inválido.";
                     if (n > 50) return "El cupo máximo permitido es 50.";
@@ -481,7 +489,11 @@ class _CrearClasePropiaViewState extends State<CrearClasePropiaView> {
                   padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
                   child: Text(
                     "Se recomienda unir todo en un solo PDF o DOCX. Máximo 3 archivos.",
-                    style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ),
                 if (_archivosSubidosNombre.isNotEmpty)
@@ -491,58 +503,102 @@ class _CrearClasePropiaViewState extends State<CrearClasePropiaView> {
                     decoration: _decoracionSimuladaCaja(context),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: _archivosSubidosNombre.map((nombre) => 
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.attach_file, size: 16, color: Color(0xFF6C63FF)),
-                              const SizedBox(width: 8),
-                              Expanded(child: Text(nombre, style: const TextStyle(fontSize: 14))),
-                            ],
-                          ),
-                        )
-                      ).toList(),
+                      children: _archivosSubidosNombre
+                          .map(
+                            (nombre) => Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4.0,
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.attach_file,
+                                    size: 16,
+                                    color: Color(0xFF6C63FF),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      nombre,
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
                     ),
                   ),
                 ElevatedButton.icon(
-                  onPressed: _estaSubiendoArchivos ? null : () async {
-                    setState(() {
-                      _estaSubiendoArchivos = true;
-                    });
-                    try {
-                      final servicio = FirebaseStorageServicio();
-                      final resultados = await servicio.seleccionarYSubirMultiplesArchivos(carpetaDestino: 'tutorias_sugeridas');
-                      
-                      if (resultados.isNotEmpty) {
-                        setState(() {
-                          _archivosSubidosUrl = resultados.map((r) => r['url']!).toList();
-                          _archivosSubidosNombre = resultados.map((r) => r['nombre']!).toList();
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Archivos adjuntados correctamente'), backgroundColor: Colors.green));
-                      }
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
-                    } finally {
-                      setState(() {
-                        _estaSubiendoArchivos = false;
-                      });
-                    }
-                  },
-                  icon: _estaSubiendoArchivos 
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  onPressed: _estaSubiendoArchivos
+                      ? null
+                      : () async {
+                          setState(() {
+                            _estaSubiendoArchivos = true;
+                          });
+                          try {
+                            final servicio = FirebaseStorageServicio();
+                            final resultados = await servicio
+                                .seleccionarYSubirMultiplesArchivos(
+                                  carpetaDestino: 'tutorias_sugeridas',
+                                );
+
+                            if (resultados.isNotEmpty) {
+                              setState(() {
+                                _archivosSubidosUrl = resultados
+                                    .map((r) => r['url']!)
+                                    .toList();
+                                _archivosSubidosNombre = resultados
+                                    .map((r) => r['nombre']!)
+                                    .toList();
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Archivos adjuntados correctamente',
+                                  ),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(e.toString()),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          } finally {
+                            setState(() {
+                              _estaSubiendoArchivos = false;
+                            });
+                          }
+                        },
+                  icon: _estaSubiendoArchivos
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Icon(Icons.upload_file),
-                  label: Text(_estaSubiendoArchivos ? "Subiendo..." : "Adjuntar Archivos (Máx 3)"),
+                  label: Text(
+                    _estaSubiendoArchivos
+                        ? "Subiendo..."
+                        : "Adjuntar Archivos (Máx 3)",
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.surface,
                     foregroundColor: const Color(0xFF6C63FF),
                     elevation: 0,
                     side: const BorderSide(color: Color(0xFF6C63FF)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
 
                 // Botón Gigante (Call to Action)
@@ -598,11 +654,18 @@ class _CrearClasePropiaViewState extends State<CrearClasePropiaView> {
     );
   }
 
-  InputDecoration _estiloCajaFluida(BuildContext context, {required String hint, IconData? icono}) {
+  InputDecoration _estiloCajaFluida(
+    BuildContext context, {
+    required String hint,
+    IconData? icono,
+  }) {
     final bool esModoOscuro = Theme.of(context).brightness == Brightness.dark;
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: esModoOscuro ? Colors.white54 : Colors.grey[400], fontSize: 15),
+      hintStyle: TextStyle(
+        color: esModoOscuro ? Colors.white54 : Colors.grey[400],
+        fontSize: 15,
+      ),
       filled: true,
       fillColor: Theme.of(context).colorScheme.surface,
       prefixIcon: icono != null

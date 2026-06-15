@@ -54,7 +54,9 @@ service cloud.firestore {
         && request.resource.data.rolEnElSistema == resource.data.rolEnElSistema
         && request.resource.data.esta_baneado == resource.data.esta_baneado
         && request.resource.data.strikes_inasistencia == resource.data.strikes_inasistencia
-      ) || esTutor() // Permitimos a los tutores asignar strikes en la asistencia
+      ) || (
+        esTutor() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['strikes_inasistencia'])
+      ) // Permitimos a los tutores asignar strikes en la asistencia
       || (
         estaAutenticado() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['puntos_vecta', 'insignias_tutor'])
       ); // Permitimos a los alumnos dar puntos e insignias de gamificación al evaluar
@@ -103,6 +105,15 @@ service cloud.firestore {
       // Se valida que el uid del creador o del tutor coincida, o sea admin
       allow delete: if esAdmin() || 
                     (estaAutenticado() && (resource.data.creador == request.auth.uid || resource.data.identificadorDelTutor == request.auth.uid));
+
+      // Subcolección CHAT anidada
+      match /chat/{mensajeId} {
+        // Cualquier usuario autenticado puede leer y escribir mensajes en el chat
+        allow read, create: if estaAutenticado();
+        
+        // Solo el autor original del mensaje o un Administrador pueden borrar el mensaje
+        allow delete: if estaAutenticado() && (request.auth.uid == resource.data.emisorId || esAdmin());
+      }
     }
 
     // 3. Colección de NOTIFICACIONES (Bloqueada al UID del usuario o Admin)

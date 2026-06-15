@@ -80,34 +80,44 @@ class _NotificacionesViewState extends State<NotificacionesView> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Eliminar Notificación'),
-        content: const Text('¿Estás seguro de que deseas eliminar esta notificación?'),
+        content: const Text(
+          '¿Estás seguro de que deseas eliminar esta notificación?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
           TextButton(
-            onPressed: () => Navigator.pop(ctx, true), 
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Eliminar'),
           ),
         ],
-      )
+      ),
     );
 
     if (confirmar == true && id.isNotEmpty) {
       try {
-        await FirebaseFirestore.instance.collection('notificaciones').doc(id).delete();
+        await FirebaseFirestore.instance
+            .collection('notificaciones')
+            .doc(id)
+            .delete();
         if (mounted) {
           setState(() {
             _notificaciones.removeAt(index);
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Notificación eliminada exitosamente.')),
+            const SnackBar(
+              content: Text('Notificación eliminada exitosamente.'),
+            ),
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error al eliminar: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error al eliminar: $e')));
         }
       }
     }

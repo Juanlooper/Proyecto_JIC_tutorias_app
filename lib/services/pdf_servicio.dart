@@ -12,7 +12,12 @@ class PdfServicio {
     required TutoriaModel tutoria,
     required String tutorNombre,
   }) async {
-    final pdf = pw.Document();
+    final font = await PdfGoogleFonts.interRegular();
+    final fontBold = await PdfGoogleFonts.interBold();
+
+    final pdf = pw.Document(
+      theme: pw.ThemeData.withFont(base: font, bold: fontBold),
+    );
 
     final dateFormat = DateFormat('dd/MM/yyyy');
     final fechaString = dateFormat.format(tutoria.fechaHoraSugerida);
@@ -24,63 +29,133 @@ class PdfServicio {
           return pw.Container(
             padding: const pw.EdgeInsets.all(40),
             decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.blue900, width: 4),
+              color: PdfColors.white,
+              border: pw.Border.all(
+                color: PdfColor.fromHex('#1CA887'),
+                width: 8,
+              ), // Borde verde primary
             ),
             child: pw.Column(
               mainAxisAlignment: pw.MainAxisAlignment.center,
               children: [
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
+                  children: [
+                    pw.Text(
+                      'TUTORÍAS',
+                      style: pw.TextStyle(
+                        fontSize: 40,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColor.fromHex('#1CA887'),
+                      ),
+                    ),
+                    pw.SizedBox(width: 10),
+                    pw.Text(
+                      'VECTA UTP',
+                      style: pw.TextStyle(
+                        fontSize: 40,
+                        color: PdfColors.grey700,
+                      ),
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 30),
                 pw.Text(
-                  'CERTIFICADO DE ASISTENCIA',
+                  'CERTIFICADO DE PARTICIPACIÓN',
                   style: pw.TextStyle(
                     fontSize: 32,
                     fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.blue900,
+                    color: PdfColor.fromHex('#1951CB'),
                   ),
-                ),
-                pw.SizedBox(height: 10),
-                pw.Text(
-                  'VECTA Tutorías JIC',
-                  style: const pw.TextStyle(fontSize: 18, color: PdfColors.grey700),
                 ),
                 pw.SizedBox(height: 40),
                 pw.Text(
                   'Se certifica que el estudiante',
-                  style: const pw.TextStyle(fontSize: 18),
+                  style: const pw.TextStyle(
+                    fontSize: 18,
+                    color: PdfColors.grey600,
+                  ),
                 ),
                 pw.SizedBox(height: 10),
                 pw.Text(
                   estudiante.nombreCompleto.toUpperCase(),
                   style: pw.TextStyle(
-                    fontSize: 24,
+                    fontSize: 26,
                     fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.black,
                   ),
                 ),
                 pw.SizedBox(height: 20),
                 pw.Text(
                   'Participó satisfactoriamente en la sesión de tutoría:',
-                  style: const pw.TextStyle(fontSize: 18),
+                  style: const pw.TextStyle(
+                    fontSize: 18,
+                    color: PdfColors.grey600,
+                  ),
                 ),
                 pw.SizedBox(height: 10),
                 pw.Text(
                   '${tutoria.materiaOAsignatura} - ${tutoria.temaEspecifico}',
                   style: pw.TextStyle(
-                    fontSize: 20,
+                    fontSize: 22,
                     fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.blue700,
+                    color: PdfColor.fromHex('#1CA887'),
                   ),
                 ),
                 pw.SizedBox(height: 20),
-                pw.Text(
-                  'Impartida por: $tutorNombre',
-                  style: const pw.TextStyle(fontSize: 16),
-                ),
-                pw.Text(
-                  'Fecha: $fechaString',
-                  style: const pw.TextStyle(fontSize: 16),
-                ),
-                pw.Text(
-                  'Duración: ${tutoria.duracionMinutos} minutos',
-                  style: const pw.TextStyle(fontSize: 16),
+                pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.grey100,
+                    borderRadius: pw.BorderRadius.circular(10),
+                  ),
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.center,
+                    children: [
+                      pw.Text(
+                        'Impartida por: $tutorNombre',
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                      pw.SizedBox(width: 20),
+                      pw.Text(
+                        '|',
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          color: PdfColors.grey,
+                        ),
+                      ),
+                      pw.SizedBox(width: 20),
+                      pw.Text(
+                        'Fecha: $fechaString',
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                      pw.SizedBox(width: 20),
+                      pw.Text(
+                        '|',
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          color: PdfColors.grey,
+                        ),
+                      ),
+                      pw.SizedBox(width: 20),
+                      pw.Text(
+                        'Duración: ${tutoria.duracionMinutos} minutos',
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 pw.Spacer(),
                 pw.Row(
@@ -88,16 +163,30 @@ class PdfServicio {
                   children: [
                     pw.Column(
                       children: [
-                        pw.Container(width: 150, height: 1, color: PdfColors.black),
+                        pw.Container(
+                          width: 180,
+                          height: 1,
+                          color: PdfColors.black,
+                        ),
                         pw.SizedBox(height: 5),
-                        pw.Text('Firma del Tutor'),
+                        pw.Text(
+                          'Firma del Tutor',
+                          style: pw.TextStyle(color: PdfColors.grey700),
+                        ),
                       ],
                     ),
                     pw.Column(
                       children: [
-                        pw.Container(width: 150, height: 1, color: PdfColors.black),
+                        pw.Container(
+                          width: 180,
+                          height: 1,
+                          color: PdfColors.black,
+                        ),
                         pw.SizedBox(height: 5),
-                        pw.Text('VECTA Autorización'),
+                        pw.Text(
+                          'VECTA Autorización',
+                          style: pw.TextStyle(color: PdfColors.grey700),
+                        ),
                       ],
                     ),
                   ],
@@ -109,9 +198,10 @@ class PdfServicio {
       ),
     );
 
-    await Printing.sharePdf(
-      bytes: await pdf.save(),
-      filename: 'certificado_${tutoria.materiaOAsignatura.replaceAll(" ", "_")}.pdf',
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name:
+          'certificado_vecta_${tutoria.materiaOAsignatura.replaceAll(" ", "_")}.pdf',
     );
   }
 }

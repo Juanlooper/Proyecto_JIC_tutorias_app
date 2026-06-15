@@ -56,14 +56,22 @@ class _ExplorarViewState extends State<ExplorarView> {
           // Sección Superior Fija de Búsqueda
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: SearchBar(
+            child: TextField(
               controller: _controladorDeBusqueda,
-              leading: const Icon(Icons.search, color: Colors.grey),
-              hintText: 'Buscar por nombre, carrera o facultad...',
-              shape: WidgetStateProperty.all(
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              decoration: InputDecoration(
+                hintText: 'Buscar por nombre, carrera o facultad...',
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(25),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: Colors.grey[200],
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 16,
+                ),
               ),
-              elevation: WidgetStateProperty.all(1.5),
             ),
           ),
 
@@ -160,11 +168,17 @@ class TarjetaComunidad extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
+      color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade700 : Colors.grey.shade300, width: 1),
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey.shade700
+              : Colors.grey.shade200,
+          width: 1,
+        ),
       ),
       child: InkWell(
         onTap: () {
@@ -176,108 +190,63 @@ class TarjetaComunidad extends StatelessWidget {
           );
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Columna Izquierda: Nombre
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: Colors.teal.shade50,
+                child: const Icon(Icons.person, color: Color(0xFF1CA887)),
+              ),
+              const SizedBox(width: 16),
               Expanded(
-                flex: 3,
-                child: Text(
-                  mentor.nombreCompleto,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    // Oscuro corporativo
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      mentor.nombreCompleto,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Área de especialidad: ${mentor.carrera ?? mentor.facultad ?? 'General'}',
+                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
-
-              // Columna Central: Área de especialidad
-              Expanded(
-                flex: 4,
-                child: Text(
-                  'Área de especialidad: ${mentor.carrera ?? mentor.facultad ?? 'General'}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
                 ),
-              ),
-
-              // Columna Derecha: Estrellas
-              Expanded(
-                flex: 2,
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('usuarios')
-                      .doc(mentor.identificadorUnico)
-                      .collection('evaluaciones')
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    double promedio = 0;
-                    int totalResenas = 0;
-                    if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                      final docs = snapshot.data!.docs;
-                      totalResenas = docs.length;
-                      for (var d in docs) {
-                        promedio += (d['estrellas'] as num).toDouble();
-                      }
-                      promedio /= docs.length;
-                    }
-
-                    if (totalResenas < 10) {
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.secondaryContainer,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.auto_awesome,
-                                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                                  size: 14,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Nuevo',
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                        color: Theme.of(context).colorScheme.onSecondaryContainer,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    }
-
-                    int estrellasLlenas = promedio.round();
-
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: List.generate(5, (index) {
-                        return Icon(
-                          Icons.star,
-                          size: 16,
-                          color: index < estrellasLlenas
-                              ? Colors.teal.shade500
-                              : Colors.grey.shade300,
-                        );
-                      }),
-                    );
-                  },
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add, size: 14, color: Color(0xFF1951CB)),
+                    SizedBox(width: 4),
+                    Text(
+                      'Nuevo',
+                      style: TextStyle(
+                        color: Color(0xFF1951CB),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

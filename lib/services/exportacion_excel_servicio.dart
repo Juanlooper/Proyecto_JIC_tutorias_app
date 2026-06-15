@@ -7,9 +7,15 @@ class ExportacionExcelServicio {
   static Future<void> exportarDatosGlobales(AdminProvider admin) async {
     try {
       List<List<dynamic>> rows = [];
-      
+
       // Cabeceras
-      rows.add(['Nombre', 'Facultad', 'Carrera', 'Año Cursando', 'Horas Totales']);
+      rows.add([
+        'Nombre',
+        'Facultad',
+        'Carrera',
+        'Año Cursando',
+        'Horas Totales',
+      ]);
 
       // Datos
       for (var e in admin.todosLosEstudiantesConHoras) {
@@ -22,19 +28,24 @@ class ExportacionExcelServicio {
         ]);
       }
 
-      String csvData = rows.map((row) {
-        return row.map((field) {
-          String val = field.toString().replaceAll('"', '""');
-          return '"$val"';
-        }).join(',');
-      }).join('\n');
+      String csvData = rows
+          .map((row) {
+            return row
+                .map((field) {
+                  String val = field.toString().replaceAll('"', '""');
+                  return '"$val"';
+                })
+                .join(',');
+          })
+          .join('\n');
 
       // BOM para que Excel (en español/inglés) lo lea correctamente como UTF-8
-      List<int> bytes = [0xEF, 0xBB, 0xBF]; 
+      List<int> bytes = [0xEF, 0xBB, 0xBF];
       bytes.addAll(utf8.encode(csvData));
-      
-      String filename = 'Demografia_Estudiantil_${DateTime.now().millisecondsSinceEpoch}';
-      
+
+      String filename =
+          'Demografia_Estudiantil_${DateTime.now().millisecondsSinceEpoch}';
+
       await FileSaver.instance.saveFile(
         name: filename,
         bytes: Uint8List.fromList(bytes),
