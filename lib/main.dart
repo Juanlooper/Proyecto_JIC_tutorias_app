@@ -5,6 +5,7 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'providers/tema_provider.dart';
+import 'services/data_injection_service.dart'; // Importación de inyección de datos
 
 // Importación del ADN visual
 import 'core/theme/app_theme.dart';
@@ -26,6 +27,9 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
   }
+
+  // Inyectar datos de prueba en la base de datos (puedes comentar esta línea tras la primera ejecución)
+  await DataInjectionService().injectMockData();
 
   // Activación de Firebase App Check para seguridad estricta en producción
   await FirebaseAppCheck.instance.activate(
