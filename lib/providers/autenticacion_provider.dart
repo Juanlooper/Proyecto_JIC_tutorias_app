@@ -70,16 +70,20 @@ class AutenticacionProvider extends ChangeNotifier {
     _estaInicializando = true;
     _activarIndicadorDeCargaEnPantalla();
 
-    // Asignar un usuario de prueba mock para saltar el login de Firebase
-    _usuarioActual = UsuarioModel(
-      identificadorUnico: 'dev-user-mock-id',
-      nombreCompleto: 'Desarrollador Vecta',
-      correoElectronico: 'developer@vecta.edu',
-      rolEnElSistema: RolSistema.admin, // Cambiar a RolSistema.estudiante o RolSistema.tutor si se requiere probar otros roles
-      listaDeTutoresSuscritos: [],
-      facultad: 'Ingeniería en Sistemas',
-      carrera: 'Desarrollo de Software',
-    );
+    // Esperamos a que Firebase lea su caché local (IndexedDB en web)
+    await FirebaseAuth.instance.authStateChanges().first;
+
+    // Pedimos al servicio que busque de inmediato si existe un "fantasma" de sesión válida en el teléfono
+    _usuarioActual = await _servicioIntegradoDeAutenticacion
+        .obtenerDatosDelUsuarioActual();
+
+    // Verificación de baneo por tribunal de disciplina
+    if (_usuarioActual != null && _usuarioActual!.estaBaneado) {
+      await _servicioIntegradoDeAutenticacion.cerrarSesion();
+      _usuarioActual = null;
+      _mensajeDeError =
+          "Tu cuenta ha sido suspendida por el Tribunal de Disciplina.";
+    }
 
     _estaInicializando = false;
     _desactivarIndicadorDeCargaEnPantalla();
