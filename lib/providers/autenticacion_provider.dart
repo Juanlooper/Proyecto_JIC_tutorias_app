@@ -107,7 +107,8 @@ class AutenticacionProvider extends ChangeNotifier {
 
     // Si mensajeDeError es null, el inicio de sesión fue exitoso en Firebase
     if (mensajeDeError == null) {
-      // Validación estricta de Email Verificado reactivada
+      // Validación estricta de Email Verificado temporalmente desactivada
+      /*
       if (FirebaseAuth.instance.currentUser != null &&
           !FirebaseAuth.instance.currentUser!.emailVerified) {
         String mensajeRetenido =
@@ -117,6 +118,7 @@ class AutenticacionProvider extends ChangeNotifier {
         notifyListeners();
         return false;
       }
+      */
 
       // Éxito. Acudimos al baúl de base de datos a traer todo su expediente formal de la JIC.
       _usuarioActual = await _servicioIntegradoDeAutenticacion
