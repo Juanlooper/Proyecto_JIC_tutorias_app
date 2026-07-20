@@ -44,8 +44,11 @@ service cloud.firestore {
       // Cualquiera autenticado puede leer perfiles (para ver la lista de tutores, por ejemplo)
       allow read: if estaAutenticado();
       
-      // Creación: Permitida si el usuario está autenticado y el documento coincide con su UID, o si es Administrador (para inyectar datos)
-      allow create: if estaAutenticado() && (request.auth.uid == userId || esAdmin());
+      // Creación: Permitida si el usuario está autenticado y coincide su UID (limitando rol a estudiante), o si es Administrador
+      allow create: if estaAutenticado() && (
+        (request.auth.uid == userId && (request.resource.data.rolEnElSistema == 'estudiante' || request.resource.data.rolEnElSistema == 'RolSistema.estudiante')) || 
+        esAdmin()
+      );
       
       // Actualización: Solo el dueño de la cuenta puede editar su perfil.
       // SEGURO APLICADO: Bloqueo de escalamiento de privilegios para campos sensibles.

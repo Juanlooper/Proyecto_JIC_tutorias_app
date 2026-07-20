@@ -460,12 +460,12 @@ class _RegistroViewState extends State<RegistroView> {
                   ),
                 ),
                 const SizedBox(height: 15),
-                // Campo de Cédula con el formato exacto del Forms
+                // Campo de Documento de Identidad Flexible
                 _buildHelpTextField(
-                  'Cédula (Ej. 08-0000-000000)',
+                  'Documento de Identidad (Cédula o Pasaporte)',
                   Icons.credit_card,
-                  'Utiliza el formato NN-NNNN-NNNNNN (2 dígitos, guión, 4 dígitos, guión, 6 dígitos). Los guiones se insertan automáticamente.',
-                  type: _FieldType.cedula,
+                  'Ingresa tu número de identificación (Ej. 8-1234-5678, E-8-123456, PE-8-1234 o Pasaporte). Puedes usar letras, números y guiones.',
+                  type: _FieldType.documento,
                 ),
                 const SizedBox(height: 15),
                 // Año que cursa (Menú desplegable)
@@ -597,8 +597,8 @@ class _RegistroViewState extends State<RegistroView> {
                         keyboardType: TextInputType.emailAddress,
                         onChanged: _validarEmail,
                         decoration: InputDecoration(
-                          hintText: 'Correo institucional (@utp.ac.pa)',
-                          hintStyle: const TextStyle(
+                          labelText: 'Correo institucional (@utp.ac.pa)',
+                          labelStyle: const TextStyle(
                             color: VectaColors.softBlue,
                           ),
                           prefixIcon: const Icon(
@@ -650,9 +650,9 @@ class _RegistroViewState extends State<RegistroView> {
                         obscureText: _obscureText,
                         onChanged: _validarContrasenaEnTiempoReal,
                         decoration: InputDecoration(
-                          hintText:
+                          labelText:
                               'Contraseña (min. 8 caracteres, Mayús, #, Especial)',
-                          hintStyle: const TextStyle(
+                          labelStyle: const TextStyle(
                             color: VectaColors.softBlue,
                           ),
                           prefixIcon: const Icon(
@@ -964,6 +964,12 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
           FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]')),
         ];
         break;
+      case _FieldType.documento:
+        keyboardType = TextInputType.text;
+        formatters = [
+          FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9-]')),
+        ];
+        break;
     }
 
     return TextField(
@@ -971,8 +977,8 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
       keyboardType: keyboardType,
       inputFormatters: formatters,
       decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(color: VectaColors.softBlue, fontSize: 15),
+        labelText: hint,
+        labelStyle: const TextStyle(color: VectaColors.softBlue, fontSize: 15),
         prefixIcon: Icon(icon, color: VectaColors.secondaryBlue, size: 22),
         prefixText: type == _FieldType.celular ? '+507 ' : null,
         prefixStyle: TextStyle(
@@ -1027,8 +1033,8 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
         children: [
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(color: VectaColors.softBlue),
+              labelText: hint,
+              labelStyle: const TextStyle(color: VectaColors.softBlue),
               prefixIcon: Icon(icon, color: VectaColors.secondaryBlue),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
@@ -1101,7 +1107,7 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
               return DropdownMenu<String>(
                 width: constraints.maxWidth,
                 controller: controller,
-                hintText: hint,
+                label: Text(hint),
                 textStyle: TextStyle(
                   color: Theme.of(context).brightness == Brightness.dark
                       ? Colors.white
@@ -1162,7 +1168,7 @@ Nos reservamos el derecho de actualizar este documento para adaptarnos a nuevas 
   }
 }
 
-enum _FieldType { soloLetras, soloNumeros, cedula, celular }
+enum _FieldType { soloLetras, soloNumeros, cedula, celular, documento }
 
 // Formateadores especiales
 class _CedulaFormatter extends TextInputFormatter {

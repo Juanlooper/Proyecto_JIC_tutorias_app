@@ -144,23 +144,7 @@ class _MainNavigationViewState extends State<MainNavigationView> {
     }
   }
 
-  /// Desplaza el panel superior hacia la izquierda.
-  void _desplazarPanelIzquierda() {
-    _scrollControllerBarraSuperior.animateTo(
-      _scrollControllerBarraSuperior.offset - 150, // Se mueve 150 píxeles
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
 
-  /// Desplaza el panel superior hacia la derecha.
-  void _desplazarPanelDerecha(int length) {
-    _scrollControllerBarraSuperior.animateTo(
-      _scrollControllerBarraSuperior.offset + 150, // Se mueve 150 píxeles
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
 
   void _seleccionarVista(int indice) {
     setState(() {
@@ -278,72 +262,27 @@ class _MainNavigationViewState extends State<MainNavigationView> {
                 ),
 
                 if (!isMobile)
-                  // Bloque Central: Flecha - Título - Flecha
+                  // Bloque Central: Opciones de Navegación (Sin flechas, Hallazgo Heurístico #6)
                   Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // [Icono Flecha Izquierda]
-                        // El tamaño estándar de los botones de acción es generalmente 24.0.
-                        // Cálculo de tamaño relativo: 24.0 * 0.75 = 18.0.
-                        // Justificación de jerarquía visual: Un tamaño menor evita que estas flechas
-                        // de navegación secundaria compitan con la atención de los iconos principales
-                        // del menú, así como con el logo y el perfil.
-                        IconButton(
-                          tooltip: 'Desplazar pestañas a la izquierda',
-                          icon: const Icon(
-                            Icons.chevron_left,
-                            color: Colors.white,
-                            size: 18.0,
-                          ),
-                          onPressed:
-                              _desplazarPanelIzquierda, // Nueva función de scroll
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: SingleChildScrollView(
+                        controller: _scrollControllerBarraSuperior,
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(modulosUI.length, (
+                            index,
+                          ) {
+                            final obj = modulosUI[index];
+                            return _crearBotonSuperior(
+                              index,
+                              obj['titulo'] as String,
+                              obj['icono'] as IconData,
+                            );
+                          }),
                         ),
-
-                        // [Título/Texto Central]
-                        Flexible(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8.0,
-                            ),
-                            child: SingleChildScrollView(
-                              controller: _scrollControllerBarraSuperior,
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: List.generate(modulosUI.length, (
-                                  index,
-                                ) {
-                                  final obj = modulosUI[index];
-                                  return _crearBotonSuperior(
-                                    index,
-                                    obj['titulo'] as String,
-                                    obj['icono'] as IconData,
-                                  );
-                                }),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // [Icono Flecha Derecha]
-                        // Tamaño relativo al 75% (24.0 * 0.75 = 18.0) para mantener la jerarquía visual balanceada.
-                        IconButton(
-                          tooltip: 'Desplazar pestañas a la derecha',
-                          // Aplicamos opacidad si llegamos al final de la lista de módulos
-                          icon: Icon(
-                            Icons.chevron_right,
-                            color: _indiceActual < modulosUI.length - 1
-                                ? Colors.white
-                                : Colors.white38,
-                            size: 18.0,
-                          ),
-                          // Evaluamos dinámicamente contra el largo de modulosUI
-                          onPressed: _indiceActual < modulosUI.length - 1
-                              ? () => _desplazarPanelDerecha(modulosUI.length)
-                              : null,
-                        ),
-                      ],
+                      ),
                     ),
                   ),
 
