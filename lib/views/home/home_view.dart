@@ -18,6 +18,7 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   final TextEditingController _controladorBusqueda = TextEditingController();
   String _terminoBusqueda = '';
+  DateTime? _ultimaCargaLocal;
 
   final List<String> _filtrosRapidos = [
     'Cálculo',
@@ -31,6 +32,7 @@ class _HomeViewState extends State<HomeView> {
   @override
   void initState() {
     super.initState();
+    _ultimaCargaLocal = DateTime.now();
     // Escucha los cambios en el teclado para actualizar el estado reactivamente
     _controladorBusqueda.addListener(() {
       setState(() {
@@ -52,10 +54,18 @@ class _HomeViewState extends State<HomeView> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Explorar Tutorías'), centerTitle: true),
-      body: Column(
+      body: Stack(
         children: [
-          // Barra de Búsqueda (HCI: Reconocimiento sobre recuerdo)
-          Padding(
+          RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                _ultimaCargaLocal = DateTime.now();
+              });
+            },
+            child: Column(
+              children: [
+                // Barra de Búsqueda (HCI: Reconocimiento sobre recuerdo)
+                Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
               controller: _controladorBusqueda,
@@ -129,8 +139,8 @@ class _HomeViewState extends State<HomeView> {
           const SizedBox(height: 8),
 
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
+            child: FutureBuilder<QuerySnapshot>(
+              future: FirebaseFirestore.instance
                   .collection('tutorias')
                   .where(
                     'estadoDeLaSolicitud',
@@ -144,7 +154,7 @@ class _HomeViewState extends State<HomeView> {
                     ],
                   )
                   .limit(100)
-                  .snapshots(),
+                  .get(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -199,40 +209,96 @@ class _HomeViewState extends State<HomeView> {
                       }).toList();
 
                 if (listadoFiltrado.isEmpty) {
-                  return ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: const [
-                      SizedBox(height: 100),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Text(
-                          'No se encontraron tutorías con esos criterios de búsqueda.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      setState(() {});
+                    },
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 100),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Text(
+                            'No se encontraron tutorías con esos criterios de búsqueda.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   );
                 }
 
-                return ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
-                  ),
-                  itemCount: listadoFiltrado.length,
-                  itemBuilder: (context, indice) {
-                    return _TarjetaDeTutoriaDinamica(
-                      datosTutoria: listadoFiltrado[indice],
-                    );
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    setState(() {});
                   },
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    itemCount: listadoFiltrado.length,
+                    itemBuilder: (context, indice) {
+                      return _TarjetaDeTutoriaDinamica(
+                        datosTutoria: listadoFiltrado[indice],
+                      );
+                    },
+                  ),
                 );
               },
             ),
           ),
         ],
       ),
+    ),
+    
+    // --- Botón Flotante Estilo Twitter ---
+    StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('system').doc('metadata').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || !snapshot.data!.exists) return const SizedBox.shrink();
+        
+        final data = snapshot.data!.data() as Map<String, dynamic>;
+        final timestampStr = data['ultima_actualizacion_tutorias'] as String?;
+        if (timestampStr == null) return const SizedBox.shrink();
+        
+        final DateTime serverTime = DateTime.parse(timestampStr);
+        
+        // Si hay una actualización posterior a nuestra última carga
+        if (_ultimaCargaLocal != null && serverTime.isAfter(_ultimaCargaLocal!)) {
+          return Positioned(
+            top: 16,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _ultimaCargaLocal = DateTime.now();
+                  });
+                },
+                icon: const Icon(Icons.arrow_upward, size: 18),
+                label: const Text("Nuevas tutorías disponibles"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1CA887),
+                  foregroundColor: Colors.white,
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    ),
+  ],
+),
     );
   }
 }

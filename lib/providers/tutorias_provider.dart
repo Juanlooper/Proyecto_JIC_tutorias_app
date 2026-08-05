@@ -107,6 +107,11 @@ class TutoriasProvider extends ChangeNotifier {
         .crearNuevaTutoria(modeloDeLaNuevaClase: planoFormateadoDelExamen);
 
     if (huboVerdaderoExitoInformativo == true) {
+      // Activar la señal global de nueva tutoría para el botón estilo Twitter
+      await FirebaseFirestore.instance.collection('system').doc('metadata').set({
+        'ultima_actualizacion_tutorias': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
       // Como acabamos de plantar una clase de status 'pendiente', solicitamos sincronizar listas públicas y avisamos a la app que repinte.
       await cargarListadoDeTutoriasPendientes();
       return true;
@@ -219,6 +224,11 @@ class TutoriasProvider extends ChangeNotifier {
       );
 
       await collectionRef.doc(docId).set(claseProcesada.toMap());
+
+      // Activar la señal global de nueva tutoría
+      await FirebaseFirestore.instance.collection('system').doc('metadata').set({
+        'ultima_actualizacion_tutorias': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
       await cargarListadoDeTutoriasPendientes();
       await cargarTutoriasSuscritasDelUsuario(uidTutor);
@@ -513,6 +523,7 @@ class TutoriasProvider extends ChangeNotifier {
 
   /// Permite a un estudiante darse de baja (retirar su apoyo/inscripción) de una tutoría, de manera rápida y eficiente sin mutar arrays locales manualmente.
   Future<bool> abandonarTutoria(String tutoriaId, {String? excusa}) async {
+    if (_estaCargandoPeticionEnNube) return false;
     _iluminarSenalIndicadoraDeEspera();
     _purgarCasillasDeAdvertencias();
 
@@ -594,6 +605,7 @@ class TutoriasProvider extends ChangeNotifier {
     String tutoriaId,
     String motivoCancelacion,
   ) async {
+    if (_estaCargandoPeticionEnNube) return false;
     _iluminarSenalIndicadoraDeEspera();
     _purgarCasillasDeAdvertencias();
 
@@ -662,6 +674,7 @@ class TutoriasProvider extends ChangeNotifier {
     List<String> listaLinks,
     List<String> listaNombres,
   ) async {
+    if (_estaCargandoPeticionEnNube) return false;
     _iluminarSenalIndicadoraDeEspera();
     _purgarCasillasDeAdvertencias();
 
@@ -1632,6 +1645,7 @@ class TutoriasProvider extends ChangeNotifier {
     String estudianteId,
     double estrellas,
     String comentario,
+    String comentarioAdmin,
   ) async {
     _iluminarSenalIndicadoraDeEspera();
     _purgarCasillasDeAdvertencias();
@@ -1657,6 +1671,7 @@ class TutoriasProvider extends ChangeNotifier {
           'tutoriaId': tutoriaId,
           'estrellas': estrellas,
           'comentario': comentario,
+          'comentarioAdmin': comentarioAdmin,
           'fecha': DateTime.now().toIso8601String(),
         });
       });
@@ -1664,7 +1679,7 @@ class TutoriasProvider extends ChangeNotifier {
       // Notificar a los administradores para seguimiento
       await notificarAdministradores(
         'Evaluación a Estudiante',
-        'Tutor calificó al alumno $estudianteId con ${estrellas.toStringAsFixed(0)} estrellas. ${comentario.isNotEmpty ? 'Comentario: $comentario' : ''}',
+        'Tutor calificó al alumno $estudianteId con ${estrellas.toStringAsFixed(0)} estrellas. Privado: $comentarioAdmin',
         tipo: estrellas <= 2 ? 'alerta_roja' : 'info',
       );
 

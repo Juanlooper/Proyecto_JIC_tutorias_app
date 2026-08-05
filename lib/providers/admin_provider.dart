@@ -322,18 +322,16 @@ class AdminProvider extends ChangeNotifier {
           if (ano.isEmpty) ano = 'No especificado';
           estudiantesPorAno[ano] = (estudiantesPorAno[ano] ?? 0) + 1;
         }
+      }
 
-        // Estrellas (Revisar subcolección evaluaciones)
-        if (d['rolEnElSistema'] == 'tutor') {
-          final evals = await u.reference.collection('evaluaciones').get();
-          for (var e in evals.docs) {
-            final ed = e.data();
-            double est = ((ed['estrellas'] ?? 5) as num).toDouble();
-            int estRound = est.round().clamp(1, 5);
-            distribucionEstrellasGlobal[estRound] =
-                (distribucionEstrellasGlobal[estRound] ?? 0) + 1;
-          }
-        }
+      // Estrellas (Cálculo optimizado O(1) petición usando collectionGroup)
+      final evalsQuery = await _baseDeDatosOperativa.collectionGroup('evaluaciones').get();
+      for (var e in evalsQuery.docs) {
+        final ed = e.data();
+        double est = ((ed['estrellas'] ?? 5) as num).toDouble();
+        int estRound = est.round().clamp(1, 5);
+        distribucionEstrellasGlobal[estRound] =
+            (distribucionEstrellasGlobal[estRound] ?? 0) + 1;
       }
 
       // Ordenar Heavy Users desc

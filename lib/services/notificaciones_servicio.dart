@@ -61,6 +61,9 @@ class NotificacionesServicio {
     }
   }
 
+  // Caché de notificaciones en memoria para Anti-Spam (Evita duplicados)
+  static final Map<String, DateTime> _historialNotificaciones = {};
+
   /// Crea una notificación individual para un usuario.
   Future<void> crearNotificacion({
     required String usuarioId,
@@ -68,6 +71,17 @@ class NotificacionesServicio {
     required String mensaje,
     String tipo = 'info',
   }) async {
+    // Mecanismo Anti-Spam (Debouncer de 3 segundos)
+    String hashKey = '$usuarioId-$titulo-$mensaje';
+    final now = DateTime.now();
+    if (_historialNotificaciones.containsKey(hashKey)) {
+      if (now.difference(_historialNotificaciones[hashKey]!).inSeconds < 3) {
+        debugPrint("Anti-Spam activado: Bloqueada notificación duplicada -> $titulo");
+        return; 
+      }
+    }
+    _historialNotificaciones[hashKey] = now;
+
     try {
       await FirebaseFirestore.instance.collection('notificaciones').add({
         'usuarioId': usuarioId,
