@@ -47,6 +47,9 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    final esOscuro = Theme.of(context).brightness == Brightness.dark;
+    final colorTexto = Theme.of(context).colorScheme.onSurface;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Explorar Tutorías'), centerTitle: true),
       body: Column(
@@ -64,7 +67,7 @@ class _HomeViewState extends State<HomeView> {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: Colors.grey[200],
+                fillColor: esOscuro ? Colors.grey[850] : Colors.grey[200],
                 contentPadding: const EdgeInsets.symmetric(
                   vertical: 0,
                   horizontal: 16,
@@ -91,7 +94,7 @@ class _HomeViewState extends State<HomeView> {
                     label: Text(
                       filtro,
                       style: TextStyle(
-                        color: estaSeleccionado ? Colors.white : Colors.black87,
+                        color: estaSeleccionado ? Colors.white : colorTexto,
                         fontWeight: estaSeleccionado
                             ? FontWeight.bold
                             : FontWeight.normal,
@@ -105,7 +108,7 @@ class _HomeViewState extends State<HomeView> {
                       side: BorderSide(
                         color: estaSeleccionado
                             ? const Color(0xFF1CA887)
-                            : Colors.grey[300]!,
+                            : (esOscuro ? Colors.grey[700]! : Colors.grey[300]!),
                       ),
                     ),
                     showCheckmark: false,
@@ -467,6 +470,9 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
   Widget build(BuildContext context) {
     final proveedorIdentidad = context.watch<AutenticacionProvider>();
     final elUsuario = proveedorIdentidad.usuarioActual;
+    final esOscuro = Theme.of(context).brightness == Brightness.dark;
+    final colorTexto = Theme.of(context).colorScheme.onSurface;
+    final colorSubtexto = esOscuro ? Colors.grey[400] : Colors.grey[700];
 
     if (elUsuario == null) return const SizedBox.shrink();
 
@@ -477,13 +483,13 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: esOscuro ? Colors.black26 : Colors.black.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
         ],
         border: Border.all(
-          color: const Color(0xFF1CA887).withValues(alpha: 0.2),
+          color: const Color(0xFF1CA887).withValues(alpha: esOscuro ? 0.35 : 0.2),
           width: 1,
         ),
       ),
@@ -500,15 +506,16 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
               children: [
                 Text(
                   datosTutoria.materiaOAsignatura.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
+                    color: colorTexto,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   datosTutoria.temaEspecifico,
-                  style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                  style: TextStyle(color: colorSubtexto, fontSize: 13),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -526,9 +533,10 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                     Expanded(
                       child: Text(
                         '${datosTutoria.modalidadDeClase}, ${datosTutoria.lugar ?? "Por definir"}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w500,
                           fontSize: 13,
+                          color: colorTexto,
                         ),
                       ),
                     ),
@@ -542,8 +550,8 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'Tutor: ${datosTutoria.identificadorDelTutor.isEmpty ? "Por asignar" : (datosTutoria.nombre_tutor ?? "Tutor Asignado")}',
-                        style: const TextStyle(
-                          color: Colors.black87,
+                        style: TextStyle(
+                          color: colorTexto,
                           fontSize: 13,
                         ),
                       ),
@@ -559,9 +567,10 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       'Cupos: ${datosTutoria.listaDeEstudiantesInscritos.length} / ${datosTutoria.cupoMaximo}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w500,
                         fontSize: 13,
+                        color: colorTexto,
                       ),
                     ),
                   ],
@@ -574,8 +583,8 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                     Expanded(
                       child: Text(
                         '${datosTutoria.fechaHoraSugerida.day.toString().padLeft(2, '0')}/${datosTutoria.fechaHoraSugerida.month.toString().padLeft(2, '0')} - ${datosTutoria.fechaHoraSugerida.hour.toString().padLeft(2, '0')}:${datosTutoria.fechaHoraSugerida.minute.toString().padLeft(2, '0')} Hrs',
-                        style: const TextStyle(
-                          color: Colors.black87,
+                        style: TextStyle(
+                          color: colorTexto,
                           fontSize: 13,
                         ),
                       ),
@@ -588,8 +597,8 @@ class _TarjetaDeTutoriaDinamica extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       '${datosTutoria.duracionMinutos} min',
-                      style: const TextStyle(
-                        color: Colors.black87,
+                      style: TextStyle(
+                        color: colorTexto,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),

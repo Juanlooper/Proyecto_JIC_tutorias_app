@@ -211,6 +211,9 @@ class _PerfilViewState extends State<PerfilView> {
   Widget build(BuildContext context) {
     final motorAutenticacion = context.watch<AutenticacionProvider>();
     final elUsuarioActual = motorAutenticacion.usuarioActual;
+    final esOscuro = Theme.of(context).brightness == Brightness.dark;
+    final colorTexto = Theme.of(context).colorScheme.onSurface;
+    final colorSubtexto = esOscuro ? Colors.grey[400] : Colors.grey;
 
     if (elUsuarioActual == null || motorAutenticacion.estaCargando) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -241,16 +244,18 @@ class _PerfilViewState extends State<PerfilView> {
               children: [
                 CircleAvatar(
                   radius: 50,
-                  backgroundColor: Colors.teal.shade50,
+                  backgroundColor: esOscuro
+                      ? Colors.teal.withValues(alpha: 0.2)
+                      : Colors.teal.shade50,
                   child: const Icon(Icons.person, size: 50, color: Colors.teal),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   elUsuarioActual.nombreCompleto,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: colorTexto,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -259,7 +264,7 @@ class _PerfilViewState extends State<PerfilView> {
                   elUsuarioActual.carrera ??
                       elUsuarioActual.facultad ??
                       'Estudiante General',
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  style: TextStyle(fontSize: 14, color: colorSubtexto),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
@@ -269,7 +274,7 @@ class _PerfilViewState extends State<PerfilView> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
+                    color: esOscuro ? Colors.grey[850] : Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -277,7 +282,7 @@ class _PerfilViewState extends State<PerfilView> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade700,
+                      color: esOscuro ? Colors.grey[300] : Colors.grey.shade700,
                     ),
                   ),
                 ),
@@ -288,22 +293,15 @@ class _PerfilViewState extends State<PerfilView> {
             // Sección Emails y Cédula (Mockup inferior del avatar)
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.teal,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.email, color: Colors.teal),
-                ),
+                _buildIcon(Icons.email, Colors.teal),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Correo Institucional',
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                        style: TextStyle(color: colorSubtexto, fontSize: 12),
                       ),
                       Text(
                         elUsuarioActual.correoElectronico,
@@ -321,22 +319,15 @@ class _PerfilViewState extends State<PerfilView> {
             const SizedBox(height: 16),
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.teal,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.badge, color: Colors.teal),
-                ),
+                _buildIcon(Icons.badge, Colors.teal),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Identificador Interno',
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                        style: TextStyle(color: colorSubtexto, fontSize: 12),
                       ),
                       Text(
                         elUsuarioActual.identificadorUnico
@@ -358,9 +349,11 @@ class _PerfilViewState extends State<PerfilView> {
 
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(
+                  color: esOscuro ? Colors.grey[800]! : Colors.grey.shade200,
+                ),
               ),
               child: Column(
                 children: [
@@ -480,7 +473,10 @@ class _PerfilViewState extends State<PerfilView> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const MisTutoriasView(),
+                          builder: (context) => const MisTutoriasView(
+                            initialIndex: 2,
+                            esSubpantalla: true,
+                          ),
                         ),
                       );
                     },

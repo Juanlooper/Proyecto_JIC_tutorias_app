@@ -37,6 +37,7 @@ class _ExplorarViewState extends State<ExplorarView> {
   Widget build(BuildContext context) {
     final identidadMotor = context.watch<AutenticacionProvider>();
     final elUsuario = identidadMotor.usuarioActual;
+    final esOscuro = Theme.of(context).brightness == Brightness.dark;
 
     if (elUsuario == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -66,7 +67,7 @@ class _ExplorarViewState extends State<ExplorarView> {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: Colors.grey[200],
+                fillColor: esOscuro ? Colors.grey[850] : Colors.grey[200],
                 contentPadding: const EdgeInsets.symmetric(
                   vertical: 0,
                   horizontal: 16,
@@ -167,20 +168,25 @@ class TarjetaComunidad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final esOscuro = Theme.of(context).brightness == Brightness.dark;
+    final colorTexto = Theme.of(context).colorScheme.onSurface;
+    final colorSubtexto = esOscuro ? Colors.grey[400] : Colors.grey;
+
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: Theme.of(context).brightness == Brightness.dark
+          color: esOscuro
               ? Colors.grey.shade700
               : Colors.grey.shade200,
           width: 1,
         ),
       ),
       child: InkWell(
+        borderRadius: BorderRadius.circular(16),
         onTap: () {
           Navigator.push(
             context,
@@ -196,7 +202,9 @@ class TarjetaComunidad extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: Colors.teal.shade50,
+                backgroundColor: esOscuro
+                    ? Colors.teal.withValues(alpha: 0.2)
+                    : Colors.teal.shade50,
                 child: const Icon(Icons.person, color: Color(0xFF1CA887)),
               ),
               const SizedBox(width: 16),
@@ -206,9 +214,10 @@ class TarjetaComunidad extends StatelessWidget {
                   children: [
                     Text(
                       mentor.nombreCompleto,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
+                        color: colorTexto,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -216,7 +225,7 @@ class TarjetaComunidad extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       'Área de especialidad: ${mentor.carrera ?? mentor.facultad ?? 'General'}',
-                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                      style: TextStyle(fontSize: 13, color: colorSubtexto),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -230,18 +239,28 @@ class TarjetaComunidad extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: esOscuro
+                      ? Colors.blue.withValues(alpha: 0.2)
+                      : Colors.blue.shade50,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.add, size: 14, color: Color(0xFF1951CB)),
-                    SizedBox(width: 4),
+                    Icon(
+                      Icons.add,
+                      size: 14,
+                      color: esOscuro
+                          ? Colors.blue.shade300
+                          : const Color(0xFF1951CB),
+                    ),
+                    const SizedBox(width: 4),
                     Text(
                       'Nuevo',
                       style: TextStyle(
-                        color: Color(0xFF1951CB),
+                        color: esOscuro
+                            ? Colors.blue.shade300
+                            : const Color(0xFF1951CB),
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),

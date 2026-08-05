@@ -64,7 +64,7 @@ class _MisSugerenciasViewState extends State<MisSugerenciasView> {
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return _construirEstadoVacio();
+            return _construirEstadoVacio(context);
           }
 
           // Filtrar adicionalmente por seguridad
@@ -77,7 +77,7 @@ class _MisSugerenciasViewState extends State<MisSugerenciasView> {
               .toList();
 
           if (sugerenciasActivas.isEmpty) {
-            return _construirEstadoVacio();
+            return _construirEstadoVacio(context);
           }
 
           // ORDENAMIENTO (De mayor apoyo a menor)
@@ -104,22 +104,34 @@ class _MisSugerenciasViewState extends State<MisSugerenciasView> {
     );
   }
 
-  Widget _construirEstadoVacio() {
+  Widget _construirEstadoVacio(BuildContext context) {
+    final esOscuro = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.lightbulb_outline, size: 80, color: Colors.grey[350]),
+          Icon(
+            Icons.lightbulb_outline,
+            size: 80,
+            color: esOscuro ? Colors.grey[700] : Colors.grey[350],
+          ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             "La bolsa está vacía.",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             "¡Sé el primero en proponer una tutoría!",
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14),
+            style: TextStyle(
+              fontSize: 14,
+              color: esOscuro ? Colors.grey[400] : Colors.grey[600],
+            ),
           ),
         ],
       ),
@@ -234,6 +246,9 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
     );
     final bool esMiCreacion =
         sugerencia.creador == usuarioActual.identificadorUnico;
+    final esOscuro = Theme.of(context).brightness == Brightness.dark;
+    final colorTexto = Theme.of(context).colorScheme.onSurface;
+    final colorSubtexto = esOscuro ? Colors.grey[400] : Colors.grey[700];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16.0),
@@ -242,13 +257,13 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: esOscuro ? Colors.black26 : Colors.black.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
         ],
         border: Border.all(
-          color: const Color(0xFF1CA887).withValues(alpha: 0.2),
+          color: const Color(0xFF1CA887).withValues(alpha: esOscuro ? 0.35 : 0.2),
           width: 1,
         ),
       ),
@@ -266,9 +281,10 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
                   Expanded(
                     child: Text(
                       sugerencia.materiaOAsignatura,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
+                        color: colorTexto,
                       ),
                     ),
                   ),
@@ -304,10 +320,13 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Tema: ${sugerencia.temaEspecifico}',
-                style: const TextStyle(fontSize: 14),
+                style: TextStyle(fontSize: 14, color: colorSubtexto),
               ),
               const SizedBox(height: 16),
-              const Divider(height: 1),
+              Divider(
+                height: 1,
+                color: esOscuro ? Colors.grey[800] : Colors.grey[200],
+              ),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -350,9 +369,9 @@ class _TarjetaSugerenciaFlat extends StatelessWidget {
 
                   if (!esTutor && esMiCreacion)
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.delete_outline,
-                        color: Colors.grey,
+                        color: esOscuro ? Colors.grey[400] : Colors.grey,
                       ),
                       tooltip: 'Eliminar mi sugerencia',
                       onPressed: () => _borrarMisugerenciaPropia(context),

@@ -14,7 +14,14 @@ import '../tutorias/chat_tutoria_view.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class MisTutoriasView extends StatefulWidget {
-  const MisTutoriasView({super.key});
+  final int initialIndex;
+  final bool esSubpantalla;
+
+  const MisTutoriasView({
+    super.key,
+    this.initialIndex = 0,
+    this.esSubpantalla = false,
+  });
 
   @override
   State<MisTutoriasView> createState() => _MisTutoriasViewState();
@@ -52,9 +59,17 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
 
     return DefaultTabController(
       length: 3,
+      initialIndex: widget.initialIndex,
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
+          leading: widget.esSubpantalla
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.pop(context),
+                  tooltip: 'Volver',
+                )
+              : null,
           elevation: 0,
 
           foregroundColor: AppTheme.grisTexto,
@@ -71,20 +86,25 @@ class _MisTutoriasViewState extends State<MisTutoriasView> {
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey[850]
+                    : Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(25),
               ),
-              child: const TabBar(
+              child: TabBar(
                 dividerColor: Colors.transparent,
                 indicatorSize: TabBarIndicatorSize.tab,
-                indicator: BoxDecoration(
+                indicator: const BoxDecoration(
                   borderRadius: BorderRadius.all(Radius.circular(25)),
                   color: Color(0xFF1CA887),
                 ),
                 labelColor: Colors.white,
-                unselectedLabelColor: Colors.grey,
-                labelStyle: TextStyle(fontWeight: FontWeight.bold),
-                tabs: [
+                unselectedLabelColor:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[400]
+                        : Colors.grey[600],
+                labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                tabs: const [
                   Tab(text: "Calendario"),
                   Tab(text: "Próximas"),
                   Tab(text: "Historial"),
@@ -1346,14 +1366,19 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
   Widget build(BuildContext context) {
     final esDictando = datos.identificadorDelTutor == uidActual;
     final colorDeEstado = _extraerColorPorEstadoBase();
+    final esOscuro = Theme.of(context).brightness == Brightness.dark;
+    final colorTexto = Theme.of(context).colorScheme.onSurface;
+    final colorSubtexto = esOscuro ? Colors.grey[400] : Colors.grey.shade600;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(
+          color: esOscuro ? Colors.grey[700]! : Colors.grey.shade200,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -1370,9 +1395,10 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                 Expanded(
                   child: Text(
                     datos.materiaOAsignatura.toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      color: colorTexto,
                     ),
                   ),
                 ),
@@ -1399,7 +1425,7 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               datos.temaEspecifico,
-              style: TextStyle(color: Colors.grey.shade600),
+              style: TextStyle(color: colorSubtexto),
             ),
             const SizedBox(height: 8),
             Row(
@@ -1409,7 +1435,7 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                 Expanded(
                   child: Text(
                     '${datos.fechaHoraSugerida.hour.toString().padLeft(2, '0')}:${datos.fechaHoraSugerida.minute.toString().padLeft(2, '0')} Hrs - ${datos.fechaHoraSugerida.day.toString().padLeft(2, '0')}/${datos.fechaHoraSugerida.month.toString().padLeft(2, '0')}',
-                    style: const TextStyle(color: Colors.black87),
+                    style: TextStyle(color: colorTexto),
                   ),
                 ),
                 const Icon(
@@ -1420,8 +1446,8 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   '${datos.duracionMinutos} min',
-                  style: const TextStyle(
-                    color: Colors.black87,
+                  style: TextStyle(
+                    color: colorTexto,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1436,7 +1462,7 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     datos.lugar ?? datos.modalidadDeClase,
-                    style: const TextStyle(color: Colors.black87),
+                    style: TextStyle(color: colorTexto),
                   ),
                 ],
               ),
@@ -1447,7 +1473,7 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     'Contacto: ${datos.contacto_tutor ?? 'No provisto'}',
-                    style: const TextStyle(color: Colors.black87),
+                    style: TextStyle(color: colorTexto),
                   ),
                 ],
               ),
@@ -1475,8 +1501,8 @@ class _TarjetaDeCompromisoFlat extends StatelessWidget {
                     child: FilledButton(
                       onPressed: () => _abandonarTutoriaEstudiante(context),
                       style: FilledButton.styleFrom(
-                        backgroundColor: Colors.grey.shade200,
-                        foregroundColor: Colors.black87,
+                        backgroundColor: esOscuro ? Colors.grey[800] : Colors.grey.shade200,
+                        foregroundColor: colorTexto,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
