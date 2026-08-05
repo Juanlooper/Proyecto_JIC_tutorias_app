@@ -58,6 +58,10 @@ class TribunalServicio {
         final usuarioSnapshot = await transaction.get(usuarioRef);
         if (usuarioSnapshot.exists) {
           final datosUsuario = usuarioSnapshot.data()!;
+          
+          // Prevención de redundancia: si ya está baneado, no gastamos escrituras.
+          if (datosUsuario['esta_baneado'] == true) return;
+
           final strikesActuales = datosUsuario['strikes_inasistencia'] ?? 0;
           final nuevosStrikes = strikesActuales + 1;
 

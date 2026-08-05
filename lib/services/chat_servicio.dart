@@ -51,23 +51,22 @@ class ChatServicio {
 
   /// Retorna un Stream con los mensajes de una tutoría ordenados por fecha.
   Stream<List<MensajeChat>> obtenerMensajesDeTutoria(String tutoriaId) {
+    // Cálculo seguro de la ventana de tiempo (últimas 24 horas)
+    final ventana24H = Timestamp.fromDate(DateTime.now().subtract(const Duration(hours: 24)));
+
     return _db
         .collection('tutorias')
         .doc(tutoriaId)
         .collection('chat')
+        .where('fechaHora', isGreaterThanOrEqualTo: ventana24H)
         .orderBy('fechaHora', descending: false)
         .snapshots()
         .map((snapshot) {
-          final ahora = DateTime.now();
           List<MensajeChat> mensajesRecientes = [];
-
           for (var doc in snapshot.docs) {
             final msg = MensajeChat.fromMap(doc.id, doc.data());
 
-            // Filtro local de 24 horas (Garbage Collection visual)
-            if (ahora.difference(msg.fechaHora).inHours < 24) {
-              mensajesRecientes.add(msg);
-            }
+            mensajesRecientes.add(msg);
           }
 
           return mensajesRecientes;

@@ -459,6 +459,24 @@ class _PerfilViewState extends State<PerfilView> {
                         _mostrarDialogoDatosContacto(context, elUsuarioActual),
                   ),
                   const Divider(height: 1),
+                  if (elUsuarioActual.rolEnElSistema == RolSistema.estudiante) ...[
+                    ListTile(
+                      leading: _buildIcon(Icons.rate_review, Colors.amber),
+                      title: const Text(
+                        'Comentarios de Tutores',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                        color: Colors.grey,
+                      ),
+                      onTap: () => _mostrarEvaluacionesEstudiante(
+                        context,
+                        elUsuarioActual.identificadorUnico,
+                      ),
+                    ),
+                    const Divider(height: 1),
+                  ],
                   ListTile(
                     leading: _buildIcon(Icons.workspace_premium, Colors.teal),
                     title: const Text(
@@ -754,5 +772,115 @@ class _PerfilViewState extends State<PerfilView> {
         'en_revision',
       );
     }
+  }
+
+  void _mostrarEvaluacionesEstudiante(BuildContext context, String estudianteId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    'Feedback de mis Tutores',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  child: FutureBuilder<QuerySnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('evaluaciones_estudiantes')
+                        .where('estudianteId', isEqualTo: estudianteId)
+                        .get(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return const Center(
+                          child: Text("Error al cargar comentarios."),
+                        );
+                      }
+                      var docs = snapshot.data?.docs.toList() ?? [];
+                      if (docs.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            "Aún no tienes evaluaciones de tutores.",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        );
+                      }
+
+                      // Ordenamiento cliente (Evita Índice Compuesto en Firestore)
+                      docs.sort((a, b) {
+                        final dataA = a.data() as Map<String, dynamic>;
+                        final dataB = b.data() as Map<String, dynamic>;
+                        final fechaA = dataA['fecha'] ?? '';
+                        final fechaB = dataB['fecha'] ?? '';
+                        return fechaB.compareTo(fechaA); // Descendente
+                      });
+
+                      return ListView.builder(
+                        controller: scrollController,
+                        itemCount: docs.length,
+                        itemBuilder: (context, index) {
+                          final data = docs[index].data() as Map<String, dynamic>;
+                          final estrellas = (data['estrellas'] ?? 5).toDouble();
+                          final comentario = data['comentario'] ?? '';
+                          final fecha = data['fecha'] != null 
+                              ? data['fecha'].toString().substring(0, 10) 
+                              : '';
+
+                          return Card(
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 6,
+                            ),
+                            child: ListTile(
+                              leading: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.star, color: Colors.amber),
+                                  Text(
+                                    estrellas.toStringAsFixed(1),
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                              title: Text(
+                                comentario.isEmpty 
+                                    ? "Sin comentario" 
+                                    : comentario,
+                                style: TextStyle(
+                                  fontStyle: comentario.isEmpty 
+                                      ? FontStyle.italic 
+                                      : FontStyle.normal,
+                                ),
+                              ),
+                              subtitle: Text("Fecha: $fecha"),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 }

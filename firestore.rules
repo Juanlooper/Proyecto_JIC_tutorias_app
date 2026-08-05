@@ -71,7 +71,9 @@ service cloud.firestore {
       match /evaluaciones/{evaluacionId} {
         allow read: if estaAutenticado();
         // Solo estudiantes pueden calificar y el admin puede moderar
-        allow create: if estaAutenticado(); 
+        allow create: if estaAutenticado() 
+                      && (!('comentario_publico' in request.resource.data) || request.resource.data.comentario_publico.size() <= 1000)
+                      && (!('comentario_admin' in request.resource.data) || request.resource.data.comentario_admin.size() <= 1000); 
         allow update, delete: if esAdmin();
       }
 
@@ -111,8 +113,9 @@ service cloud.firestore {
 
       // Subcolección CHAT anidada
       match /chat/{mensajeId} {
-        // Cualquier usuario autenticado puede leer y escribir mensajes en el chat
-        allow read, create: if estaAutenticado();
+        // Cualquier usuario autenticado puede leer y escribir mensajes en el chat (con límite de tamaño)
+        allow read: if estaAutenticado();
+        allow create: if estaAutenticado() && (!('texto' in request.resource.data) || request.resource.data.texto.size() <= 1500);
         
         // Solo el autor original del mensaje o un Administrador pueden borrar el mensaje
         allow delete: if estaAutenticado() && (request.auth.uid == resource.data.emisorId || esAdmin());
@@ -125,7 +128,7 @@ service cloud.firestore {
       allow read, update, delete: if esAdmin() || (estaAutenticado() && resource.data.usuarioId == request.auth.uid);
       
       // Cualquier usuario autenticado puede generar una notificación (Ej: Un estudiante le envía a un tutor)
-      allow create: if estaAutenticado();
+      allow create: if estaAutenticado() && (!('mensaje' in request.resource.data) || request.resource.data.mensaje.size() <= 500);
     }
 
 
@@ -137,8 +140,8 @@ service cloud.firestore {
 
     // 5. QUEJAS Y TRIBUNAL (Privacidad Estricta)
     match /quejas/{quejaId} {
-      // Estudiantes o tutores pueden crear una queja
-      allow create: if estaAutenticado();
+      // Estudiantes o tutores pueden crear una queja (con límite de payload)
+      allow create: if estaAutenticado() && (!('descripcion_del_problema' in request.resource.data) || request.resource.data.descripcion_del_problema.size() <= 4000);
       // SOLO el Administrador puede leer, actualizar o borrar quejas
       allow read, update, delete: if esAdmin();
     }

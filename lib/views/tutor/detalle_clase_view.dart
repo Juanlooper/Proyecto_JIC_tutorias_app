@@ -173,6 +173,7 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
   Future<void> _mostrarDialogoEvaluacion(String uidAlumno) async {
     double estrellas = 5;
     final comentarioCtrl = TextEditingController();
+    final comentarioAdminCtrl = TextEditingController();
 
     final confirmar = await showDialog<bool>(
       context: context,
@@ -188,7 +189,7 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                    "Califica el desempeño del estudiante. Esta información es de uso administrativo y no será visible para el alumno.",
+                    "Califica el desempeño del estudiante. Podrás dejar un mensaje para que él lo vea, y uno privado para administración.",
                     style: TextStyle(fontSize: 13, color: Colors.grey),
                   ),
                   const SizedBox(height: 16),
@@ -213,7 +214,16 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
                   TextField(
                     controller: comentarioCtrl,
                     decoration: const InputDecoration(
-                      labelText: "Comentario privado",
+                      labelText: "Cosas a mejorar (El alumno lo verá)",
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: comentarioAdminCtrl,
+                    decoration: const InputDecoration(
+                      labelText: "Comentario interno (Privado para administración)",
                       border: OutlineInputBorder(),
                     ),
                     maxLines: 2,
@@ -243,6 +253,7 @@ class _DetalleClaseViewState extends State<DetalleClaseView> {
         uidAlumno,
         estrellas,
         comentarioCtrl.text.trim(),
+        comentarioAdminCtrl.text.trim(),
       );
 
       if (mounted) {

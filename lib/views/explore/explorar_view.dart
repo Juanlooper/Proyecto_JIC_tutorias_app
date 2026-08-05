@@ -76,13 +76,14 @@ class _ExplorarViewState extends State<ExplorarView> {
             ),
           ),
 
-          // Grilla Principal usando StreamBuilder para Reactividad Total
+          // Grilla Principal usando FutureBuilder para Ahorrar Costos
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
+            child: FutureBuilder<QuerySnapshot>(
+              future: FirebaseFirestore.instance
                   .collection('usuarios')
                   .where('rolEnElSistema', isEqualTo: 'tutor')
-                  .snapshots(),
+                  .limit(50)
+                  .get(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -141,16 +142,21 @@ class _ExplorarViewState extends State<ExplorarView> {
                   );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
-                  ),
-                  itemCount: tutoresVirtuales.length,
-                  itemBuilder: (context, index) {
-                    final mentor = tutoresVirtuales[index];
-                    return TarjetaComunidad(mentor: mentor);
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    setState(() {});
                   },
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    itemCount: tutoresVirtuales.length,
+                    itemBuilder: (context, index) {
+                      final mentor = tutoresVirtuales[index];
+                      return TarjetaComunidad(mentor: mentor);
+                    },
+                  ),
                 );
               },
             ),
